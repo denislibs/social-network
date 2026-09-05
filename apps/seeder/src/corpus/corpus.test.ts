@@ -43,6 +43,14 @@ describe('corpus', () => {
         for (const h of c.hashtags) expect(h).toMatch(/^#[^\s#]+$/)
         expect(c.topic).toBe(topic)
       })
+      it('uses {n:one|few|many} for declinable nouns', () => {
+        expect(
+          [...c.posts, ...c.personalPosts].filter((p) =>
+            /\{n\}\s+(?!человек(?![а-яё]))[а-яё]/i.test(p),
+          ),
+          'bare {n} before a declinable noun',
+        ).toEqual([])
+      })
       it('is not templated: skeleton groups ≤ 8, length and register spread', () => {
         const groups = new Map<string, number>()
         for (const p of c.posts) {
