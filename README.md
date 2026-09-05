@@ -20,7 +20,7 @@ apps/web (фронт: React + VKUI, см. спек 2026-09-06) · apps/api · ap
 
 ## Фронт
 
-`apps/web` — React 19 + VKUI 8, строго по Feature-Sliced Design (`app → pages → widgets → features → entities → shared`, слайсы одного слоя друг друга не импортируют, вход только через `index.ts`). Три обязательных проверки, все в `bun run lint`: Steiger (`bun run lint:fsd`), oxlint (`no-restricted-imports` по слоям) и тест `vkui-only.test.ts` (запрещает свои цвета, `font-size` и «сырые» HTML-контролы вне VKUI). Соответствие компонентов и токенов оригиналу vk.ru — `docs/reference/vk-ru-vkui-map.md`. Подробности архитектуры и отступления от исходного плана — `docs/superpowers/specs/2026-09-06-web-react-vkui-migration-design.md`.
+`apps/web` — React 19 + VKUI 8, строго по Feature-Sliced Design (`app → pages → widgets → features → entities → shared`, слайсы одного слоя друг друга не импортируют, вход только через `index.ts`). Три обязательных проверки: Steiger (`bun run lint:fsd`) и oxlint (`no-restricted-imports` по слоям) — обе в `bun run lint`; тест `vkui-only.test.ts` (запрещает свои цвета, `font-size` и «сырые» HTML-контролы вне VKUI) — в `bun run test:unit`. Соответствие компонентов и токенов оригиналу vk.ru — `docs/reference/vk-ru-vkui-map.md`. Подробности архитектуры и отступления от исходного плана — `docs/superpowers/specs/2026-09-06-web-react-vkui-migration-design.md`.
 
 ## Деплой
 За TLS выставьте `COOKIE_SECURE=1` — иначе браузер примет cookie сессии, но при переходе на
