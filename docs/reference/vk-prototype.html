@@ -1,0 +1,1739 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Прототип ВКонтакте</title>
+  <style>
+    :root{color-scheme:light}
+    html,body{margin:0}
+    img{max-width:100%}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body>
+<style>
+/* ======================================================================
+   Токены VKUI (vkBase). Светлая — база, тёмная — оверрайд.
+   ====================================================================== */
+:root{
+  color-scheme: light;
+  --is-dark:0;
+  --bg:#edeef0; --content:#ffffff; --secondary:#f0f2f5; --tertiary:#fafbfc;
+  --modal:#ffffff; --header:#ffffff; --field:#ffffff; --searchfield:#edeef0;
+  --acc:#447bba; --acc-h:#4177b5; --acc-a:#3f72b0; --on-acc:#ffffff;
+  --neg:#e64646; --pos:#4bb34b;
+  --neg-tint:#faebeb; --pos-tint:#e8f9e8; --warn-tint:#fff2d6; --info-tint:#deeeff;
+  --text:#000000; --text2:#818c99; --subhead:#626d7a; --text3:#99a2ad;
+  --link:#2a5885; --accent:#447bba; --text-neg:#e64646; --text-pos:#4bb34b;
+  --icon:#2c2d2e; --icon2:#99a2ad; --icon3:#aeb7c2; --icon-med:#6f7985; --icon-acc:#447bba;
+  --sep:#dce1e6; --sep2:#e7e8ec;
+  --hover:rgba(0,16,61,.04); --active:rgba(0,16,61,.08); --alpha:rgba(39,63,92,.07);
+  --skel-from:rgba(3,11,23,.02); --skel-to:rgba(3,11,23,.1);
+  --im-bg:#edeef0; --bubble-in:#ffffff; --bubble-out:#cfe0f5; --im-field:#ffffff; --field-soft:#f0f2f5; --sec-pill:#e6e9ee;
+  --a-azure:#3f8ae0; --a-violet:#792ec0; --a-fire:#f05c44; --a-cyan:#7cf4dc;
+  --e1:0 0 2px rgba(0,0,0,.06), 0 2px 2px rgba(0,0,0,.08);
+  --e2:0 4px 8px rgba(0,0,0,.08), 0 0 4px rgba(0,0,0,.06);
+  --e3:0 0 2px rgba(0,0,0,.12), 0 4px 16px rgba(0,0,0,.12);
+  --e4:0 0 8px rgba(0,0,0,.06), 0 16px 16px rgba(0,0,0,.10);
+  --ease:cubic-bezier(.3,.3,.5,1); --ease-p:cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-vk="light"]){
+    color-scheme: dark;
+    --is-dark:1;
+    --bg:#141414; --content:#222222; --secondary:#333333; --tertiary:#292929;
+    --modal:#292929; --header:#222222; --field:#292929; --searchfield:#424242;
+    --acc:#e1e3e6; --acc-h:#d8dbdf; --acc-a:#cfd2d8; --on-acc:#222222;
+    --neg:#ff5c5c; --pos:#4bb34b;
+    --neg-tint:#522e2e; --pos-tint:#2f422f; --warn-tint:#473315; --info-tint:#1c3954;
+    --text:#e1e3e6; --text2:#828282; --subhead:#939393; --text3:#656565;
+    --link:#71aaeb; --accent:#71aaeb; --text-neg:#ff5c5c; --text-pos:#4bb34b;
+    --icon:#e1e3e6; --icon2:#828282; --icon3:#656565; --icon-med:#939393; --icon-acc:#71aaeb;
+    --sep:#363738; --sep2:#292929;
+    --hover:rgba(255,255,255,.04); --active:rgba(255,255,255,.08); --alpha:rgba(255,255,255,.08);
+    --skel-from:#292929; --skel-to:#333333;
+    --im-bg:#19191a; --bubble-in:#333333; --bubble-out:#1e2f42; --im-field:#292929; --field-soft:#292929; --sec-pill:#323232; --sec-pill:#323232; --field-soft:#292929;
+    --a-azure:#5d9ee9; --a-violet:#a94fff; --a-fire:#f05c44; --a-cyan:#55f1d2;
+    --e1:0 0 2px rgba(0,0,0,.10), 0 2px 2px rgba(0,0,0,.20);
+    --e2:0 4px 8px rgba(0,0,0,.15), 0 0 4px rgba(0,0,0,.20);
+    --e3:0 0 2px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.30);
+    --e4:0 0 8px rgba(0,0,0,.10), 0 16px 16px rgba(0,0,0,.20);
+  }
+}
+:root[data-vk="dark"]{
+  color-scheme: dark;
+  --is-dark:1;
+  --bg:#141414; --content:#222222; --secondary:#333333; --tertiary:#292929;
+  --modal:#292929; --header:#222222; --field:#292929; --searchfield:#424242;
+  --acc:#e1e3e6; --acc-h:#d8dbdf; --acc-a:#cfd2d8; --on-acc:#222222;
+  --neg:#ff5c5c; --pos:#4bb34b;
+  --neg-tint:#522e2e; --pos-tint:#2f422f; --warn-tint:#473315; --info-tint:#1c3954;
+  --text:#e1e3e6; --text2:#828282; --subhead:#939393; --text3:#656565;
+  --link:#71aaeb; --accent:#71aaeb; --text-neg:#ff5c5c; --text-pos:#4bb34b;
+  --icon:#e1e3e6; --icon2:#828282; --icon3:#656565; --icon-med:#939393; --icon-acc:#71aaeb;
+  --sep:#363738; --sep2:#292929;
+  --hover:rgba(255,255,255,.04); --active:rgba(255,255,255,.08); --alpha:rgba(255,255,255,.08);
+  --skel-from:#292929; --skel-to:#333333;
+  --im-bg:#19191a; --bubble-in:#333333; --bubble-out:#1e2f42; --im-field:#292929;
+  --a-azure:#5d9ee9; --a-violet:#a94fff; --a-fire:#f05c44; --a-cyan:#55f1d2;
+  --e1:0 0 2px rgba(0,0,0,.10), 0 2px 2px rgba(0,0,0,.20);
+  --e2:0 4px 8px rgba(0,0,0,.15), 0 0 4px rgba(0,0,0,.20);
+  --e3:0 0 2px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.30);
+  --e4:0 0 8px rgba(0,0,0,.10), 0 16px 16px rgba(0,0,0,.20);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,system-ui,"Helvetica Neue",Roboto,sans-serif;
+  font-size:15px;line-height:20px;-webkit-font-smoothing:antialiased;
+}
+button,input,textarea{font-family:inherit}
+a{color:var(--link);text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+::selection{background:var(--accent);color:var(--on-acc)}
+
+/* ---------- шапка ---------- */
+.hdr{
+  position:sticky;top:0;z-index:60;height:48px;background:var(--header);
+  box-shadow:0 0 0 1px var(--sep2);display:flex;align-items:center;gap:12px;
+  padding:0 16px;
+}
+.hdr .logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:17px;letter-spacing:-.01em;color:var(--text)}
+.hdr .logo .mark{
+  width:26px;height:26px;border-radius:7px;background:#0077ff;display:grid;place-items:center;
+  color:#fff;font-size:11px;font-weight:700;letter-spacing:-.04em;flex:0 0 auto;
+}
+.search{
+  flex:0 1 340px;display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:8px;
+  background:var(--searchfield);color:var(--text2);font-size:14px;cursor:text;
+  transition:background-color .15s ease-out;border:0;width:100%;
+}
+.search:hover{background:var(--hover),var(--searchfield)}
+.search:focus-within{box-shadow:inset 0 0 0 1px var(--accent)}
+.search input:focus{outline:none}
+.search input::placeholder{color:var(--text2)}
+.hdr .grow{flex:1}
+.iconbtn{
+  position:relative;width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:var(--icon);
+  display:grid;place-items:center;cursor:pointer;overflow:hidden;flex:0 0 auto;
+  transition:background-color .15s ease-out;
+}
+.iconbtn:hover{background:var(--hover)}
+.iconbtn:active{background:var(--active)}
+.badge{
+  position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+  background:var(--neg);color:#fff;font-size:11px;font-weight:600;line-height:16px;text-align:center;
+  box-shadow:0 0 0 2px var(--header);
+}
+.proto-tag{
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);
+  border:1px solid var(--sep);border-radius:20px;padding:3px 9px;white-space:nowrap;
+}
+
+/* ---------- каркас ---------- */
+.shell{max-width:1420px;margin:0 auto;padding:16px 12px;display:grid;grid-template-columns:180px minmax(0,1fr) 280px;gap:16px;align-items:start}
+@media (max-width:1180px){ .shell{grid-template-columns:180px minmax(0,1fr)} .aside{display:none} }
+@media (max-width:760px){ .shell{grid-template-columns:minmax(0,1fr)} .nav{display:none} }
+
+.nav{position:sticky;top:64px;display:flex;flex-direction:column;gap:2px}
+.nav a{
+  position:relative;display:flex;align-items:center;gap:12px;height:36px;padding:0 10px;border-radius:8px;
+  color:var(--text);font-size:14px;overflow:hidden;transition:background-color .15s ease-out;cursor:pointer;
+}
+.nav a:hover{background:var(--hover)}
+.nav a[aria-current="page"]{background:var(--alpha);font-weight:500}
+.nav a svg{color:var(--icon-med);flex:0 0 auto}
+.nav a[aria-current="page"] svg{color:var(--icon)}
+.nav .cnt{margin-left:auto;font-size:12px;font-weight:600;color:#fff;background:var(--neg);border-radius:9px;padding:0 6px;line-height:18px}
+.nav .sep{height:1px;background:var(--sep);margin:10px 0}
+.nav .quiet{color:var(--text2);font-size:12.5px;padding:0 10px;line-height:22px}
+
+.card{background:var(--content);border-radius:12px;overflow:hidden}
+.card + .card{margin-top:12px}
+.pad{padding:14px 16px}
+.aside{position:sticky;top:64px;display:flex;flex-direction:column;gap:12px}
+
+/* ---------- типографика VKUI ---------- */
+.t-title2{font-size:20px;line-height:24px;font-weight:500}
+.t-headline{font-size:16px;line-height:20px;font-weight:500}
+.t-text{font-size:16px;line-height:20px}
+.t-paragraph{font-size:15px;line-height:20px}
+.t-subhead{font-size:14px;line-height:18px}
+.t-footnote{font-size:13px;line-height:16px}
+.t-caption{font-size:12px;line-height:14px}
+.muted{color:var(--text2)}
+.dim{color:var(--text3)}
+
+/* ---------- кнопки ---------- */
+.btn{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:0;border-radius:8px;padding:0 16px;height:32px;cursor:pointer;overflow:hidden;
+  font-size:13.5px;font-weight:500;background:var(--acc);color:var(--on-acc);
+  transition:background-color .15s ease-out,color .15s ease-out,opacity .15s ease-out;
+}
+.btn:hover{background:var(--acc-h)} .btn:active{background:var(--acc-a)}
+.btn.sec{background:var(--alpha);color:var(--text)}
+.btn.sec:hover{background:var(--hover)}
+.btn.ter{background:transparent;color:var(--accent)}
+.btn.ter:hover{background:var(--hover)}
+.btn.wide{width:100%}
+.btn.l{height:36px;font-size:14px}
+
+/* ---------- ripple (vkuiTappable__animationWave) ---------- */
+.tap{position:relative;overflow:hidden}
+.wave{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;pointer-events:none;
+  background:var(--active);animation:wave .3s var(--ease-p) forwards}
+@keyframes wave{0%{opacity:1;transform:scale(1)}30%{opacity:1}to{opacity:0;transform:scale(8)}}
+
+/* ---------- аватары ---------- */
+.av{border-radius:50%;flex:0 0 auto;background-color:var(--secondary);background-size:cover;
+  background-position:center;display:block;position:relative}
+.av.sq{border-radius:8px}
+.avw{position:relative;flex:0 0 auto}
+.on{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:var(--pos);
+  box-shadow:0 0 0 3px var(--content)}
+
+/* ---------- посты ---------- */
+.post-hd{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+.post-hd .who{font-size:15px;line-height:19px;font-weight:500}
+.post-hd .when{font-size:13px;line-height:16px;color:var(--text2);display:flex;align-items:center;gap:5px}
+.post-txt{padding:0 16px 12px;font-size:15px;line-height:20px;white-space:pre-wrap;word-break:break-word}
+.post-txt .tag{color:var(--link)}
+.more-btn{background:none;border:0;color:var(--link);cursor:pointer;font-size:15px;padding:0}
+.media{width:100%;aspect-ratio:4/3;background:var(--secondary);display:block;cursor:zoom-in}
+.media.tall{aspect-ratio:3/4}
+/* реакции и действия поста — прозрачные кнопки h24/r8, как на vk.ru */
+.reacts{display:flex;align-items:center;gap:8px;padding:2px 16px 0;font-size:13px;line-height:16px;color:var(--text2)}
+.reacts .stack{display:flex}
+.reacts .stack span{width:16px;height:16px;border-radius:50%;font-size:10px;display:grid;place-items:center;
+  background:var(--secondary);box-shadow:0 0 0 2px var(--content);margin-left:-5px}
+.reacts .stack span:first-child{margin-left:0}
+.acts{display:flex;align-items:center;gap:4px;padding:8px 12px 12px}
+.act{
+  position:relative;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:8px;
+  border:0;background:transparent;color:var(--text2);font-size:13px;line-height:16px;font-weight:500;
+  cursor:pointer;overflow:hidden;transition:background-color .15s ease-out,color .15s ease-out;
+}
+.act:hover{background:var(--hover);color:var(--text)}
+.act.on{color:var(--text-neg)}
+.act.on:hover{color:var(--text-neg)}
+.act .n{font-variant-numeric:tabular-nums}
+.act.when{margin-left:auto;background:transparent;pointer-events:none;color:var(--text3);font-weight:400}
+
+/* вложения */
+.attach{margin:0 16px 12px;border-radius:8px;border:1px solid var(--sep);overflow:hidden}
+.attach .row{display:flex;align-items:center;gap:12px;padding:10px 12px}
+.attach .cover{width:40px;height:40px;border-radius:6px;flex:0 0 auto;background:var(--secondary)}
+.attach .lnk{padding:10px 12px;border-top:1px solid var(--sep)}
+.playbtn{
+  width:36px;height:36px;border-radius:50%;border:0;background:var(--acc);color:var(--on-acc);
+  display:grid;place-items:center;cursor:pointer;flex:0 0 auto;transition:transform .15s var(--ease);
+}
+.playbtn:hover{transform:scale(1.06)}
+
+/* комментарии — без «бабблов», как на vk.ru: аватар 28, имя 14/18/500, текст 14/18, мета 13/16 */
+.cmts{border-top:1px solid var(--sep2);padding:10px 16px 14px;display:flex;flex-direction:column;gap:14px}
+.cmt-sort{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;
+  color:var(--text);font-size:14px;line-height:18px;font-weight:500;cursor:pointer}
+.cmt-sort svg{color:var(--icon2)}
+.cmt{display:flex;gap:10px}
+.cav{width:28px;height:28px;border-radius:50%;flex:0 0 auto;background-size:cover;background-color:var(--secondary);display:block}
+.cmt .bd{flex:1;min-width:0}
+.cmt .nm{display:flex;align-items:center;gap:5px;font-size:14px;line-height:18px;font-weight:500}
+.cmt .tx{font-size:14px;line-height:18px;margin-top:1px;word-break:break-word;white-space:pre-wrap}
+.cmt .tx.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.cmt .showmore{background:none;border:0;padding:0;color:var(--link);font-size:14px;line-height:18px;cursor:pointer}
+.cmt .mt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:4px;font-size:13px;line-height:16px;color:var(--text2)}
+.cmt .mt > span:first-child{white-space:nowrap}
+.viewer .side [data-cshare]{display:none}
+.cmt .mt button{background:none;border:0;color:var(--text2);cursor:pointer;font-size:13px;line-height:16px;padding:0}
+.cmt .mt button:hover{color:var(--link)}
+.cmt .clike{margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;
+  color:var(--text2);font-size:13px;line-height:16px;cursor:pointer;font-variant-numeric:tabular-nums}
+.cmt .clike:hover{color:var(--text)}
+.cmt .clike.on{color:var(--text-neg)}
+.cmt-new{display:flex;gap:10px;align-items:center}
+.cmt-new .fld{flex:1;display:flex;align-items:center;gap:4px;height:38px;border-radius:8px;
+  background:var(--field-soft);border:1px solid transparent;padding:0 6px 0 12px;
+  transition:border-color .15s ease-out}
+.cmt-new .fld:focus-within{border-color:var(--accent)}
+.cmt-new input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font-size:13px;line-height:18px}
+.cmt-new input:focus{outline:none}
+.cmt-new input::placeholder{color:var(--text2)}
+
+/* ---------- истории ---------- */
+.stories{display:flex;gap:8px;overflow-x:auto;padding:2px;scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+.story{width:94px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;text-align:left;color:var(--text)}
+.story .im{width:94px;height:167px;border-radius:12px;position:relative;overflow:hidden;background:var(--secondary);
+  transition:transform .2s var(--ease)}
+.story:hover .im{transform:translateY(-2px)}
+.story .ava{position:absolute;left:8px;top:8px;width:32px;height:32px;border-radius:50%;
+  box-shadow:0 0 0 2px var(--a-azure), 0 0 0 4px rgba(0,0,0,.35);background:var(--secondary);background-size:cover}
+.story .cap{position:absolute;left:6px;right:6px;bottom:6px;font-size:11px;line-height:14px;color:#fff;
+  text-shadow:0 1px 3px rgba(0,0,0,.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.story.add .im{display:grid;place-items:center;background:var(--secondary)}
+.story.add .plus{width:36px;height:36px;border-radius:50%;background:var(--content);display:grid;place-items:center;color:var(--icon)}
+
+/* ---------- профиль (значения с vk.ru) ---------- */
+.cover{height:200px;position:relative;background-size:130% 130%;background-position:center;
+  background-color:var(--secondary)}
+.cover::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 35%,rgba(0,0,0,.45))}
+.prof{position:relative;background:var(--content);padding:8px 16px 14px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.prof .avwrap{margin-top:-84px;flex:0 0 auto;position:relative}
+.prof .big{width:130px;height:130px;border-radius:50%;box-shadow:0 0 0 4px var(--content);background-size:cover;
+  background-color:var(--secondary);display:block}
+.prof .plusb{position:absolute;right:6px;bottom:6px;width:26px;height:26px;border-radius:50%;border:0;
+  background:var(--a-azure);color:#fff;display:grid;place-items:center;cursor:pointer;
+  box-shadow:0 0 0 3px var(--content)}
+.prof .info{flex:1 1 220px;padding-bottom:2px;min-width:0}
+.prof .nm{font-size:22px;line-height:24px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.prof .nm .emo{font-size:22px;line-height:24px}
+.prof .st{display:inline-flex;align-items:center;gap:4px;color:var(--link);font-size:13px;line-height:16px;margin-top:8px;cursor:pointer}
+.pacts{display:flex;gap:8px;align-items:center;padding-bottom:2px;flex-wrap:wrap}
+
+.tabs{display:flex;gap:4px;padding:8px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{
+  border:0;background:transparent;color:var(--text2);font-size:14px;font-weight:500;
+  padding:7px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;position:relative;overflow:hidden;
+  transition:background-color .15s ease-out,color .15s ease-out;
+}
+.tabs button:hover{background:var(--hover);color:var(--text)}
+.tabs button[aria-selected="true"]{background:var(--alpha);color:var(--text)}
+
+/* альбомы-обложки и треки в две колонки — как на странице профиля */
+.albstrip{display:flex;gap:12px;overflow-x:auto;padding:4px 16px 12px;scrollbar-width:none}
+.albstrip::-webkit-scrollbar{display:none}
+.albstrip .a{width:104px;flex:0 0 auto;border:0;background:none;padding:0;cursor:pointer;text-align:left;color:var(--text)}
+.albstrip .a .im{display:block;width:104px;height:104px;border-radius:8px;background:var(--secondary);
+  transition:transform .2s var(--ease)}
+.albstrip .a:hover .im{transform:translateY(-2px)}
+.albstrip .a .cap{display:block;font-size:13px;line-height:16px;margin-top:8px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.trk2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:0 8px;padding:0 8px}
+.gifts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gifts span{aspect-ratio:1;border-radius:8px;background:var(--secondary);background-size:cover}
+.createpost{display:flex;align-items:center;gap:10px;padding:10px 16px}
+.createpost .mid{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:36px;
+  border-radius:8px;border:0;background:var(--alpha);color:var(--text);font-size:14px;font-weight:500;
+  cursor:pointer;position:relative;overflow:hidden;transition:background-color .15s ease-out}
+.createpost .mid:hover{background:var(--hover)}
+.emptybox{padding:26px 16px;text-align:center;color:var(--text2);font-size:13px;line-height:18px}
+
+.trk{display:flex;align-items:center;gap:12px;padding:8px 16px;cursor:pointer;position:relative;overflow:hidden;
+  transition:background-color .15s ease-out}
+.trk:hover{background:var(--hover)}
+.trk .cv{width:40px;height:40px;border-radius:6px;flex:0 0 auto;background:var(--secondary);display:grid;place-items:center}
+.trk .ti{flex:1;min-width:0}
+.trk .t1{display:block;font-size:14px;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trk .t2{display:block;font-size:13px;line-height:16px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trk .dur{font-size:12.5px;color:var(--text3);font-variant-numeric:tabular-nums}
+.trk[aria-current="true"] .t1{color:var(--accent)}
+
+.eq{display:flex;align-items:flex-end;gap:2px;height:14px}
+.eq i{width:3px;background:var(--accent);border-radius:2px;animation:eq .9s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:.15s}.eq i:nth-child(3){animation-delay:.3s}.eq i:nth-child(4){animation-delay:.45s}
+@keyframes eq{0%,100%{height:4px}50%{height:14px}}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:0;background:var(--alpha);color:var(--text);border-radius:16px;padding:7px 14px;font-size:13.5px;
+  cursor:pointer;position:relative;overflow:hidden;transition:background-color .15s ease-out}
+.chip:hover{background:var(--hover)}
+
+.grid-pl{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.pl{border:0;padding:0;background:none;cursor:pointer;text-align:left;color:var(--text)}
+.pl .im{aspect-ratio:1;border-radius:10px;background:var(--secondary);position:relative;overflow:hidden;
+  transition:transform .2s var(--ease)}
+.pl:hover .im{transform:scale(1.02)}
+.pl .nm{display:block;font-size:13.5px;line-height:17px;margin-top:7px;font-weight:500}
+.pl .sb{display:block;font-size:12.5px;line-height:16px;color:var(--text2)}
+.pl .im{display:block}
+.alb .im,.story .im{display:block}
+.prof .st{display:block}
+
+/* ---------- фото ---------- */
+.ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding:6px}
+.ph{border:0;padding:0;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:zoom-in;background:var(--secondary);
+  position:relative;transition:opacity .15s ease-out}
+.ph:hover{opacity:.88}
+.ph .ov{position:absolute;left:0;right:0;bottom:0;padding:22px 8px 6px;display:flex;gap:10px;
+  background:linear-gradient(transparent,rgba(0,0,0,.55));color:#fff;font-size:12px;opacity:0;transition:opacity .15s ease-out}
+.ph:hover .ov{opacity:1}
+.alb{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:16px}
+.alb button{border:0;background:none;padding:0;cursor:pointer;text-align:left;color:var(--text)}
+.alb .im{aspect-ratio:4/3;border-radius:10px;background:var(--secondary);overflow:hidden}
+.alb .nm{display:block;font-size:14px;font-weight:500;margin-top:8px}
+.alb .sb{display:block;font-size:12.5px;color:var(--text2)}
+
+/* ---------- мессенджер: значения сняты с vk.ru/im ---------- */
+.im-wrap{display:grid;grid-template-columns:319px minmax(0,1fr);height:calc(100vh - 132px);min-height:520px;
+  background:var(--content);border-radius:12px;overflow:hidden}
+@media (max-width:820px){ .im-wrap{grid-template-columns:minmax(0,1fr)} .im-wrap.chat-open .im-col{display:none} .im-wrap:not(.chat-open) .im-chat{display:none} }
+
+.im-col{display:flex;flex-direction:column;min-height:0;background:var(--content)}
+.im-list{display:flex;flex-direction:column;background:var(--content);min-height:0;flex:1}
+.im-list-hd{padding:0 8px;flex:0 0 auto}
+.im-list-top{display:flex;align-items:center;gap:8px;height:48px;padding:0 4px}
+.im-list-top b{font-size:16px;line-height:20px;font-weight:500;flex:1}
+.im-filters{display:flex;align-items:center;gap:4px;padding:6px 4px 8px}
+.filter{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:0;border-radius:8px;
+  background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;position:relative;overflow:hidden;
+  transition:background-color .15s ease-out,color .15s ease-out}
+.filter:hover{background:var(--hover)}
+.filter[aria-pressed="true"]{background:var(--alpha);color:var(--text)}
+.filter i{font-style:normal;font-size:11px;font-weight:600;background:var(--alpha);border-radius:8px;padding:1px 6px;color:var(--text2)}
+.im-rows{overflow:auto;flex:1;padding:0 8px;min-height:0}
+.im-list-ft{flex:0 0 auto;display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;
+  border-top:1px solid var(--sep2);color:var(--text2);font-size:13px}
+.sw-toggle{display:inline-block;flex:0 0 auto;width:34px;height:14px;border-radius:7px;background:var(--sep);
+  position:relative;cursor:pointer;transition:background-color .2s var(--ease)}
+.sw-toggle .pin{position:absolute;top:-3px;left:-1px;width:20px;height:20px;border-radius:50%;
+  background:var(--text2);box-shadow:var(--e1);transition:transform .2s var(--ease),background-color .2s var(--ease)}
+.sw-toggle[aria-checked="true"]{background:var(--acc);opacity:.5}
+.sw-toggle[aria-checked="true"] .pin{transform:translateX(15px);background:var(--acc);opacity:1}
+
+.convo{display:flex;gap:12px;align-items:center;height:60px;padding:6px 12px;border-radius:8px;cursor:pointer;
+  position:relative;overflow:hidden;width:100%;border:0;background:transparent;color:var(--text);text-align:left;
+  transition:background-color .15s ease-out}
+.convo:hover{background:var(--hover)}
+.convo[aria-current="true"]{background:var(--alpha)}
+.convo .cav{width:48px;height:48px;border-radius:50%;flex:0 0 auto;background-size:cover;background-color:var(--secondary)}
+.convo .cbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.convo .chd{display:flex;align-items:center;gap:4px;min-width:0}
+.convo .ctitle{font-size:13px;line-height:16px;font-weight:500;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.convo .cmsg{display:flex;align-items:center;gap:4px;min-width:0;font-size:13px;line-height:18px;color:var(--text3)}
+.convo .ctext{flex:0 1 auto;min-width:0;color:var(--subhead);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.convo .cdate{flex:0 0 auto;color:var(--text3);white-space:nowrap}
+.convo .cout{flex:0 0 auto;color:var(--icon-acc);display:inline-flex}
+.unread{margin-left:auto;flex:0 0 auto;min-width:18px;height:18px;padding:0 4px;border-radius:9px;
+  background:var(--acc);color:var(--on-acc);font-size:12px;font-weight:500;line-height:18px;text-align:center;
+  font-variant-numeric:tabular-nums}
+.ver{width:14px;height:14px;flex:0 0 auto;color:var(--icon-acc);display:inline-flex}
+
+.im-chat{display:flex;flex-direction:column;min-height:0;background:var(--im-bg)}
+.ch-hd{flex:0 0 auto;display:flex;align-items:center;gap:8px;height:56px;padding:4px 8px;background:var(--content)}
+.ch-hd .ct{font-size:15px;line-height:19px;font-weight:500;display:flex;align-items:center;gap:5px}
+.ch-hd .cs{display:block;font-size:13px;line-height:16px;color:var(--text2)}
+.msgs{flex:1;overflow:auto;padding:8px 16px 12px;display:flex;flex-direction:column;min-height:0}
+/* короткая переписка прижимается к низу, длинная скроллится как обычно */
+.msgs > *:first-child{margin-top:auto}
+.datesep{align-self:center;font-size:13px;line-height:16px;color:var(--subhead);padding:3px 12px 5px;margin:6px 0}
+.mblock{padding:4px 0;display:flex}
+.mblock.out{justify-content:flex-end}
+.msg{max-width:min(530px,80%);padding:8px 10px;border-radius:14px;font-size:13px;line-height:18px;
+  word-break:break-word;background:var(--bubble-in);animation:msgIn .2s var(--ease-p) both}
+.mblock.out .msg{background:var(--bubble-out)}
+.msg .btxt{white-space:pre-wrap}
+.msg .binfo{font-size:11px;line-height:11px;color:var(--text2);margin-top:5px;text-align:right}
+.msg .bkey{margin:8px -10px -8px;border-top:1px solid var(--sep);padding:0}
+.msg .bkey button{width:100%;height:34px;border:0;background:transparent;color:var(--accent);font-size:13px;
+  font-weight:500;cursor:pointer;border-radius:0 0 14px 14px;position:relative;overflow:hidden;
+  transition:background-color .15s ease-out}
+.msg .bkey button:hover{background:var(--hover)}
+@keyframes msgIn{0%{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.typing{align-self:flex-start;display:flex;gap:4px;padding:11px 12px;background:var(--bubble-in);border-radius:14px;margin:4px 0}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+
+.composer-wrap{flex:0 0 auto;padding:8px 16px 12px}
+.composer{display:flex;align-items:center;gap:2px;height:44px;border-radius:12px;background:var(--im-field);
+  padding:0 6px;transition:box-shadow .15s ease-out}
+.composer:focus-within{box-shadow:inset 0 0 0 1px var(--accent)}
+.composer input{flex:1;border:0;background:transparent;color:var(--text);font-size:13px;line-height:18px;padding:0 6px}
+.composer input:focus{outline:none}
+.composer input::placeholder{color:var(--text2)}
+.cbtn{width:32px;height:32px;border-radius:8px;border:0;background:transparent;color:var(--icon-med);
+  display:grid;place-items:center;cursor:pointer;flex:0 0 auto;position:relative;overflow:hidden;
+  transition:background-color .15s ease-out,color .15s ease-out}
+.cbtn:hover{background:var(--hover);color:var(--icon)}
+.cbtn.plus{width:36px;height:44px;color:var(--icon-acc)}
+.cbtn.send{color:var(--icon-acc)}
+
+/* ---------- поиск в списке бесед ---------- */
+.im-search{display:flex;flex-direction:column;flex:1;min-height:0}
+.im-search-hd{display:flex;align-items:center;gap:6px;height:48px;padding:0 4px;flex:0 0 auto}
+.im-search-hd b{font-size:15px;line-height:20px;font-weight:500}
+.search-tabs{display:flex;gap:4px;align-items:center;height:44px;padding:0 12px;flex:0 0 auto}
+.search-tabs button{height:28px;padding:2px 8px;border-radius:8px;border:0;background:transparent;
+  color:var(--text2);font-size:13px;cursor:pointer;position:relative;overflow:hidden;
+  transition:background-color .15s ease-out,color .15s ease-out}
+.search-tabs button:hover{background:var(--hover)}
+.search-tabs button[aria-selected="true"]{background:var(--sec-pill);color:var(--text)}
+.search-body{flex:1;overflow:auto;min-height:0;display:flex;flex-direction:column}
+.sec-hd{flex:0 0 auto;font-size:12px;line-height:14px;font-weight:600;text-transform:uppercase;
+  color:var(--text2);padding:10px 16px 8px}
+.hscroll{flex:0 0 auto;display:flex;gap:2px;overflow-x:auto;padding:0 8px 10px;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.hcell{width:76px;flex:0 0 auto;border:0;background:none;padding:6px 0 8px;cursor:pointer;color:var(--text);
+  display:flex;flex-direction:column;align-items:center;gap:8px;border-radius:8px;position:relative;overflow:hidden;
+  transition:background-color .15s ease-out}
+.hcell:hover{background:var(--hover)}
+.hcell .a{width:56px;height:56px;border-radius:50%;background-size:cover;background-color:var(--secondary);
+  display:grid;place-items:center}
+.hcell .a.fav{background:var(--a-azure);color:#fff}
+.hcell .n{font-size:12px;line-height:14px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  color:var(--text2);text-align:center;padding:20px 40px}
+.search-empty p{font-size:14px;line-height:18px;max-width:190px}
+
+/* ---------- плеер в шапке, как на vk.ru ---------- */
+.hplayer{display:flex;align-items:center;gap:2px;min-width:0;max-width:420px;opacity:0;
+  transition:opacity .2s ease-out;pointer-events:none}
+.hplayer.up{opacity:1;pointer-events:auto}
+.hplayer .iconbtn{width:28px;height:28px}
+.hp-meta{font-size:13px;line-height:16px;color:var(--text);margin-left:6px;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hp-bar{width:88px;height:3px;border-radius:2px;background:var(--sep);overflow:hidden;cursor:pointer;
+  margin-left:10px;flex:0 0 auto}
+.hp-bar i{display:block;height:100%;background:var(--accent);border-radius:2px;width:0}
+.hp-tm{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;white-space:nowrap;margin-left:8px}
+@media (max-width:900px){ .hp-bar,.hp-tm{display:none} .hp-meta{max-width:150px} }
+
+/* ---------- модалки ---------- */
+.scrim{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:20px;
+  animation:fadeIn .1s ease-in both}
+@keyframes fadeIn{0%{opacity:0}to{opacity:1}}
+.viewer{width:min(980px,100%);max-height:90vh;background:var(--modal);border-radius:12px;overflow:hidden;
+  display:grid;grid-template-columns:minmax(0,1.5fr) 320px;animation:alertUp .2s var(--ease-p) both;box-shadow:var(--e4)}
+@media (max-width:760px){ .viewer{grid-template-columns:minmax(0,1fr)} .viewer .side{max-height:40vh} }
+@keyframes alertUp{0%{opacity:0;transform:scale(.95)}to{opacity:1;transform:none}}
+.viewer .stage{background:#000;position:relative;display:grid;place-items:center;min-height:320px}
+.viewer .stage .im{position:absolute;inset:0}
+.viewer .nav-b{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;
+  border:0;background:rgba(0,0,0,.5);color:#fff;cursor:pointer;display:grid;place-items:center}
+.viewer .nav-b.l{left:10px} .viewer .nav-b.r{right:10px}
+.viewer .side{display:flex;flex-direction:column;min-height:0}
+.viewer .side .top{padding:14px 16px;border-bottom:1px solid var(--sep2);display:flex;gap:10px;align-items:center}
+.viewer .side .body{flex:1;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.viewer .side .foot{padding:12px 16px;border-top:1px solid var(--sep2)}
+.closex{position:absolute;top:12px;right:12px;z-index:2;width:32px;height:32px;border-radius:50%;border:0;
+  background:rgba(0,0,0,.5);color:#fff;cursor:pointer}
+
+/* сториз-вьюер */
+.stview{width:min(380px,100%);height:min(680px,86vh);border-radius:14px;overflow:hidden;position:relative;
+  background:#000;animation:alertUp .2s var(--ease-p) both;box-shadow:var(--e4)}
+.stview .im{position:absolute;inset:0}
+.stview .bars{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:4px;z-index:2}
+.stview .bars i{flex:1;height:2px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden}
+.stview .bars i b{display:block;height:100%;background:#fff;width:0}
+.stview .who{position:absolute;top:24px;left:12px;right:12px;display:flex;align-items:center;gap:10px;z-index:2;color:#fff}
+.stview .cap{position:absolute;left:16px;right:16px;bottom:20px;color:#fff;font-size:15px;z-index:2;
+  text-shadow:0 1px 4px rgba(0,0,0,.7)}
+
+/* снекбар */
+.snacks{position:fixed;left:16px;bottom:72px;z-index:90;display:flex;flex-direction:column;gap:8px}
+.snack{display:flex;align-items:center;gap:10px;background:var(--modal);color:var(--text);border-radius:12px;
+  padding:10px 14px;box-shadow:var(--e3);font-size:14px;animation:snackIn .3s var(--ease) both;max-width:340px}
+@keyframes snackIn{0%{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+.snack .ic{width:24px;height:24px;border-radius:50%;background:var(--pos);color:#fff;display:grid;place-items:center;flex:0 0 auto}
+
+/* скелетоны */
+.sk{position:relative;overflow:hidden;background:var(--skel-from);border-radius:8px;flex:0 0 auto}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,var(--skel-to),transparent);animation:sweep 1.1s linear infinite}
+@keyframes sweep{to{transform:translateX(100%)}}
+.sk.c{border-radius:50%}
+.skrow{display:flex;gap:12px;align-items:center}
+.skcol{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.skwrap{display:flex;flex-direction:column;gap:12px}
+.skstrip{display:flex;gap:8px;overflow:hidden}
+.skgrid{display:grid;gap:6px}
+
+.view{animation:viewIn .2s var(--ease-p) both}
+@keyframes viewIn{0%{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+
+.ad{border-radius:12px;overflow:hidden;background:var(--content)}
+.ad .im{aspect-ratio:16/9;background:var(--secondary)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::after,*::before{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+
+<div class="hdr">
+  <span class="logo"><span class="mark">VK</span><span>ВКонтакте</span></span>
+  <button class="search" id="searchBtn" style="max-width:340px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11 3a8 8 0 1 0 4.9 14.3l3.4 3.4a1.2 1.2 0 0 0 1.7-1.7l-3.4-3.4A8 8 0 0 0 11 3Zm0 2.4a5.6 5.6 0 1 1 0 11.2 5.6 5.6 0 0 1 0-11.2Z"/></svg>
+    Поиск
+  </button>
+  <span class="grow"></span>
+  <span class="hplayer" id="hplayer">
+    <button class="iconbtn tap" id="pPrev" aria-label="Предыдущий"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h2v14H7zm11 0v14l-9-7z"/></svg></button>
+    <button class="iconbtn tap" id="pPlay" aria-label="Играть"></button>
+    <button class="iconbtn tap" id="pNext" aria-label="Следующий"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15 5h2v14h-2zM6 5l9 7-9 7z"/></svg></button>
+    <span class="hp-meta"><span id="pT2">—</span> — <span id="pT1">—</span></span>
+    <span class="hp-bar" id="pBar"><i></i></span>
+    <span class="hp-tm"><span id="pCur">0:00</span> / <span id="pDur">0:00</span></span>
+    <span class="cv" id="pCv" hidden></span>
+  </span>
+  <span class="proto-tag">прототип</span>
+  <button class="iconbtn tap" id="themeBtn" aria-label="Сменить тему"></button>
+  <button class="iconbtn tap" id="notifBtn" aria-label="Уведомления">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5a6 6 0 0 0-6 6v3.2l-1.3 2.6A1.5 1.5 0 0 0 6 16.5h12a1.5 1.5 0 0 0 1.3-2.2L18 11.7V8.5a6 6 0 0 0-6-6ZM9.5 18a2.5 2.5 0 0 0 5 0h-5Z"/></svg>
+    <span class="badge">1</span>
+  </button>
+  <button class="iconbtn tap" id="meBtn" aria-label="Профиль" style="width:32px;height:32px">
+    <span class="av" id="hdrAv" style="width:28px;height:28px"></span>
+  </button>
+</div>
+
+<div class="shell">
+  <nav class="nav" id="nav"></nav>
+  <main id="main"></main>
+  <aside class="aside" id="aside"></aside>
+</div>
+
+<div class="snacks" id="snacks"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =============== данные, снятые со страниц vk.ru =============== */
+var AV = "#666 #88a #99b #9ac #aac #99a #655 #432 #532 #543 #666 #666 #767 #889 #555 #210 #110 #210 #210 #211 #555 #432 #544 #667 #545 #100 #110 #100 #100 #100 #210 #000 #311 #332 #556 #210 #100 #100 #000 #566 #211 #000 #211 #433 #321 #432 #210 #210 #210 #322 #555 #322 #666 #422 #644 #755 #633 #210 #210 #211 #656 #556 #322 #211 #533 #655 #755 #432 #210 #311 #211 #321 #311 #321 #533 #766 #866 #755 #211 #211 #100 #000 #221 #333 #434 #555 #778 #555 #322 #110 #100 #110 #111 #433 #222 #444 #444 #212 #100 #100";
+
+var M = {
+  nn:   "#767 #666 #322 #311 #211 #322 #211 #210 #332 #433 #432 #211 #111 #433 #555 #311",
+  bird: "#343 #333 #233 #222 #233 #233 #111 #011 #111 #121 #111 #010 #111 #010 #000 #000",
+  n90:  "#222 #222 #323 #222 #324 #425 #426 #323 #323 #533 #111 #333 #323 #323 #222 #222",
+  stoner:"#753 #764 #874 #975 #643 #311 #220 #764 #865 #987 #a85 #b96 #975 #985 #a96 #ca6",
+  elite:"#321 #421 #421 #221 #742 #c72 #c83 #542 #631 #320 #753 #432 #421 #521 #421 #221",
+  math: "#410 #410 #311 #421 #300 #a54 #954 #223 #000 #433 #223 #122 #000 #211 #211 #111",
+  spider:"#eee #ddd #8aa #9bb #455 #aaa #bba #bba #ca9 #a76 #443 #997 #b97 #865 #aa9 #b98"
+};
+var D = {
+  np1:"#04d2bc #03b6a0 #02dec9 #02c7b0",
+  np2:"#ef95ee #f196ed #f199f0 #f170ed",
+  np3:"#6fb806 #5fa301 #71ba01 #56a300",
+  hoover:"#020509 #191c2a #2c6482 #1499ce",
+  vaya:"#d37c1f #d37d24 #20467a #423b34",
+  gift1:"#27b6fe #0451e4 #1b2b52 #0a1a38",
+  gift2:"#f1e8f0 #b1b3d4 #6a6a86 #b7b3d6",
+  grava:"#2a2a2c #3a3630 #1a1a1c #4a4038",
+  tolkien:"#c9a86a #8a7040 #2a2e3a #d8c08a",
+  gorod:"#7a2020 #401010 #a03030 #2a0a0a",
+  samo:"#3a3a44 #22222a #55555e #16161c",
+  motiv:"#8a8f96 #6a7078 #b0b4ba #4a5058"
+};
+
+var CAV = [D.hoover, D.vaya, D.gorod, D.samo, D.grava, D.tolkien, D.motiv, D.np3];
+var ME = { name:"Денис Кораблев", first:"Денис", status:"Глажу кота", url:"deniscoreablev" };
+
+var STORIES = [
+  {n:"nothing,nowhere.", m:M.nn,   cap:"новый трек уже везде"},
+  {n:"Bird Bone",        m:M.bird, cap:"репетиция, 2 часа ночи"},
+  {n:"'90s",             m:M.n90,  cap:"At the Drive-In — Vaya"},
+  {n:"E:\\music\\stoner",m:M.stoner,cap:"пятничная подборка"},
+  {n:"Collection Of Elite Music", m:M.elite, cap:"энциклопедия меломана"},
+  {n:"Math Rock [Beauty in Complex]", m:M.math, cap:"7/8 и никаких компромиссов"}
+];
+
+var FEED = [
+  { id:"f1", who:"КИНОБРО", av:D.gift1, when:"2 д назад", sub:false,
+    text:"Ранее неопубликованные фото со съёмок четвёртой части «Человека-паука»\n\nОфициальный онлайн-релиз состоится осенью!",
+    media:{m:M.spider, tall:true}, likes:170, cmts:11, reposts:12, views:"48,2K",
+    comments:[
+      {n:"Артём Волков", emo:"🕷", t:"Костюм наконец нормальный, без самодеятельности", tm:"29 авг в 21:14", likes:7},
+      {n:"Лиза Гринь", t:"осенью — это в ноябре или в сентябре? каждый раз одно и то же", tm:"29 авг в 22:03", likes:2},
+      {n:"Паша Смирнов", t:"кадр со стройкой топ", tm:"30 авг в 8:10", likes:0}
+    ]},
+  { id:"f2", who:"Упаковка Саморезов | Панк-Рок | г. Волжск", av:D.samo, when:"4 д назад", sub:true,
+    text:"Упаковка Саморезов — «Интерес потерян навсегда»\nПлощадки — band.link/upsa_interes\n\nАльбом записан и сведён своими силами осенью 2021 — зимой 2022 и выпущен в апреле 2022 года. По сути, он мог стать частью юбилейного альбома «20 лет по встречной», но эти песни не успели записать вовремя — поэтому тогда в релиз вошло только 7 треков.\n\nВ альбом попали неизданные и ранее незаписанные песни периода 2005–2007 годов, такие как «Едем в твой город» и «Получить отказ», а также знакомые композиции с DIY-альбомов и старых дэмок группы. Из-за общего депрессивного настроения того времени релиз получил мрачное название, соответствующую обложку и минимум огласки.\n\nЭто прямой наследник альбома «20 лет по встречной» и его логичное продолжение.",
+    link:{t:"Интерес потерян навсегда", s:"Альбом · Упаковка Саморезов", d:"band.link", cv:D.samo},
+    likes:22, cmts:1, reposts:0, views:"3 417",
+    comments:[{n:"Костя Дёмин", t:"«Едем в твой город» вживую звучит в два раза злее", tm:"27 авг в 19:40", likes:4}]},
+  { id:"f3", who:"Эстетика мира Дж. Р. Р. Толкина", av:D.tolkien, when:"6 д назад", sub:false,
+    text:"Доброе утро из Минас Тирита, толкинисты\n\nУтренний страж Белого города приветствует Вас! Пусть дух ваш будет крепок, как стены Минас Тирита! Мы готовы встретить любые испытания вместе, что могут явиться на наш путь. Пусть знамена надежды ведут нас вперёд, и пусть каждый шаг будет наполнен решимостью и благородством. Вперёд, к великим делам!\n\n#властелинколец #толкин #МинасТирит #белыйгород",
+    audio:{t:"Minas-Tirith Theme", a:"Howard Shore", cv:D.tolkien, dur:"3:41"},
+    likes:1043, cmts:34, reposts:80, views:"112K",
+    comments:[
+      {n:"Марина Кушнир", t:"каждое утро жду этот пост, спасибо", tm:"25 авг в 9:12", likes:31},
+      {n:"Denis Y.", ver:true, t:"Хауард Шор — это отдельный вид терапии. Слушаю саундтрек к «Возвращению короля» на работе уже лет пятнадцать, и до сих пор в паре мест мурашки. Особенно тема Гондора — она же построена буквально на одной восходящей фразе, а работает как целая симфония.", tm:"25 авг в 10:05", likes:18},
+      {n:"Гоша Ветров", t:"а Рохан будет?", tm:"25 авг в 12:44", likes:1}
+    ]},
+  { id:"f4", who:"E:\\music\\progressive metal", av:D.gorod, when:"2 ч назад", sub:true,
+    text:"Gorod — The Ember Gone (2026)\nprogressive death metal\n\nФранцузы Gorod празднуют своё 30-летие восьмым полноформатником. The Ember Gone возвращает тех-дэт-металлистов из Бордо к более прогрессивному духу EP Transcendence (2011): меньше шаблонов экстремального метала, больше атмосферы, грува, длинных структур и джазово-проговых текстур — при этом техника никуда не делась.",
+    audio:{t:"The Ember Gone", a:"Альбом · 2026", cv:D.gorod, dur:"48:12"},
+    likes:22, cmts:9, reposts:0, views:"1 208",
+    comments:[
+      {n:"Слава Тюрин", t:"Transcendence до сих пор их лучшее, но тут близко", tm:"сегодня в 17:20", likes:5},
+      {n:"Аня Р.", emo:"🎧", t:"первый трек в наушниках — и день сделан", tm:"сегодня в 18:02", likes:3}
+    ]},
+  { id:"f5", who:"МОТИВ", av:D.motiv, when:"вчера", sub:false,
+    text:"Пожар в жилом доме на Чапаева. Пострадавших нет, жильцов эвакуировали.",
+    media:{m:D.motiv+" "+D.motiv, wide:true}, likes:88, cmts:5, reposts:3, views:"22,6K",
+    comments:[{n:"Ирина Ц.", t:"страшно. хорошо что все успели выйти", tm:"вчера в 14:11", likes:9}]}
+];
+
+var WALL = [
+  { id:"w1", pinned:true, when:"16 июн 2019",
+    text:"«Real Emo» only consists of the DC Emotional Hardcore scene and the late 90's Screamo scene. What is known by «Midwest Emo» is nothing but Alternative Rock with questionable real emo influence.\n\nWhen people try to argue that bands like My Chemical Romance are not real emo, while saying that Sunny Day Real Estate is, I can't help not to cringe because they are just as fake emo as My Chemical Romance (plus the pretentiousness).\n\nReal emo sounds ENERGETIC, POWERFUL and somewhat HATEFUL. Fake emo is weak, self pity and a failed attempt to direct energy and emotion into music.\n\nEMO BELONGS TO HARDCORE, NOT TO INDIE, POP PUNK, ALT ROCK OR ANY OTHER MAINSTREAM GENRE",
+    likes:4, cmts:2, reposts:0, views:"1 204",
+    comments:[
+      {n:"Саша Юмин", t:"pg.99 и Rites of Spring в одном абзаце — согласен", tm:"16 июн 2019", likes:2},
+      {n:"Никита Л.", t:"American Football в фейках это больно", tm:"17 июн 2019", likes:6}
+    ]},
+  { id:"w2", when:"24 окт 2024", head:"Русское эмо",
+    text:"Marschak выпустят новые записи, и это не шутка — выйдет под эгидой «Издательство Сияние».",
+    audio:{t:"Октябрь, 23", a:"Marschak", cv:D.hoover, dur:"3:12"},
+    likes:11, cmts:1, reposts:2, views:"842",
+    comments:[{n:"Саша Юмин", t:"наконец-то", tm:"24 окт 2024", likes:1}]},
+  { id:"w3", when:"24 окт 2024", head:"E:\\music\\sludge",
+    text:"Grava — The Great White Nothing (2024)\nsludge metal | hardcore\n\nСердечный приступ для всех любителей классического сладжа. Полноформатный альбом проекта Grava, что объединяют в своём творчестве классический сладж и пост-хардкор. Да, именно в таком порядке. Вышедший пару лет назад альбом заложил неплохой фундамент, хоть и был принят многими в штыки, а вот его последователь демонстрирует на том же фоне значительно лучшие результаты.\n\n#sludge_metal #post_hardcore",
+    audio:{t:"The Great White Nothing (2024)", a:"Плейлист · Grava", cv:D.grava, dur:"41:05"},
+    likes:19, cmts:0, reposts:1, views:"1 013", comments:[]},
+  { id:"w4", when:"30 авг 2024", head:"'90s",
+    text:"At the Drive-In — Vaya (1999)\n#At_the_Drive_in\n\nОт Саши Юмина",
+    gallery:{m:D.vaya, count:6},
+    audio:{t:"Vaya", a:"Альбом · At The Drive-In · 1999", cv:D.vaya, dur:"20:44"},
+    likes:27, cmts:3, reposts:4, views:"2 655",
+    comments:[
+      {n:"Саша Юмин", t:"198d — до сих пор мурашки", tm:"30 авг 2024", likes:3},
+      {n:"Лена Ким", t:"обложка лучшая у них", tm:"30 авг 2024", likes:2},
+      {n:"Ваня Т.", t:"Relationship of Command всё-таки сильнее", tm:"31 авг 2024", likes:0}
+    ]}
+];
+
+var TRACKS = [
+  {t:"BACK IN BUSINESS", a:"NORTH POSSE", d:"2:24", cv:D.np1},
+  {t:"PTSD", a:"NORTH POSSE", d:"1:53", cv:D.np2},
+  {t:"DOLOMEALS", a:"NORTH POSSE", d:"1:45", cv:D.np3},
+  {t:"HELL IN CUP", a:"NORTH POSSE", d:"1:46", cv:D.np3},
+  {t:"King Sonny Black", a:"Bushido", d:"3:54", cv:D.samo},
+  {t:"Rap Deutschland", a:"SCHOKK", d:"2:20", cv:D.gorod},
+  {t:"узники камер", a:"JimmyCrack (MxXxK music)", d:"1:28", cv:D.grava},
+  {t:"Сам по Себе (ft. etna1se)", a:"Schokk", d:"2:34", cv:D.hoover},
+  {t:"Behind The Fence", a:"1prfct.smpl", d:"4:16", cv:D.tolkien},
+  {t:"Прочь, Земля!", a:"Johnyboy", d:"3:11", cv:D.vaya},
+  {t:"Абсолютно больно", a:"Missu feat. New Sylveon", d:"2:27", cv:D.np2},
+  {t:"Love (Burial Remix)", a:"Luke Slater", d:"7:24", cv:D.motiv},
+  {t:"Was wir alleine nicht schaffen", a:"Xavier Naidoo", d:"5:26", cv:D.gift2},
+  {t:"Führ Mich Ans Licht", a:"Xavier Naidoo", d:"4:33", cv:D.gift2},
+  {t:"Zeilen Aus Gold", a:"Xavier Naidoo", d:"3:56", cv:D.gift1},
+  {t:"не то prod. by xmindmemories", a:"cold carti", d:"2:03", cv:D.grava},
+  {t:"КИЛИМАНДЖАРО", a:"LOVV66", d:"2:08", cv:D.np1}
+];
+
+var PLAYLISTS = [
+  {n:"Для вас", s:"обновлён сегодня", cv:D.np1},
+  {n:"Открытия", s:"Новое для вас", cv:D.np2},
+  {n:"Новинки", s:"обновлён в субботу", cv:D.np3},
+  {n:"Плейлист дня 1", s:"Вы слушали: 1prfct.smpl, IY, DVRST", cv:D.hoover},
+  {n:"Плейлист дня 2", s:"Вы слушали: Фенди, Missu", cv:D.vaya},
+  {n:"Плейлист дня 3", s:"Вы слушали: ARUSTAMOV, lowlife", cv:D.gorod},
+  {n:"Плейлист дня 4", s:"Вы слушали: ессентуки", cv:D.tolkien}
+];
+
+var ALBUMS = [
+  {n:"Фото профиля", c:"1 фото", m:AV, cells:10},
+  {n:"Фото на стене", c:"2 фото", m:D.vaya},
+  {n:"Сохранённые фото", c:"2K фото", m:M.spider}
+];
+
+var PHOTOS = [
+  {m:M.spider, t:"Со съёмок", likes:12, comments:[{n:"Артём Волков", t:"качество кадра конечно", tm:"вчера в 20:15", likes:4},{n:"Лиза Гринь", t:"откуда слив?", tm:"вчера в 20:31", likes:1}]},
+  {m:M.stoner, t:"Пятничная подборка", likes:5, comments:[{n:"Костя Дёмин", t:"обложка как из 74-го", tm:"27 авг", likes:5}]},
+  {m:M.n90, t:"Vaya, разворот", likes:9, comments:[{n:"Саша Юмин", t:"у меня такой же на кассете", tm:"26 авг", likes:3},{n:"Лена Ким", t:"❤", tm:"26 авг", likes:1}]},
+  {m:M.elite, t:"Энциклопедия меломана", likes:3, comments:[]},
+  {m:M.math, t:"7/8", likes:7, comments:[{n:"Гоша Ветров", t:"а размер тут вообще какой?", tm:"20 авг", likes:0}]},
+  {m:M.bird, t:"Репетиция", likes:14, comments:[{n:"Паша Смирнов", t:"свет огонь", tm:"18 авг", likes:6}]},
+  {m:M.nn, t:"nothing,nowhere.", likes:21, comments:[{n:"Аня Р.", t:"был на этом концерте!", tm:"14 авг", likes:11}]},
+  {m:D.grava, t:"Grava", likes:6, comments:[]},
+  {m:D.tolkien, t:"Минас Тирит", likes:33, comments:[{n:"Марина Кушнир", t:"обои поставила", tm:"10 авг", likes:8}]},
+  {m:D.vaya, t:"At the Drive-In", likes:18, comments:[{n:"Ваня Т.", t:"1999 год не отпускает", tm:"5 авг", likes:2}]},
+  {m:D.gorod, t:"The Ember Gone", likes:4, comments:[]},
+  {m:D.samo, t:"Упаковка Саморезов", likes:11, comments:[{n:"Костя Дёмин", t:"волжский панк живее всех", tm:"2 авг", likes:4}]}
+];
+
+var CONVOS = [
+  { id:"c1", n:"ВКонтакте", ver:true, av:D.gift1, tm:"3ч", unread:1, status:"Сервисные уведомления", day:"вчера",
+    msgs:[
+      {me:false, t:"Совершён вход в ваш аккаунт Денис Кораблев.\nДата входа: 30 августа 2026 в 19:22\nУстройство: через Chrome\nСервис: сайт «ВКонтакте»\n\nЕсли это не вы — срочно смените пароль.", tm:"21:24", action:"Сменить пароль"},
+      {me:false, t:"Не переходите по ссылкам из сообщений, если не уверены в отправителе.", tm:"21:25"}
+    ]},
+  { id:"c2", n:"Mail", ver:true, av:D.gift2, tm:"7ч", status:"Сервисные уведомления", day:"вчера",
+    msgs:[{me:false, t:"До заморозки Облака осталось 30 дней. Если в аккаунте нет активности в течение 6 месяцев, он будет заморожен. Войдите в Облако в ближайшие 30 дней — это сохранит доступ ко всем файлам.", tm:"15:40", action:"Открыть Облако"}]},
+  { id:"c3", n:"Бот Максим", av:D.np2, tm:"1н", status:"был в сети неделю назад", day:"22 августа",
+    msgs:[
+      {me:false, t:"я тебя никогда не прощу дениска", tm:"21:25"},
+      {me:false, t:"Вам отправили анонимное сообщение", tm:"21:25"},
+      {me:true, t:"это ты сам себе отправил", tm:"21:31"},
+      {me:false, t:"нет", tm:"21:31"}
+    ]},
+  { id:"c4", n:"цйуйцу", av:D.np3, tm:"28 июн", status:"был в сети в июне", day:"28 июня",
+    msgs:[
+      {me:false, t:"а=пывп", tm:"10:31"},
+      {me:true, t:"?", tm:"10:44"}
+    ]},
+  { id:"c5", n:"Избранное", av:D.hoover, tm:"6 окт 2024", read:true, status:"сохранённые сообщения", day:"6 октября 2024",
+    msgs:[
+      {me:true, t:"Grava — The Great White Nothing, послушать целиком", tm:"23:05"},
+      {me:true, t:"🎵 Аудиозапись", tm:"23:08"}
+    ]}
+];
+
+var ALBUM_COVERS = [
+  {n:"Hoover — Hoover", cv:D.hoover},
+  {n:"Evanora Unlimited — Perfect Answer", cv:D.tolkien},
+  {n:"Demon & Eleven Children — Demonic Fascination (2024)", cv:D.gorod},
+  {n:"Blue Letter Days — Blue Letter Days (2004)", cv:D.vaya},
+  {n:"Досчитай до десяти (2010)", cv:D.np3},
+  {n:"Time Spent Driving — Walls Between Us (2000)", cv:D.grava},
+  {n:"The Get Up Kids — Four Minute Mile (1997)", cv:D.samo},
+  {n:"Dead Beast", cv:D.motiv}
+];
+
+var GIFTS = [D.gift1, D.gift2, D.np2];
+
+var SUBS = [
+  {n:"Bird Bone", cv:M.bird}, {n:"Memphis 66.6 / Phonk Community", cv:D.np2},
+  {n:"24/7", cv:D.np1}, {n:"КИНОБРО", cv:D.gift1},
+  {n:"plaksasdasd", cv:D.grava}, {n:"nothing,nowhere.", cv:M.nn}
+];
+
+/* =============== утилиты =============== */
+function el(h){ var d=document.createElement('div'); d.innerHTML=h.trim(); return d.firstChild; }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); }
+function ex(c){ // #abc -> #aabbcc
+  if(c.length===4) return '#'+c[1]+c[1]+c[2]+c[2]+c[3]+c[3];
+  return c;
+}
+/* карта цветов -> мягкий меш-градиент, похожий на исходное фото */
+function mesh(map, n){
+  var cols = map.trim().split(/\s+/).map(ex);
+  n = n || Math.round(Math.sqrt(cols.length));
+  var r = Math.round(150/n);
+  var layers = cols.map(function(c,i){
+    var x = ((i%n)+0.5)/n*100, y = (Math.floor(i/n)+0.5)/n*100;
+    return 'radial-gradient(circle at '+x.toFixed(1)+'% '+y.toFixed(1)+'%, '+c+' 0%, '+c+'00 '+r+'%)';
+  });
+  var base = cols[Math.floor(cols.length/2)];
+  return layers.join(',')+',linear-gradient('+base+','+base+')';
+}
+function bg(map,n){ return 'background-image:'+mesh(map,n)+';background-size:cover'; }
+
+function icon(name, size){
+  var P = {
+    home:'<path d="M13.2 3.3a2 2 0 0 0-2.4 0L4.3 8.4A2 2 0 0 0 3.5 10v8.5A2.5 2.5 0 0 0 6 21h2.2a1 1 0 0 0 1-1v-4.6a1 1 0 0 1 1-1h3.6a1 1 0 0 1 1 1V20a1 1 0 0 0 1 1H18a2.5 2.5 0 0 0 2.5-2.5V10a2 2 0 0 0-.8-1.6l-6.5-5.1Z"/>',
+    user:'<path d="M12 3a4.2 4.2 0 1 0 0 8.4A4.2 4.2 0 0 0 12 3Zm0 10.2c-3.9 0-7 2.2-7 4.9C5 20 7.8 21 12 21s7-1 7-2.9c0-2.7-3.1-4.9-7-4.9Z"/>',
+    msg:'<path d="M12 3c-5 0-9 3.6-9 8 0 2.5 1.3 4.7 3.3 6.2V21a.8.8 0 0 0 1.2.7l2.6-1.5c.6.1 1.2.1 1.9.1 5 0 9-3.6 9-8s-4-8-9-8Z"/>',
+    photo:'<path fill-rule="evenodd" d="M4.5 3h15A2.5 2.5 0 0 1 22 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5v-13A2.5 2.5 0 0 1 4.5 3Zm0 2a.5.5 0 0 0-.5.5v9.6l3.6-3.4a1.5 1.5 0 0 1 2 0l2.3 2.1 3.3-3.6a1.5 1.5 0 0 1 2.2 0L20 13V5.5a.5.5 0 0 0-.5-.5h-15ZM8.5 7a1.8 1.8 0 1 0 0 3.6A1.8 1.8 0 0 0 8.5 7Z"/>',
+    music:'<path d="M20 3.4a1 1 0 0 0-1.2-1L10 4.3a1 1 0 0 0-.8 1v9.3a3.6 3.6 0 1 0 2 3.2V8.2l6.8-1.5v5.6a3.6 3.6 0 1 0 2 3.2V3.4Z"/>',
+    users:'<path d="M9 4a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm7.5 1.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM9 12.6c-3.3 0-6 1.9-6 4.2C3 19 5.4 20 9 20s6-1 6-3.2c0-2.3-2.7-4.2-6-4.2Zm7.5-.3c-.6 0-1.2 0-1.7.2 1.3 1 2.2 2.4 2.2 4.1 0 .6-.1 1.2-.4 1.7 2.7-.2 4.4-1.2 4.4-3 0-1.8-2-3-4.5-3Z"/>',
+    like:'<path d="M12 20.3c-.4 0-.8-.2-1.1-.4C6.3 16.1 3 13 3 9.3 3 6.3 5.3 4 8.2 4c1.5 0 2.9.7 3.8 1.8A5 5 0 0 1 15.8 4C18.7 4 21 6.3 21 9.3c0 3.7-3.3 6.8-7.9 10.6-.3.2-.7.4-1.1.4Z"/>',
+    cmt:'<path fill-rule="evenodd" d="M12 3c-5 0-9 3.6-9 8 0 2.5 1.3 4.7 3.3 6.2V21a.8.8 0 0 0 1.2.7l2.6-1.5c.6.1 1.2.1 1.9.1 5 0 9-3.6 9-8s-4-8-9-8Zm0 2c4 0 7 2.8 7 6s-3 6-7 6c-.6 0-1.2 0-1.7-.1a1 1 0 0 0-.7.1l-1.3.8V16.6a1 1 0 0 0-.5-.9C6.1 14.6 5 12.9 5 11c0-3.2 3-6 7-6Z"/>',
+    share:'<path d="M14 4.5a1 1 0 0 1 1.7-.7l5.5 5.5a1 1 0 0 1 0 1.4l-5.5 5.5a1 1 0 0 1-1.7-.7V13c-4.4.2-7.3 1.7-9.3 4.8-.5.8-1.7.3-1.6-.6C3.6 11.4 7.4 7.7 14 7.2V4.5Z"/>',
+    eye:'<path fill-rule="evenodd" d="M12 5c-4.5 0-8.2 2.8-9.8 6.6a1 1 0 0 0 0 .8C3.8 16.2 7.5 19 12 19s8.2-2.8 9.8-6.6a1 1 0 0 0 0-.8C20.2 7.8 16.5 5 12 5Zm0 2c3.5 0 6.4 2 7.8 5-1.4 3-4.3 5-7.8 5s-6.4-2-7.8-5c1.4-3 4.3-5 7.8-5Zm0 1.8a3.2 3.2 0 1 0 0 6.4 3.2 3.2 0 0 0 0-6.4Z"/>',
+    play:'<path d="M7 4.8c0-.8.9-1.3 1.5-.9l10 7.2c.6.4.6 1.3 0 1.7l-10 7.2c-.7.5-1.5 0-1.5-.8V4.8Z"/>',
+    pause:'<path d="M7 4h3.5v16H7zM13.5 4H17v16h-3.5z"/>',
+    moon:'<path d="M21 13.6A9 9 0 1 1 10.4 3a7.2 7.2 0 0 0 10.6 10.6Z"/>',
+    sun:'<path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0-5a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Zm0 17a1 1 0 0 1 1 1v1.5a1 1 0 1 1-2 0V20a1 1 0 0 1 1-1ZM2 12a1 1 0 0 1 1-1h1.5a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Zm17.5-1H21a1 1 0 1 1 0 2h-1.5a1 1 0 1 1 0-2ZM4.9 4.9a1 1 0 0 1 1.4 0l1 1a1 1 0 1 1-1.4 1.5l-1-1.1a1 1 0 0 1 0-1.4Zm11.8 11.8a1 1 0 0 1 1.4 0l1 1a1 1 0 0 1-1.4 1.5l-1-1.1a1 1 0 0 1 0-1.4Zm2.4-11.8a1 1 0 0 1 0 1.4l-1 1.1A1 1 0 1 1 16.7 6l1-1a1 1 0 0 1 1.4 0ZM7.3 16.7a1 1 0 0 1 0 1.4l-1 1.1a1 1 0 0 1-1.4-1.4l1-1.1a1 1 0 0 1 1.4 0Z"/>',
+    plus:'<path d="M12 3.5a1.2 1.2 0 0 1 1.2 1.2v6.1h6.1a1.2 1.2 0 0 1 0 2.4h-6.1v6.1a1.2 1.2 0 0 1-2.4 0v-6.1H4.7a1.2 1.2 0 0 1 0-2.4h6.1V4.7A1.2 1.2 0 0 1 12 3.5Z"/>',
+    check:'<path d="M20.3 6.3a1.2 1.2 0 0 1 0 1.7l-9.4 9.4a1.2 1.2 0 0 1-1.7 0l-4.5-4.5a1.2 1.2 0 1 1 1.7-1.7l3.6 3.6 8.6-8.5a1.2 1.2 0 0 1 1.7 0Z"/>',
+    send:'<path d="M3.4 3.1a1 1 0 0 1 1.1-.1l16 9a1 1 0 0 1 0 1.8l-16 9a1 1 0 0 1-1.5-1.1L5.5 12 3 4.2a1 1 0 0 1 .4-1.1Z"/>',
+    close:'<path d="M6.4 5a1 1 0 0 0-1.4 1.4l5.6 5.6L5 17.6A1 1 0 1 0 6.4 19l5.6-5.6 5.6 5.6a1 1 0 0 0 1.4-1.4L13.4 12 19 6.4A1 1 0 0 0 17.6 5L12 10.6 6.4 5Z"/>',
+    left:'<path d="M15.3 4.7a1.2 1.2 0 0 1 0 1.7L9.7 12l5.6 5.6a1.2 1.2 0 0 1-1.7 1.7l-6.4-6.4a1.2 1.2 0 0 1 0-1.8l6.4-6.4a1.2 1.2 0 0 1 1.7 0Z"/>',
+    right:'<path d="M8.7 4.7a1.2 1.2 0 0 0 0 1.7l5.6 5.6-5.6 5.6a1.2 1.2 0 0 0 1.7 1.7l6.4-6.4a1.2 1.2 0 0 0 0-1.8L10.4 4.7a1.2 1.2 0 0 0-1.7 0Z"/>',
+    star:'<path d="M12 3.2c.4 0 .8.2 1 .6l2.2 4.5 5 .7c.9.1 1.2 1.2.6 1.8l-3.6 3.5.9 5a1 1 0 0 1-1.5 1L12 17.9l-4.5 2.4a1 1 0 0 1-1.5-1l.9-5-3.6-3.5c-.6-.6-.3-1.7.6-1.8l5-.7L11 3.8c.2-.4.6-.6 1-.6Z"/>',
+    bookmark:'<path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v15.8a1 1 0 0 1-1.6.8L12 17.8l-4.4 3.3A1 1 0 0 1 6 20.3V4.5Z"/>',
+    help:'<path fill-rule="evenodd" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm0 10.2a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Zm.2-8.2c1.8 0 3.1 1.1 3.1 2.7 0 1.1-.5 1.8-1.5 2.5-.7.5-.9.8-.9 1.3v.3h-1.9v-.5c0-1 .4-1.6 1.3-2.3.7-.5.9-.8.9-1.3 0-.6-.4-1-1.1-1s-1.1.4-1.2 1H8.9C9 8.1 10.3 7 12.2 7Z"/>',
+    search:'<path fill-rule="evenodd" d="M11 3a8 8 0 1 0 4.9 14.3l3.4 3.4a1.2 1.2 0 0 0 1.7-1.7l-3.4-3.4A8 8 0 0 0 11 3Zm0 2.4a5.6 5.6 0 1 1 0 11.2 5.6 5.6 0 0 1 0-11.2Z"/>',
+    burger:'<path d="M3.8 6.5h16.4a1.1 1.1 0 0 1 0 2.2H3.8a1.1 1.1 0 1 1 0-2.2Zm0 4.4h16.4a1.1 1.1 0 0 1 0 2.2H3.8a1.1 1.1 0 1 1 0-2.2Zm0 4.4h16.4a1.1 1.1 0 0 1 0 2.2H3.8a1.1 1.1 0 1 1 0-2.2Z"/>',
+    edit:'<path d="M17.6 2.9a2 2 0 0 1 2.8 0l.7.7a2 2 0 0 1 0 2.8l-1.3 1.3-3.5-3.5 1.3-1.3ZM15 5.6l3.4 3.4-8.6 8.6a2 2 0 0 1-.9.5l-3.6 1a.8.8 0 0 1-1-1l1-3.6a2 2 0 0 1 .5-.9L15 5.6Z"/>',
+    verified:'<path fill-rule="evenodd" d="M12 2.4a2.2 2.2 0 0 1 1.6.7l1 1 1.4-.2a2.2 2.2 0 0 1 2.4 1.7l.3 1.4 1.2.8a2.2 2.2 0 0 1 .6 2.9l-.7 1.2.3 1.4a2.2 2.2 0 0 1-1.5 2.6l-1.3.5-.6 1.3a2.2 2.2 0 0 1-2.7 1.1l-1.3-.4-1.2.7a2.2 2.2 0 0 1-2.9-.6l-.8-1.2-1.4-.3a2.2 2.2 0 0 1-1.7-2.4l.2-1.4-1-1a2.2 2.2 0 0 1 0-3l1-1-.2-1.4a2.2 2.2 0 0 1 1.7-2.4l1.4-.3.8-1.2A2.2 2.2 0 0 1 12 2.4Zm4.3 6.4a1.1 1.1 0 0 0-1.6 0l-4 4-1.4-1.4a1.1 1.1 0 1 0-1.6 1.6l2.2 2.2a1.1 1.1 0 0 0 1.6 0l4.8-4.8a1.1 1.1 0 0 0 0-1.6Z"/>',
+    check2:'<path d="M9.3 15.3 5.9 12a1 1 0 0 0-1.4 1.4l4.1 4.1a1 1 0 0 0 1.4 0L20.4 7.1A1 1 0 0 0 19 5.7l-9.7 9.6Zm5.6-9.6a1 1 0 0 1 1.4 1.4l-6.4 6.4-1.4-1.4 6.4-6.4Z"/>',
+    phone:'<path d="M7.3 3.6a1.8 1.8 0 0 1 2.5.5l1.6 2.4a1.8 1.8 0 0 1-.3 2.3l-1 .9c-.3.3-.4.7-.2 1a11 11 0 0 0 3.4 3.4c.3.2.7.1 1-.2l.9-1a1.8 1.8 0 0 1 2.3-.3l2.4 1.6c.9.6 1 1.8.5 2.5l-1 1.4c-.8 1-2.1 1.4-3.3 1A18.4 18.4 0 0 1 4.9 8.2c-.4-1.2 0-2.5 1-3.3l1.4-1Z"/>',
+    smile:'<path fill-rule="evenodd" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14ZM9.2 9.4a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4Zm5.6 0a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4ZM8 14.2a1 1 0 0 1 1.3.4A3.1 3.1 0 0 0 12 16a3.1 3.1 0 0 0 2.7-1.4 1 1 0 1 1 1.7 1A5.1 5.1 0 0 1 12 18a5.1 5.1 0 0 1-4.4-2.4 1 1 0 0 1 .4-1.4Z"/>',
+    pluscircle:'<path fill-rule="evenodd" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14Zm0 2.8a1 1 0 0 1 1 1V11h2.2a1 1 0 0 1 0 2H13v2.2a1 1 0 0 1-2 0V13H8.8a1 1 0 0 1 0-2H11V8.8a1 1 0 0 1 1-1Z"/>',
+    mic:'<path d="M12 3a3.2 3.2 0 0 0-3.2 3.2v5.6a3.2 3.2 0 0 0 6.4 0V6.2A3.2 3.2 0 0 0 12 3Zm-6 8a1 1 0 0 1 1 1 5 5 0 0 0 10 0 1 1 0 1 1 2 0 7 7 0 0 1-6 6.9V21a1 1 0 1 1-2 0v-2.1A7 7 0 0 1 5 12a1 1 0 0 1 1-1Z"/>',
+    chevron:'<path d="M5.7 8.7a1.1 1.1 0 0 1 1.6 0l4.7 4.7 4.7-4.7a1.1 1.1 0 1 1 1.6 1.6l-5.5 5.5a1.1 1.1 0 0 1-1.6 0L5.7 10.3a1.1 1.1 0 0 1 0-1.6Z"/>',
+    clip:'<path d="M16.9 5.6a3.2 3.2 0 0 0-4.5 0l-6.6 6.6a5 5 0 1 0 7 7l6.3-6.3a1 1 0 1 0-1.4-1.4l-6.3 6.3a3 3 0 0 1-4.2-4.2l6.6-6.6a1.2 1.2 0 0 1 1.7 1.7l-6.4 6.4a.5.5 0 0 1-.7-.7l5.6-5.6a1 1 0 1 0-1.4-1.4L7 13.6a2.5 2.5 0 0 0 3.5 3.5l6.4-6.4a3.2 3.2 0 0 0 0-4.5Z"/>'
+  };
+  return '<svg width="'+(size||22)+'" height="'+(size||22)+'" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'+(P[name]||'')+'</svg>';
+}
+
+/* ripple */
+document.addEventListener('pointerdown', function(e){
+  var h = e.target.closest('.tap,.nav a,.btn,.act,.chip,.convo,.trk,.tabs button,.counters button');
+  if(!h) return;
+  if(getComputedStyle(h).position === 'static') h.style.position='relative';
+  h.style.overflow='hidden';
+  var r = h.getBoundingClientRect();
+  var w = document.createElement('span');
+  w.className='wave'; w.style.left=(e.clientX-r.left)+'px'; w.style.top=(e.clientY-r.top)+'px';
+  h.appendChild(w); setTimeout(function(){ w.remove(); },330);
+});
+
+/* снекбар */
+function snack(text){
+  var s = el('<div class="snack"><span class="ic">'+icon('check',14)+'</span><span>'+esc(text)+'</span></div>');
+  document.getElementById('snacks').appendChild(s);
+  setTimeout(function(){ s.style.transition='opacity .2s, transform .2s'; s.style.opacity='0'; s.style.transform='translateY(20px)';
+    setTimeout(function(){ s.remove(); },220); }, 2200);
+}
+
+/* =============== тема =============== */
+var root = document.documentElement;
+function currentTheme(){
+  var a = root.getAttribute('data-vk');
+  if(a) return a;
+  // matchMedia внутри фрейма врёт — спрашиваем сам CSS
+  return getComputedStyle(root).getPropertyValue('--is-dark').trim() === '1' ? 'dark' : 'light';
+}
+function setTheme(t, persist){
+  root.setAttribute('data-vk', t);
+  if(persist){ try{ localStorage.setItem('vkproto-theme', t); }catch(e){} }
+  document.getElementById('themeBtn').innerHTML = icon(t==='dark' ? 'sun' : 'moon', 20);
+}
+document.getElementById('themeBtn').addEventListener('click', function(){
+  setTheme(currentTheme()==='dark' ? 'light' : 'dark', true);
+});
+(function(){
+  var t = null;
+  try{ t = localStorage.getItem('vkproto-theme'); }catch(e){}
+  // тема зрителя — по умолчанию; в хранилище попадает только явный выбор
+  setTheme(t === 'light' || t === 'dark' ? t : currentTheme(), false);
+})();
+
+/* =============== плеер =============== */
+var P = { i:0, playing:false, t:0, len:0, timer:null };
+function parseDur(d){ var p=d.split(':'); return (+p[0])*60 + (+p[1]); }
+function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function renderPlayer(){
+  var tr = TRACKS[P.i];
+  document.getElementById('pT1').textContent = tr.t;
+  document.getElementById('pT2').textContent = tr.a;
+  document.getElementById('pDur').textContent = tr.d;
+  document.getElementById('pCur').textContent = fmt(P.t);
+  document.querySelector('#pBar i').style.width = (P.len ? P.t/P.len*100 : 0)+'%';
+  document.getElementById('pPlay').innerHTML = icon(P.playing?'pause':'play',16);
+  document.getElementById('hplayer').classList.add('up');
+  document.querySelectorAll('[data-track]').forEach(function(n){
+    n.setAttribute('aria-current', String(+n.dataset.track === P.i && P.playing));
+    var eqn = n.querySelector('.eqslot');
+    if(eqn) eqn.innerHTML = (+n.dataset.track===P.i && P.playing) ? '<span class="eq"><i></i><i></i><i></i><i></i></span>' : '';
+  });
+}
+function play(i){
+  if(i!=null && i!==P.i){ P.i=i; P.t=0; }
+  P.len = parseDur(TRACKS[P.i].d);
+  P.playing = true;
+  clearInterval(P.timer);
+  P.timer = setInterval(function(){
+    P.t += 1;
+    if(P.t >= P.len){ next(); return; }
+    document.getElementById('pCur').textContent = fmt(P.t);
+    document.querySelector('#pBar i').style.width = (P.t/P.len*100)+'%';
+  }, 1000);
+  renderPlayer();
+}
+function toggle(){ if(P.playing){ P.playing=false; clearInterval(P.timer); renderPlayer(); } else play(); }
+function next(){ P.i = (P.i+1)%TRACKS.length; P.t=0; play(); }
+function prev(){ P.i = (P.i-1+TRACKS.length)%TRACKS.length; P.t=0; play(); }
+document.getElementById('pPlay').addEventListener('click', toggle);
+document.getElementById('pNext').addEventListener('click', next);
+document.getElementById('pPrev').addEventListener('click', prev);
+document.getElementById('pBar').addEventListener('click', function(e){
+  var r=this.getBoundingClientRect(); P.t = Math.round((e.clientX-r.left)/r.width*P.len);
+  document.getElementById('pCur').textContent = fmt(P.t);
+  this.querySelector('i').style.width=((e.clientX-r.left)/r.width*100)+'%';
+});
+
+/* =============== навигация =============== */
+var NAV = [
+  {id:'profile', n:'Профиль', ic:'user'},
+  {id:'feed',    n:'Лента',   ic:'home'},
+  {id:'im',      n:'Мессенджер', ic:'msg', cnt:1},
+  {id:'friends', n:'Друзья',  ic:'users'},
+  {id:'photos',  n:'Фото',    ic:'photo'},
+  {id:'music',   n:'Музыка',  ic:'music'}
+];
+function renderNav(cur){
+  document.getElementById('nav').innerHTML =
+    NAV.map(function(x){
+      return '<a href="#/'+x.id+'"'+(cur===x.id?' aria-current="page"':'')+'>'+icon(x.ic,22)+
+        '<span>'+x.n+'</span>'+(x.cnt?'<span class="cnt">'+x.cnt+'</span>':'')+'</a>';
+    }).join('') +
+    '<div class="sep"></div>' +
+    '<a href="#/photos">'+icon('bookmark',22)+'<span>Закладки</span></a>' +
+    '<a href="#/feed">'+icon('star',22)+'<span>Сервисы</span></a>' +
+    '<a href="#/feed">'+icon('help',22)+'<span>Помощь</span></a>' +
+    '<div class="sep"></div>' +
+    '<div class="quiet">Прототип на токенах VKUI</div>';
+}
+
+/* =============== посты =============== */
+var likeState = {}, cmtState = {};
+function postHTML(p, opts){
+  opts = opts || {};
+  var who = opts.who || ME.name;
+  var av  = opts.av  || AV;
+  var avn = opts.av ? 2 : 10;
+  var liked = !!likeState[p.id];
+  var extra = (p.comments||[]).length + (cmtState[p.id]||[]).length;
+  var body = '';
+
+  if(p.head) body += '<div class="post-txt" style="padding-bottom:4px"><b>'+esc(p.head)+'</b></div>';
+  body += '<div class="post-txt" data-clamp>'+linkify(p.text)+'</div>';
+
+  if(p.media){
+    body += '<div class="media'+(p.media.tall?' tall':'')+'" style="'+bg(p.media.m,4)+'" data-photo="'+esc(p.id)+'"></div>';
+  }
+  if(p.gallery){
+    body += '<div class="media" style="'+bg(p.gallery.m,2)+';position:relative" data-photo="'+esc(p.id)+'">'+
+      '<span style="position:absolute;top:10px;right:12px;background:rgba(0,0,0,.55);color:#fff;border-radius:12px;padding:2px 9px;font-size:12px">1/'+p.gallery.count+'</span></div>';
+  }
+  if(p.audio){
+    body += '<div class="attach"><div class="row">'+
+      '<span class="cover" style="'+bg(p.audio.cv,2)+'"></span>'+
+      '<span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:500">'+esc(p.audio.t)+'</span>'+
+      '<span style="display:block;font-size:13px;color:var(--text2)">'+esc(p.audio.a)+'</span></span>'+
+      '<span class="dim" style="font-size:12.5px">'+esc(p.audio.dur)+'</span>'+
+      '<button class="playbtn tap" data-audio aria-label="Слушать">'+icon('play',16)+'</button>'+
+      '</div></div>';
+  }
+  if(p.link){
+    body += '<div class="attach"><div class="row">'+
+      '<span class="cover" style="'+bg(p.link.cv,2)+'"></span>'+
+      '<span style="flex:1;min-width:0"><span style="display:block;font-size:14px;font-weight:500">'+esc(p.link.t)+'</span>'+
+      '<span style="display:block;font-size:13px;color:var(--text2)">'+esc(p.link.s)+'</span></span></span>'+
+      '</div><div class="lnk t-footnote muted">'+esc(p.link.d)+' · <a href="#/feed">Перейти</a></div></div>';
+  }
+
+  var totalLikes = p.likes + (liked?1:0);
+  return '<article class="card" data-post="'+esc(p.id)+'">'+
+    '<div class="post-hd">'+
+      '<span class="av" style="'+bg(av,avn)+';width:40px;height:40px"></span>'+
+      '<span style="flex:1;min-width:0"><span class="who">'+esc(who)+'</span>'+
+      (p.pinned?'<span class="when">📌 запись закреплена</span>':'')+'</span>'+
+      (opts.sub===true ? '<button class="btn sec tap" data-sub>Подписаться</button>' : '')+
+    '</div>'+
+    body+
+    (totalLikes>=20 ? '<div class="reacts"><span class="stack"><span>❤</span><span>🔥</span><span>👍</span></span>'+
+      '<span>Оценили '+totalLikes+' человек</span></div>' : '')+
+    '<div class="acts">'+
+      '<button class="act tap'+(liked?' on':'')+'" data-like>'+icon('like',16)+'<span class="n">'+(totalLikes>=20?(liked?'Вы оценили':'Лайк'):totalLikes)+'</span></button>'+
+      '<button class="act tap" data-cmt>'+icon('cmt',16)+'<span class="n">'+(p.cmts+(cmtState[p.id]||[]).length)+'</span></button>'+
+      '<button class="act tap" data-share>'+icon('share',16)+(p.reposts?'<span class="n">'+p.reposts+'</span>':'')+'</button>'+
+      '<span class="act when">'+esc(p.when)+'</span>'+
+    '</div>'+
+    '<div class="cmts" hidden data-cmts></div>'+
+  '</article>';
+}
+function linkify(t){
+  return esc(t)
+    .replace(/(#[\wА-Яа-яЁё_]+)/g,'<span class="tag">$1</span>')
+    .replace(/(band\.link\/[\w.\-_]+)/g,'<a href="#/feed">$1</a>');
+}
+function findPost(id){
+  var all = FEED.concat(WALL);
+  for(var i=0;i<all.length;i++) if(all[i].id===id) return all[i];
+  return null;
+}
+var cLikeState = {};
+function commentHTML(c, key, ci){
+  var liked = !!cLikeState[key];
+  var n = (c.likes||0) + (liked?1:0);
+  var long = c.t.length > 220;
+  return '<div class="cmt" data-c="'+esc(key)+'">'+
+    '<span class="cav" style="'+bg(c.av||CAV[ci%CAV.length],2)+'"></span>'+
+    '<span class="bd">'+
+      '<span class="nm">'+esc(c.n)+(c.emo?' <span>'+c.emo+'</span>':'')+
+      (c.ver?'<span class="ver">'+icon('verified',13)+'</span>':'')+'</span>'+
+      '<div class="tx'+(long?' clamp':'')+'">'+esc(c.t)+'</div>'+
+      (long?'<button class="showmore" data-showmore>Показать ещё</button>':'')+
+      '<div class="mt"><span>'+esc(c.tm||'только что')+'</span>'+
+        '<button data-reply>Ответить</button><button data-cshare>Поделиться</button>'+
+        '<button class="clike'+(liked?' on':'')+'" data-clike>'+icon('like',14)+(n?'<span>'+n+'</span>':'')+'</button>'+
+      '</div>'+
+    '</span></div>';
+}
+function renderComments(art){
+  var id = art.dataset.post, p = findPost(id);
+  var box = art.querySelector('[data-cmts]');
+  var list = (p.comments||[]).concat(cmtState[id]||[]);
+  box.innerHTML =
+    (list.length>1 ? '<button class="cmt-sort tap">Сначала интересные '+icon('chevron',16)+'</button>' : '')+
+    list.map(function(c,ci){ return commentHTML(c, id+'_'+ci, ci); }).join('') +
+    '<div class="cmt-new"><span class="cav" style="'+bg(AV,10)+'"></span>'+
+    '<span class="fld"><input placeholder="Написать комментарий…" data-cmt-input>'+
+    '<button class="cbtn tap" aria-label="Прикрепить">'+icon('clip',18)+'</button>'+
+    '<button class="cbtn tap" aria-label="Фото">'+icon('photo',18)+'</button>'+
+    '<button class="cbtn tap" aria-label="Смайлы">'+icon('smile',18)+'</button></span>'+
+    '<button class="iconbtn tap" data-cmt-send aria-label="Отправить">'+icon('send',20)+'</button></div>';
+}
+
+/* =============== экраны =============== */
+function screenFeed(){
+  return '<div class="view">'+
+    '<div class="card pad"><div class="stories">'+
+      '<button class="story add tap"><span class="im"><span class="plus">'+icon('plus',20)+'</span></span><span class="cap" style="position:static;color:var(--text);text-shadow:none;display:block;margin-top:6px">История</span></button>'+
+      STORIES.map(function(s,i){
+        return '<button class="story tap" data-story="'+i+'"><span class="im" style="'+bg(s.m,4)+'">'+
+        '<span class="ava" style="'+bg(s.m,2)+'"></span><span class="cap">'+esc(s.n)+'</span></span></button>';
+      }).join('')+
+    '</div></div>'+
+    '<div class="card pad" style="display:flex;gap:10px;align-items:center">'+
+      '<span class="av" style="'+bg(AV,10)+';width:36px;height:36px"></span>'+
+      '<button class="search tap" style="flex:1;height:36px;max-width:none">Что у вас нового?</button>'+
+      '<button class="btn tap">'+icon('plus',16)+'Создать</button>'+
+    '</div>'+
+    FEED.map(function(p){ return postHTML(p,{who:p.who, av:p.av, sub:p.sub}); }).join('')+
+  '</div>';
+}
+
+var PTABS = [['Музыка','music'],['Фото','photo'],['Видео','play'],['Альбомы','bookmark'],['Клипы','play'],['Статьи','cmt']];
+function screenProfile(){
+  return '<div class="view">'+
+    '<div class="card">'+
+      '<div class="cover" style="background-image:'+mesh(AV,10)+'"></div>'+
+      '<div class="prof">'+
+        '<span class="avwrap"><span class="big" style="'+bg(AV,10)+'"></span>'+
+        '<button class="plusb tap" aria-label="Обновить фото">'+icon('plus',16)+'</button></span>'+
+        '<span class="info"><span class="nm">'+esc(ME.name)+' <span class="emo">🐈‍⬛</span></span>'+
+        '<span class="st">Укажите информацию о себе '+icon('right',12)+'</span></span>'+
+        '<span class="pacts"><button class="btn sec tap">Редактировать профиль</button>'+
+        '<button class="btn sec tap" style="width:32px;padding:0" aria-label="Статистика">'+icon('star',16)+'</button>'+
+        '<button class="btn sec tap">Ещё '+icon('right',12)+'</button></span>'+
+      '</div>'+
+      '<div class="tabs" role="tablist">'+
+        PTABS.map(function(t,i){
+          return '<button role="tab" aria-selected="'+(i===0)+'" data-ptab="'+i+'">'+icon(t[1],16)+' '+t[0]+'</button>';
+        }).join('')+
+      '</div>'+
+      '<div id="ptabBody"></div>'+
+    '</div>'+
+    '<div class="card createpost">'+
+      '<span class="av" style="'+bg(AV,10)+';width:36px;height:36px"></span>'+
+      '<button class="mid tap">'+icon('plus',18)+'Создать пост</button>'+
+      '<button class="iconbtn tap" aria-label="История">'+icon('photo',20)+'</button>'+
+      '<button class="iconbtn tap" aria-label="Клип">'+icon('play',20)+'</button>'+
+    '</div>'+
+    WALL.map(function(p){ return postHTML(p,{}); }).join('')+
+  '</div>';
+}
+function ptabBody(i){
+  if(i===0){
+    return '<div><div class="albstrip">'+ALBUM_COVERS.map(function(a,n){
+        return '<button class="a tap" data-track="'+(n%TRACKS.length)+'"><span class="im" style="'+bg(a.cv,2)+'"></span>'+
+          '<span class="cap">'+esc(a.n)+'</span></button>';
+      }).join('')+'</div>'+
+      '<div class="trk2">'+TRACKS.slice(0,6).map(function(t,n){
+      return '<div class="trk tap" data-track="'+n+'"><span class="cv" style="'+bg(t.cv,2)+'"></span>'+
+        '<span class="ti"><span class="t1">'+esc(t.t)+'</span><span class="t2">'+esc(t.a)+'</span></span>'+
+        '<span class="eqslot"></span><span class="dur">'+t.d+'</span></div>';
+    }).join('')+'</div><div style="padding:8px 16px 16px"><button class="btn sec wide tap l" data-go="music">Показать всё</button></div></div>';
+  }
+  if(i===1){
+    return '<div class="ph-grid">'+PHOTOS.slice(0,8).map(function(p,n){
+      return '<button class="ph tap" data-ph="'+n+'" style="'+bg(p.m,4)+'"><span class="ov">'+icon('like',14)+p.likes+' '+icon('cmt',14)+p.comments.length+'</span></button>';
+    }).join('')+'</div>';
+  }
+  if(i===3){
+    return '<div class="alb">'+ALBUMS.map(function(a){
+      return '<button class="tap"><span class="im" style="'+bg(a.m,a.cells||4)+'"></span><span class="nm">'+esc(a.n)+'</span><span class="sb">'+esc(a.c)+'</span></button>';
+    }).join('')+'</div>';
+  }
+  return '<div class="pad muted t-paragraph" style="padding:28px 16px;text-align:center">Здесь пока пусто</div>';
+}
+
+function screenPhotos(){
+  return '<div class="view">'+
+    '<div class="card"><div class="pad" style="display:flex;align-items:center;gap:12px">'+
+      '<span class="t-title2" style="flex:1">Мои фотографии</span>'+
+      '<button class="btn sec tap">Создать альбом</button></div>'+
+      '<div class="alb" style="padding-top:0">'+ALBUMS.map(function(a){
+        return '<button class="tap"><span class="im" style="'+bg(a.m,a.cells||4)+'"></span><span class="nm">'+esc(a.n)+'</span><span class="sb">'+esc(a.c)+'</span></button>';
+      }).join('')+'</div>'+
+    '</div>'+
+    '<div class="card"><div class="pad t-headline">Сохранённые фото</div>'+
+      '<div class="ph-grid" style="padding-top:0">'+PHOTOS.map(function(p,n){
+        return '<button class="ph tap" data-ph="'+n+'" style="'+bg(p.m,4)+'"><span class="ov">'+icon('like',14)+p.likes+' '+icon('cmt',14)+p.comments.length+'</span></button>';
+      }).join('')+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function screenMusic(){
+  return '<div class="view">'+
+    '<div class="card"><div class="tabs" role="tablist">'+
+      ['Главная','Моя музыка','Обзор','Радио','Обновления'].map(function(t,i){
+        return '<button role="tab" aria-selected="'+(i===1)+'">'+t+'</button>';
+      }).join('')+'</div>'+
+      '<div class="pad" style="padding-top:0"><button class="search tap" style="max-width:none;width:100%;height:36px">Поиск музыки</button></div>'+
+    '</div>'+
+    '<div class="card"><div class="pad" style="display:flex;align-items:center">'+
+      '<span class="t-headline" style="flex:1">Мои треки</span><span class="dim t-footnote">'+TRACKS.length+'</span></div>'+
+      TRACKS.map(function(t,n){
+        return '<div class="trk tap" data-track="'+n+'"><span class="cv" style="'+bg(t.cv,2)+'"></span>'+
+          '<span class="ti"><span class="t1">'+esc(t.t)+'</span><span class="t2">'+esc(t.a)+'</span></span>'+
+          '<span class="eqslot"></span><span class="dur">'+t.d+'</span></div>';
+      }).join('')+
+    '</div>'+
+    '<div class="card pad"><div class="t-headline" style="margin-bottom:12px">Собрано алгоритмами</div>'+
+      '<div class="grid-pl">'+PLAYLISTS.map(function(p,i){
+        return '<button class="pl tap" data-pl="'+i+'"><span class="im" style="'+bg(p.cv,2)+'"></span>'+
+        '<span class="nm">'+esc(p.n)+'</span><span class="sb">'+esc(p.s)+'</span></button>';
+      }).join('')+'</div></div>'+
+    '<div class="card pad"><div class="t-headline" style="margin-bottom:12px">Жанры</div>'+
+      '<div class="chips">'+['Поп','Хип-хоп','Рок','Электроника','Инди','Метал','Фолк','Фонк','Джаз','Фанк','Эмбиент','Панк']
+        .map(function(g){ return '<button class="chip tap">'+g+'</button>'; }).join('')+'</div></div>'+
+  '</div>';
+}
+
+var curConvo = 'c3', convoMsgs = {};
+function convoRow(c){
+  var ms = convoMsgs[c.id] || c.msgs;
+  var last = ms[ms.length-1];
+  var preview = (last.me ? 'Вы: ' : '') + last.t.split('\n')[0];
+  return '<button class="convo tap" data-convo="'+c.id+'"'+(c.id===curConvo?' aria-current="true"':'')+'>'+
+    '<span class="cav" style="'+bg(c.av,2)+'"></span>'+
+    '<span class="cbody">'+
+      '<span class="chd"><span class="ctitle">'+esc(c.n)+'</span>'+
+      (c.ver?'<span class="ver">'+icon('verified',14)+'</span>':'')+'</span>'+
+      '<span class="cmsg">'+
+        (last.me && c.read ? '<span class="cout">'+icon('check2',14)+'</span>' : '')+
+        '<span class="ctext">'+esc(preview)+'</span>'+
+        '<span class="cdate">· '+esc(c.tm)+'</span>'+
+        (c.unread?'<span class="unread">'+c.unread+'</span>':'')+
+      '</span>'+
+    '</span>'+
+  '</button>';
+}
+var searchTab = 0;
+function searchPanel(){
+  return '<div class="im-search" id="imSearch" hidden>'+
+    '<div class="im-search-hd">'+
+      '<button class="iconbtn tap" id="searchBack" aria-label="Назад">'+icon('left',20)+'</button>'+
+      '<b>Поиск</b>'+
+    '</div>'+
+    '<div style="padding:0 8px"><span class="search" style="max-width:none;width:100%;height:32px;cursor:text">'+
+      icon('search',16)+'<input id="imSearchInput" placeholder="Поиск" '+
+      'style="flex:1;border:0;background:transparent;color:var(--text);font-size:14px;min-width:0"></span></div>'+
+    '<div class="search-tabs">'+
+      ['Чаты','Сообщения','Сообщества'].map(function(t,i){
+        return '<button class="tap" data-stab="'+i+'" aria-selected="'+(i===0)+'">'+t+'</button>';
+      }).join('')+
+    '</div>'+
+    '<div class="search-body" id="searchBody"></div>'+
+  '</div>';
+}
+function searchBody(q){
+  var box = document.getElementById('searchBody');
+  if(!box) return;
+  q = (q||'').trim().toLowerCase();
+  if(!q){
+    box.innerHTML =
+      '<div class="sec-hd">Важные</div>'+
+      '<div class="hscroll">'+
+        '<button class="hcell tap"><span class="a fav">'+icon('bookmark',26)+'</span><span class="n">Избранное</span></button>'+
+        CONVOS.filter(function(c){return c.id!=="c5"}).map(function(c){
+          return '<button class="hcell tap" data-convo="'+c.id+'"><span class="a" style="'+bg(c.av,2)+'"></span>'+
+            '<span class="n">'+esc(c.n)+'</span></button>';
+        }).join('')+
+      '</div>'+
+      '<div class="search-empty">'+icon('search',48)+'<p>Начните вводить текст в поле поиска</p></div>';
+    return;
+  }
+  var hits = CONVOS.filter(function(c){
+    var ms = convoMsgs[c.id] || c.msgs;
+    return c.n.toLowerCase().indexOf(q)>=0 ||
+      ms.some(function(m){ return m.t.toLowerCase().indexOf(q)>=0 });
+  });
+  box.innerHTML = hits.length
+    ? '<div class="sec-hd">Чаты</div><div class="im-rows" style="overflow:visible;flex:0 0 auto">'+hits.map(convoRow).join('')+'</div>'
+    : '<div class="search-empty">'+icon('search',48)+'<p>Ничего не нашлось по запросу «'+esc(q)+'»</p></div>';
+}
+function setSearch(on){
+  var list = document.getElementById('imList'), panel = document.getElementById('imSearch');
+  if(!list || !panel) return;
+  list.hidden = on; panel.hidden = !on;
+  if(on){ searchBody(''); var i=document.getElementById('imSearchInput'); if(i){ i.value=''; i.focus(); } }
+}
+function screenIM(){
+  return '<div class="view"><div class="im-wrap" id="imWrap">'+
+    '<div class="im-col">'+
+    '<div class="im-list" id="imList">'+
+      '<div class="im-list-hd">'+
+        '<div class="im-list-top">'+
+          '<button class="iconbtn tap" aria-label="Меню">'+icon('burger',20)+'</button>'+
+          '<b>Мессенджер</b>'+
+          '<button class="iconbtn tap" aria-label="Новая беседа">'+icon('users',20)+'</button>'+
+          '<button class="iconbtn tap" aria-label="Архив">'+icon('bookmark',20)+'</button>'+
+          '<button class="iconbtn tap" aria-label="Написать">'+icon('edit',20)+'</button>'+
+        '</div>'+
+        '<button class="search tap" style="max-width:none;width:100%;height:32px">'+icon('search',16)+' Поиск</button>'+
+        '<div class="im-filters">'+
+          '<button class="filter tap" aria-pressed="true">Все <i>1</i></button>'+
+          '<button class="filter tap" aria-pressed="false">Каналы <i>8</i></button>'+
+          '<span style="flex:1"></span>'+
+          '<button class="iconbtn tap" aria-label="Настройки списка">'+icon('star',18)+'</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="im-rows">'+CONVOS.map(convoRow).join('')+'</div>'+
+      '<div class="im-list-ft">'+icon('cmt',18)+'<span style="flex:1">Только непрочитанные</span>'+
+        '<span class="sw-toggle" aria-checked="false" role="switch" aria-label="Только непрочитанные"><span class="pin"></span></span></div>'+
+    '</div>'+
+    searchPanel()+
+    '</div>'+
+    '<div class="im-chat" id="imChat"></div>'+
+  '</div></div>';
+}
+function renderChat(){
+  var c = CONVOS.filter(function(x){return x.id===curConvo})[0];
+  var ms = convoMsgs[c.id] || (convoMsgs[c.id] = c.msgs.slice());
+  document.getElementById('imChat').innerHTML =
+    '<div class="ch-hd">'+
+      '<button class="iconbtn tap" aria-label="Закрыть">'+icon('close',18)+'</button>'+
+      '<span class="av" style="'+bg(c.av,2)+';width:36px;height:36px"></span>'+
+      '<span style="flex:1;min-width:0"><span class="ct">'+esc(c.n)+
+      (c.ver?'<span class="ver">'+icon('verified',14)+'</span>':'')+'</span>'+
+      '<span class="cs">'+esc(c.status || 'был в сети сегодня')+'</span></span>'+
+      '<button class="iconbtn tap" aria-label="Позвонить">'+icon('phone',20)+'</button>'+
+      '<button class="iconbtn tap" aria-label="Поиск по беседе">'+icon('search',20)+'</button>'+
+      '<button class="iconbtn tap" aria-label="Ещё">'+icon('more',20)+'</button>'+
+    '</div>'+
+    '<div class="msgs" id="msgs"><div class="datesep">'+esc(c.day||'вчера')+'</div>'+
+    ms.map(function(m){
+      return '<div class="mblock'+(m.me?' out':'')+'"><div class="msg">'+
+        '<div class="btxt">'+esc(m.t)+'</div>'+
+        '<div class="binfo">'+esc(m.tm||'')+'</div>'+
+        (m.action ? '<div class="bkey"><button class="tap">'+esc(m.action)+' ↗</button></div>' : '')+
+      '</div></div>';
+    }).join('')+
+    '</div>'+
+    '<div class="composer-wrap">'+
+      '<div class="composer">'+
+        '<button class="cbtn plus tap" aria-label="Прикрепить">'+icon('pluscircle',26)+'</button>'+
+        '<input id="msgInput" placeholder="Сообщение">'+
+        '<button class="cbtn tap" aria-label="Стикеры">'+icon('smile',20)+'</button>'+
+        '<button class="cbtn tap send" id="msgSend" aria-label="Голосовое сообщение">'+icon('mic',20)+'</button>'+
+      '</div>'+
+    '</div>';
+  var m = document.getElementById('msgs'); m.scrollTop = m.scrollHeight;
+  document.querySelectorAll('[data-convo]').forEach(function(b){ b.setAttribute('aria-current', String(b.dataset.convo===curConvo)); });
+  var mi = document.getElementById('msgInput');
+  if(mi) mi.addEventListener('input', function(){
+    var btn = document.getElementById('msgSend'); if(!btn) return;
+    var has = mi.value.trim().length>0;
+    btn.innerHTML = icon(has?'send':'mic', 20);
+    btn.setAttribute('aria-label', has?'Отправить':'Голосовое сообщение');
+  });
+}
+function sendMsg(){
+  var inp = document.getElementById('msgInput');
+  var v = inp.value.trim(); if(!v) return;
+  var c = CONVOS.filter(function(x){return x.id===curConvo})[0];
+  var now = new Date(), tm = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  convoMsgs[c.id].push({me:true,t:v,tm:tm});
+  inp.value=''; renderChat();
+  var box = document.getElementById('msgs');
+  var REPLY = { c3:'а вот и нет', c4:'ыфвафыв', c5:null, c1:null, c2:null };
+  var r = REPLY[c.id];
+  if(!r) return;
+  var typing = el('<div class="typing"><i></i><i></i><i></i></div>');
+  box.appendChild(typing); box.scrollTop = box.scrollHeight;
+  setTimeout(function(){
+    typing.remove();
+    convoMsgs[c.id].push({me:false,t:r,tm:tm});
+    renderChat();
+  }, 1400);
+}
+
+function screenFriends(){
+  return '<div class="view"><div class="card pad" style="text-align:center;padding:40px 16px">'+
+    '<div style="font-size:44px">🫥</div>'+
+    '<div class="t-title2" style="margin-top:10px">У вас пока нет друзей</div>'+
+    '<div class="muted t-paragraph" style="margin-top:6px">Зато 64 подписки — этого достаточно</div>'+
+    '<button class="btn tap l" style="margin-top:16px">Добавить друзей</button></div>'+
+    '<div class="card"><div class="pad t-headline">Подписки · 64</div>'+
+    SUBS.map(function(s){
+      return '<div class="trk tap"><span class="av" style="'+bg(s.cv,2)+';width:40px;height:40px"></span>'+
+      '<span class="ti"><span class="t1">'+esc(s.n)+'</span><span class="t2">сообщество</span></span>'+
+      '<button class="btn sec tap">Открыть</button></div>';
+    }).join('')+'</div></div>';
+}
+
+function aside(route){
+  if(route==='im') return '';
+  if(route==='profile'){
+    return '<div class="card"><div class="pad t-headline" style="padding-bottom:0">Друзья</div>'+
+      '<div class="emptybox">У вас пока нет друзей</div>'+
+      '<div style="padding:0 16px 16px"><button class="btn sec wide tap" data-go="friends">'+icon('users',16)+' Добавить друзей</button></div></div>'+
+      '<div class="card pad"><div class="t-headline" style="margin-bottom:10px">Подарки <span class="dim" style="font-weight:400">36</span></div>'+
+      '<div class="gifts">'+GIFTS.map(function(g){ return '<span style="'+bg(g,2)+'"></span>'; }).join('')+'</div></div>'+
+      '<div class="card pad"><div class="t-headline" style="margin-bottom:10px">Подписки <span class="dim" style="font-weight:400">64</span></div>'+
+      SUBS.slice(0,5).map(function(s){
+        return '<div style="display:flex;gap:10px;align-items:center;padding:5px 0">'+
+        '<span class="av" style="'+bg(s.cv,2)+';width:32px;height:32px"></span>'+
+        '<span class="t-subhead" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.n)+'</span></div>';
+      }).join('')+'</div>';
+  }
+  var ad = '<div class="ad"><div class="im" style="'+bg(D.gift1,2)+'"></div>'+
+    '<div class="pad"><div class="t-footnote" style="font-weight:500">Герои китайских мифов рвутся в бой</div>'+
+    '<div class="t-caption muted" style="margin-top:4px">Соберите сильнейший отряд в игре «Печать демонов»</div>'+
+    '<button class="btn sec wide tap" style="margin-top:10px">Играть</button></div></div>';
+  if(route==='music'){
+    return '<div class="card pad"><div class="t-headline" style="margin-bottom:10px">Сейчас играет</div>'+
+      '<div class="pl"><span class="im" id="asideCv" style="'+bg(TRACKS[P.i].cv,2)+'"></span>'+
+      '<span class="nm" id="asideT1">'+esc(TRACKS[P.i].t)+'</span><span class="sb" id="asideT2">'+esc(TRACKS[P.i].a)+'</span></div></div>'+ad;
+  }
+  return '<div class="card pad"><div class="t-headline" style="margin-bottom:10px">Подписки</div>'+
+    SUBS.slice(0,4).map(function(s){
+      return '<div style="display:flex;gap:10px;align-items:center;padding:6px 0">'+
+      '<span class="av" style="'+bg(s.cv,2)+';width:32px;height:32px"></span>'+
+      '<span class="t-subhead" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.n)+'</span></div>';
+    }).join('')+'</div>'+ad;
+}
+
+/* =============== просмотрщики =============== */
+function openPhoto(i){
+  var scrim = el('<div class="scrim"><div class="viewer"></div></div>');
+  document.body.appendChild(scrim);
+  var v = scrim.querySelector('.viewer');
+  function draw(){
+    var p = PHOTOS[i];
+    var liked = !!likeState['ph'+i];
+    v.innerHTML =
+      '<div class="stage"><div class="im" style="'+bg(p.m,4)+'"></div>'+
+      '<button class="nav-b l tap" data-pv>'+icon('left',20)+'</button>'+
+      '<button class="nav-b r tap" data-nx>'+icon('right',20)+'</button>'+
+      '<button class="closex tap" data-close>'+icon('close',16)+'</button></div>'+
+      '<div class="side"><div class="top"><span class="av" style="'+bg(AV,10)+';width:36px;height:36px"></span>'+
+      '<span><span style="display:block;font-size:14px;font-weight:500">'+esc(ME.name)+'</span>'+
+      '<span class="t-footnote muted">'+esc(p.t)+' · '+(i+1)+' из '+PHOTOS.length+'</span></span></div>'+
+      '<div class="body">'+
+        (p.comments.length ? p.comments.map(function(c,ci){
+          return commentHTML(c, 'ph'+i+'_'+ci, ci);
+        }).join('') : '<div class="muted t-footnote">Комментариев пока нет — напишите первый</div>')+
+      '</div>'+
+      '<div class="foot"><div style="display:flex;gap:4px;margin-bottom:10px">'+
+        '<button class="act tap'+(liked?' on':'')+'" data-phlike>'+icon('like',16)+'<span class="n">'+(p.likes+(liked?1:0))+'</span></button>'+
+        '<button class="act tap">'+icon('share',16)+'</button></div>'+
+      '<div class="cmt-new"><span class="cav" style="'+bg(AV,10)+'"></span>'+
+      '<span class="fld"><input placeholder="Написать комментарий…" data-phc>'+
+      '<button class="cbtn tap" aria-label="Смайлы">'+icon('smile',18)+'</button></span>'+
+      '<button class="iconbtn tap" data-phsend aria-label="Отправить">'+icon('send',20)+'</button></div></div>'+
+      '</div>';
+  }
+  draw();
+  scrim.addEventListener('click', function(e){
+    if(e.target===scrim || e.target.closest('[data-close]')) { scrim.remove(); return; }
+    if(e.target.closest('[data-nx]')){ i=(i+1)%PHOTOS.length; draw(); }
+    if(e.target.closest('[data-pv]')){ i=(i-1+PHOTOS.length)%PHOTOS.length; draw(); }
+    if(e.target.closest('[data-phlike]')){ likeState['ph'+i]=!likeState['ph'+i]; draw(); }
+    if(e.target.closest('[data-clike]')){
+      var ck2 = e.target.closest('[data-c]').dataset.c;
+      cLikeState[ck2] = !cLikeState[ck2]; draw();
+    }
+    if(e.target.closest('[data-showmore]')){
+      var sm2 = e.target.closest('[data-showmore]');
+      sm2.previousElementSibling.classList.remove('clamp'); sm2.remove();
+    }
+    if(e.target.closest('[data-phsend]')){
+      var inp = v.querySelector('[data-phc]'); var t=inp.value.trim(); if(!t) return;
+      PHOTOS[i].comments.push({n:ME.name, t:t}); draw(); snack('Комментарий добавлен');
+    }
+  });
+  scrim.addEventListener('keydown', function(e){ if(e.key==='Escape') scrim.remove(); });
+  document.addEventListener('keydown', function esc2(e){
+    if(e.key==='Escape'){ scrim.remove(); document.removeEventListener('keydown',esc2); }
+  });
+}
+
+function openStory(i){
+  var scrim = el('<div class="scrim"><div class="stview"></div></div>');
+  document.body.appendChild(scrim);
+  var v = scrim.querySelector('.stview');
+  var timer;
+  function draw(){
+    var s = STORIES[i];
+    v.innerHTML = '<div class="im" style="'+bg(s.m,4)+'"></div>'+
+      '<div class="bars">'+STORIES.map(function(_,k){
+        return '<i><b style="width:'+(k<i?100:0)+'%"></b></i>';
+      }).join('')+'</div>'+
+      '<div class="who"><span class="av" style="'+bg(s.m,2)+';width:32px;height:32px;box-shadow:0 0 0 2px #fff"></span>'+
+      '<span style="font-size:14px;font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.7)">'+esc(s.n)+'</span>'+
+      '<button class="closex tap" style="position:static;margin-left:auto" data-close>'+icon('close',16)+'</button></div>'+
+      '<div class="cap">'+esc(s.cap)+'</div>';
+    var bar = v.querySelectorAll('.bars b')[i];
+    var t0 = Date.now(), DUR = 4000;
+    clearInterval(timer);
+    timer = setInterval(function(){
+      var p = (Date.now()-t0)/DUR;
+      if(p>=1){ if(i<STORIES.length-1){ i++; draw(); } else { clearInterval(timer); scrim.remove(); } return; }
+      bar.style.width = (p*100)+'%';
+    }, 40);
+  }
+  draw();
+  scrim.addEventListener('click', function(e){
+    if(e.target.closest('[data-close]') || e.target===scrim){ clearInterval(timer); scrim.remove(); return; }
+    var r = v.getBoundingClientRect();
+    if(e.clientX - r.left < r.width*0.35){ if(i>0){ i--; draw(); } }
+    else { if(i<STORIES.length-1){ i++; draw(); } else { clearInterval(timer); scrim.remove(); } }
+  });
+  document.addEventListener('keydown', function esc3(e){
+    if(e.key==='Escape'){ clearInterval(timer); scrim.remove(); document.removeEventListener('keydown',esc3); }
+  });
+}
+
+/* =============== роутер =============== */
+/* скелетон повторяет каркас именно того экрана, который грузится */
+function rep(n, html){ var s=''; for(var i=0;i<n;i++) s+=html; return s; }
+var SKELETON = {
+  feed: function(){
+    return '<div class="card pad"><div class="skstrip">'+
+        rep(6,'<div class="sk" style="width:94px;height:167px;border-radius:12px"></div>')+'</div></div>'+
+      '<div class="card pad skrow"><div class="sk c" style="width:36px;height:36px"></div>'+
+        '<div class="sk" style="height:36px;flex:1;border-radius:8px"></div>'+
+        '<div class="sk" style="width:112px;height:32px"></div></div>'+
+      rep(2,'<div class="card"><div class="pad skrow"><div class="sk c" style="width:40px;height:40px"></div>'+
+        '<div class="skcol"><div class="sk" style="height:14px;width:38%"></div><div class="sk" style="height:11px;width:20%"></div></div></div>'+
+        '<div class="pad" style="padding-top:0"><div class="sk" style="height:12px;width:92%"></div>'+
+        '<div class="sk" style="height:12px;width:64%;margin-top:8px"></div></div>'+
+        '<div class="sk" style="height:220px;border-radius:0"></div>'+
+        '<div class="pad skrow" style="gap:6px">'+rep(3,'<div class="sk" style="width:64px;height:30px;border-radius:15px"></div>')+'</div></div>');
+  },
+  profile: function(){
+    return '<div class="card"><div class="sk" style="height:200px;border-radius:0"></div>'+
+      '<div class="pad skrow" style="align-items:flex-end;gap:16px">'+
+        '<div class="sk c" style="width:130px;height:130px;margin-top:-84px"></div>'+
+        '<div class="skcol"><div class="sk" style="height:22px;width:210px"></div><div class="sk" style="height:12px;width:150px"></div></div>'+
+        '<div class="sk" style="width:170px;height:32px"></div></div>'+
+      '<div class="pad skrow" style="gap:6px;padding-top:0">'+rep(5,'<div class="sk" style="width:84px;height:30px"></div>')+'</div>'+
+      '<div class="skstrip" style="padding:0 16px 14px">'+rep(5,'<div class="sk" style="width:104px;height:128px"></div>')+'</div>'+
+      '<div class="skgrid" style="grid-template-columns:1fr 1fr;padding:0 16px 16px;gap:8px 16px">'+
+        rep(6,'<div class="skrow"><div class="sk" style="width:40px;height:40px"></div>'+
+        '<div class="skcol"><div class="sk" style="height:12px;width:70%"></div><div class="sk" style="height:10px;width:40%"></div></div></div>')+'</div></div>';
+  },
+  im: function(){
+    return '<div class="im-wrap"><div class="im-col"><div class="im-list">'+
+      '<div class="im-list-hd"><div class="im-list-top"><div class="sk" style="height:18px;width:130px"></div></div>'+
+      '<div class="sk" style="height:32px;border-radius:8px"></div>'+
+      '<div class="im-filters">'+rep(2,'<div class="sk" style="width:72px;height:30px"></div>')+'</div></div>'+
+      '<div class="im-rows">'+rep(6,'<div class="convo" style="cursor:default"><div class="sk c" style="width:48px;height:48px"></div>'+
+        '<div class="skcol"><div class="sk" style="height:13px;width:52%"></div><div class="sk" style="height:11px;width:80%"></div></div></div>')+'</div></div></div>'+
+      '<div class="im-chat"><div class="ch-hd"><div class="sk c" style="width:36px;height:36px"></div>'+
+        '<div class="skcol" style="max-width:200px"><div class="sk" style="height:13px;width:60%"></div><div class="sk" style="height:11px;width:80%"></div></div></div>'+
+      '<div class="msgs">'+
+        '<div class="mblock"><div class="sk" style="width:56%;height:56px;border-radius:14px;background:var(--bubble-in)"></div></div>'+
+        '<div class="mblock out"><div class="sk" style="width:38%;height:34px;border-radius:14px"></div></div>'+
+        '<div class="mblock"><div class="sk" style="width:44%;height:34px;border-radius:14px"></div></div>'+
+        '<div class="mblock out"><div class="sk" style="width:30%;height:34px;border-radius:14px"></div></div>'+
+      '</div>'+
+      '<div class="composer-wrap"><div class="sk c" style="width:36px;height:36px"></div>'+
+      '<div class="sk" style="height:44px;flex:1;border-radius:12px"></div></div></div></div>';
+  },
+  photos: function(){
+    return '<div class="card"><div class="pad"><div class="sk" style="height:20px;width:190px"></div></div>'+
+      '<div class="skgrid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));padding:0 16px 16px;gap:12px">'+
+        rep(3,'<div><div class="sk" style="aspect-ratio:4/3;border-radius:10px"></div>'+
+        '<div class="sk" style="height:12px;width:70%;margin-top:8px"></div></div>')+'</div></div>'+
+      '<div class="card"><div class="pad"><div class="sk" style="height:16px;width:150px"></div></div>'+
+      '<div class="skgrid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));padding:0 6px 6px">'+
+        rep(12,'<div class="sk" style="aspect-ratio:1"></div>')+'</div></div>';
+  },
+  music: function(){
+    return '<div class="card"><div class="pad skrow" style="gap:6px">'+
+        rep(5,'<div class="sk" style="width:78px;height:30px"></div>')+'</div>'+
+      '<div class="pad" style="padding-top:0"><div class="sk" style="height:36px;border-radius:8px"></div></div></div>'+
+      '<div class="card"><div class="pad"><div class="sk" style="height:16px;width:110px"></div></div>'+
+        rep(8,'<div class="trk" style="cursor:default"><div class="sk" style="width:40px;height:40px;border-radius:6px"></div>'+
+        '<div class="skcol"><div class="sk" style="height:12px;width:44%"></div><div class="sk" style="height:10px;width:26%"></div></div>'+
+        '<div class="sk" style="width:28px;height:10px"></div></div>')+'</div>'+
+      '<div class="card pad"><div class="sk" style="height:16px;width:170px;margin-bottom:12px"></div>'+
+      '<div class="skgrid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">'+
+        rep(4,'<div><div class="sk" style="aspect-ratio:1;border-radius:10px"></div>'+
+        '<div class="sk" style="height:12px;width:60%;margin-top:8px"></div></div>')+'</div></div>';
+  },
+  friends: function(){
+    return '<div class="card pad" style="text-align:center;padding:40px 16px">'+
+      '<div class="sk c" style="width:56px;height:56px;margin:0 auto"></div>'+
+      '<div class="sk" style="height:18px;width:220px;margin:14px auto 0"></div>'+
+      '<div class="sk" style="height:12px;width:170px;margin:10px auto 0"></div></div>'+
+      '<div class="card"><div class="pad"><div class="sk" style="height:16px;width:140px"></div></div>'+
+      rep(6,'<div class="trk" style="cursor:default"><div class="sk c" style="width:40px;height:40px"></div>'+
+      '<div class="skcol"><div class="sk" style="height:12px;width:50%"></div><div class="sk" style="height:10px;width:24%"></div></div>'+
+      '<div class="sk" style="width:76px;height:30px"></div></div>')+'</div>';
+  }
+};
+function skeleton(r){ return '<div class="view">'+(SKELETON[r] ? SKELETON[r]() : SKELETON.feed())+'</div>'; }
+var SCREENS = { feed:screenFeed, profile:screenProfile, photos:screenPhotos, music:screenMusic, im:screenIM, friends:screenFriends };
+function route(){
+  var r = (location.hash.replace('#/','') || 'feed');
+  if(!SCREENS[r]) r='feed';
+  renderNav(r);
+  var main = document.getElementById('main');
+  main.innerHTML = skeleton(r);
+  document.getElementById('aside').innerHTML = aside(r);
+  setTimeout(function(){
+    main.innerHTML = SCREENS[r]();
+    if(r==='profile') document.getElementById('ptabBody').innerHTML = ptabBody(0);
+    if(r==='im') renderChat();
+    renderPlayer();
+    window.scrollTo({top:0,behavior:'instant'});
+  }, 220);
+}
+window.addEventListener('hashchange', route);
+
+/* =============== делегирование событий =============== */
+document.addEventListener('click', function(e){
+  var t = e.target;
+
+  var story = t.closest('[data-story]');
+  if(story){ openStory(+story.dataset.story); return; }
+
+  var ph = t.closest('[data-ph]');
+  if(ph){ openPhoto(+ph.dataset.ph); return; }
+
+  var pm = t.closest('[data-photo]');
+  if(pm){ openPhoto(0); return; }
+
+  var tr = t.closest('[data-track]');
+  if(tr){ play(+tr.dataset.track);
+    var a1=document.getElementById('asideT1');
+    if(a1){ a1.textContent=TRACKS[P.i].t; document.getElementById('asideT2').textContent=TRACKS[P.i].a;
+      document.getElementById('asideCv').setAttribute('style', bg(TRACKS[P.i].cv,2)); }
+    return; }
+
+  var au = t.closest('[data-audio]');
+  if(au){ play(P.i); snack('Играет: '+TRACKS[P.i].t); return; }
+
+  var go = t.closest('[data-go]');
+  if(go){ location.hash = '#/'+go.dataset.go; return; }
+
+  var ptab = t.closest('[data-ptab]');
+  if(ptab){
+    document.querySelectorAll('[data-ptab]').forEach(function(b){ b.setAttribute('aria-selected', String(b===ptab)); });
+    document.getElementById('ptabBody').innerHTML = ptabBody(+ptab.dataset.ptab);
+    return;
+  }
+
+  var art = t.closest('[data-post]');
+  if(art){
+    if(t.closest('[data-clike]')){
+      var cel = t.closest('[data-c]'); var ck = cel.dataset.c;
+      cLikeState[ck] = !cLikeState[ck];
+      var cb = cel.querySelector('[data-clike]');
+      var base = 0, pp = findPost(art.dataset.post);
+      var all = (pp.comments||[]).concat(cmtState[art.dataset.post]||[]);
+      var ix = +ck.split('_').pop(); base = (all[ix] && all[ix].likes) || 0;
+      var tot = base + (cLikeState[ck]?1:0);
+      cb.classList.toggle('on', cLikeState[ck]);
+      cb.innerHTML = icon('like',14) + (tot?'<span>'+tot+'</span>':'');
+      return;
+    }
+    if(t.closest('[data-showmore]')){
+      var sm = t.closest('[data-showmore]');
+      sm.previousElementSibling.classList.remove('clamp'); sm.remove(); return;
+    }
+    if(t.closest('[data-reply]')){
+      var inp0 = art.querySelector('[data-cmt-input]');
+      if(inp0){ inp0.value = t.closest('[data-c]').querySelector('.nm').textContent.trim()+', '; inp0.focus(); }
+      return;
+    }
+    if(t.closest('[data-cshare]')){ snack('Ссылка на комментарий скопирована'); return; }
+    if(t.closest('[data-like]')){
+      var id = art.dataset.post; likeState[id] = !likeState[id];
+      var b = art.querySelector('[data-like]'), p = findPost(id);
+      b.classList.toggle('on', likeState[id]);
+      var tot2 = p.likes + (likeState[id]?1:0);
+      b.querySelector('.n').textContent = tot2>=20 ? (likeState[id]?'Вы оценили':'Лайк') : tot2;
+      var rr = art.querySelector('.reacts span:last-child');
+      if(rr) rr.textContent = 'Оценили '+tot2+' человек';
+      return;
+    }
+    if(t.closest('[data-cmt]')){
+      var box = art.querySelector('[data-cmts]');
+      if(box.hidden){ renderComments(art); box.hidden=false; } else box.hidden=true;
+      return;
+    }
+    if(t.closest('[data-share]')){ snack('Ссылка скопирована'); return; }
+    if(t.closest('[data-sub]')){
+      var btn = t.closest('[data-sub]');
+      btn.textContent = btn.textContent==='Подписаться' ? 'Вы подписаны' : 'Подписаться';
+      snack(btn.textContent==='Вы подписаны' ? 'Подписка оформлена' : 'Подписка отменена'); return;
+    }
+    if(t.closest('[data-cmt-send]')){
+      var inp = art.querySelector('[data-cmt-input]'); var v = inp.value.trim(); if(!v) return;
+      var pid = art.dataset.post;
+      (cmtState[pid] = cmtState[pid] || []).push({n:ME.name, t:v});
+      renderComments(art); snack('Комментарий добавлен'); return;
+    }
+  }
+
+  var cv = t.closest('[data-convo]');
+  if(cv){
+    var sp = document.getElementById('imSearch');
+    if(sp && !sp.hidden) setSearch(false);
+    curConvo = cv.dataset.convo;
+    document.getElementById('imWrap').classList.add('chat-open');
+    renderChat(); return;
+  }
+  if(t.closest('#msgSend')){
+    var mi2 = document.getElementById('msgInput');
+    if(mi2 && !mi2.value.trim()){ snack('Запись голосового сообщения — не в этом прототипе'); return; }
+    sendMsg(); return;
+  }
+
+  if(t.closest('#imList .search')){ setSearch(true); return; }
+  if(t.closest('#searchBack')){ setSearch(false); return; }
+  var stab = t.closest('[data-stab]');
+  if(stab){
+    stab.parentElement.querySelectorAll('[data-stab]').forEach(function(x){ x.setAttribute('aria-selected', String(x===stab)); });
+    searchTab = +stab.dataset.stab;
+    var q0 = (document.getElementById('imSearchInput')||{}).value || '';
+    searchBody(q0);
+    return;
+  }
+
+  var sw = t.closest('.sw-toggle');
+  if(sw){ sw.setAttribute('aria-checked', String(sw.getAttribute('aria-checked')!=='true')); return; }
+
+  var flt = t.closest('.filter');
+  if(flt){
+    flt.parentElement.querySelectorAll('.filter').forEach(function(f){ f.setAttribute('aria-pressed', String(f===flt)); });
+    return;
+  }
+
+  if(t.closest('#searchBtn')){ snack('Поиск в прототипе не подключён'); return; }
+  if(t.closest('#notifBtn')){ location.hash='#/im'; return; }
+  if(t.closest('#meBtn')){ location.hash='#/profile'; return; }
+});
+
+document.addEventListener('input', function(e){
+  if(e.target && e.target.id==='imSearchInput') searchBody(e.target.value);
+});
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape' && document.getElementById('imSearch') && !document.getElementById('imSearch').hidden){ setSearch(false); return; }
+  if(e.key==='Enter'){
+    if(e.target.id==='msgInput'){ sendMsg(); }
+    if(e.target.matches('[data-cmt-input]')){
+      var art = e.target.closest('[data-post]');
+      var v = e.target.value.trim(); if(!v) return;
+      var pid = art.dataset.post;
+      (cmtState[pid] = cmtState[pid] || []).push({n:ME.name, t:v});
+      renderComments(art); snack('Комментарий добавлен');
+    }
+    if(e.target.matches('[data-phc]')){
+      var sc = e.target.closest('.scrim');
+      sc.querySelector('[data-phsend]').click();
+    }
+  }
+});
+
+/* старт */
+document.getElementById('hdrAv').setAttribute('style', bg(AV,10)+';width:28px;height:28px');
+P.i = 0; P.len = parseDur(TRACKS[0].d);
+renderPlayer(); P.playing=false; renderPlayer();
+route();
+})();
+</script>
+</body>
+</html>

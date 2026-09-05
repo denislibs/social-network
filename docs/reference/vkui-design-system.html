@@ -1,0 +1,1326 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Витрина VKUI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root{color-scheme:light}
+    html,body{margin:0}
+    img{max-width:100%}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body>
+<style>
+/* ============ CHROME TOKENS (тема зрителя) ============ */
+:root{
+  color-scheme: light;
+  --ui-is-dark:0;
+  --ui-ground:#eceef1;
+  --ui-surface:#ffffff;
+  --ui-sunk:#f4f5f7;
+  --ui-ink:#141619;
+  --ui-ink2:#565d67;
+  --ui-ink3:#8b929c;
+  --ui-line:#d7dbe1;
+  --ui-line-soft:#e5e8ec;
+  --ui-mark:#141619;
+  --ui-mark-ink:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ui-is-dark:1;
+    --ui-ground:#0d0e10;
+    --ui-surface:#16181b;
+    --ui-sunk:#101215;
+    --ui-ink:#e7e9ed;
+    --ui-ink2:#949aa4;
+    --ui-ink3:#6b727c;
+    --ui-line:#252932;
+    --ui-line-soft:#1c1f24;
+    --ui-mark:#e7e9ed;
+    --ui-mark-ink:#0d0e10;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ui-is-dark:1;
+  --ui-ground:#0d0e10;
+  --ui-surface:#16181b;
+  --ui-sunk:#101215;
+  --ui-ink:#e7e9ed;
+  --ui-ink2:#949aa4;
+  --ui-ink3:#6b727c;
+  --ui-line:#252932;
+  --ui-line-soft:#1c1f24;
+  --ui-mark:#e7e9ed;
+  --ui-mark-ink:#0d0e10;
+}
+
+/* ============ VK TOKENS (vkBase — рабочая тема vk.ru) ============ */
+/* по умолчанию — тёмная схема, как на vk.ru */
+:root{
+  --vk-bg:#141414;            --vk-content:#222222;      --vk-secondary:#333333;
+  --vk-tertiary:#292929;      --vk-modal:#292929;        --vk-header:#222222;
+  --vk-field:#292929;         --vk-searchfield:#424242;
+  --vk-acc:#e1e3e6;           --vk-acc-h:#d8dbdf;        --vk-acc-a:#cfd2d8;   --vk-on-acc:#222222;
+  --vk-neg:#ff5c5c;           --vk-pos:#4bb34b;
+  --vk-neg-tint:#522e2e;      --vk-pos-tint:#2f422f;     --vk-warn-tint:#473315; --vk-info-tint:#1c3954;
+  --vk-text:#e1e3e6;          --vk-text2:#828282;        --vk-subhead:#939393;  --vk-text3:#656565;
+  --vk-link:#71aaeb;          --vk-accent:#71aaeb;       --vk-text-neg:#ff5c5c; --vk-text-pos:#4bb34b;
+  --vk-icon:#e1e3e6;          --vk-icon2:#828282;        --vk-icon3:#656565;    --vk-icon-med:#939393;
+  --vk-icon-acc:#71aaeb;
+  --vk-sep:#363738;           --vk-sep2:#292929;
+  --vk-hover:rgba(255,255,255,.04);  --vk-active:rgba(255,255,255,.08);
+  --vk-alpha:rgba(255,255,255,.08);
+  --vk-skel-from:#292929;     --vk-skel-to:#333333;
+  --vk-a-azure:#5d9ee9; --vk-a-blue:#397dcc; --vk-a-cyan:#55f1d2; --vk-a-gray:#aeb7c2;
+  --vk-a-green:#4bb34b; --vk-a-lime:#caf96c; --vk-a-orange:#ffa000; --vk-a-fire:#f05c44;
+  --vk-a-peach:#ffc062; --vk-a-pink:#f899ff; --vk-a-purple:#937ff5; --vk-a-raspberry:#f060c0;
+  --vk-a-red:#ff3347; --vk-a-secondary:#3f8ae0; --vk-a-violet:#a94fff;
+  --vk-shadow-strength:1;
+}
+:root[data-vk="light"]{
+  --vk-bg:#edeef0;            --vk-content:#ffffff;      --vk-secondary:#f0f2f5;
+  --vk-tertiary:#fafbfc;      --vk-modal:#ffffff;        --vk-header:#ffffff;
+  --vk-field:#ffffff;         --vk-searchfield:#edeef0;
+  --vk-acc:#447bba;           --vk-acc-h:#4177b5;        --vk-acc-a:#3f72b0;   --vk-on-acc:#ffffff;
+  --vk-neg:#e64646;           --vk-pos:#4bb34b;
+  --vk-neg-tint:#faebeb;      --vk-pos-tint:#e8f9e8;     --vk-warn-tint:#fff2d6; --vk-info-tint:#deeeff;
+  --vk-text:#000000;          --vk-text2:#818c99;        --vk-subhead:#626d7a;  --vk-text3:#99a2ad;
+  --vk-link:#2a5885;          --vk-accent:#447bba;       --vk-text-neg:#e64646; --vk-text-pos:#4bb34b;
+  --vk-icon:#2c2d2e;          --vk-icon2:#99a2ad;        --vk-icon3:#aeb7c2;    --vk-icon-med:#6f7985;
+  --vk-icon-acc:#447bba;
+  --vk-sep:#dce1e6;           --vk-sep2:#e7e8ec;
+  --vk-hover:rgba(0,16,61,.04);      --vk-active:rgba(0,16,61,.08);
+  --vk-alpha:rgba(39,63,92,.07);
+  --vk-skel-from:rgba(3,11,23,.02);  --vk-skel-to:rgba(3,11,23,.1);
+  --vk-a-azure:#3f8ae0; --vk-a-blue:#5181b8; --vk-a-cyan:#7cf4dc; --vk-a-gray:#aeb7c2;
+  --vk-a-green:#4bb34b; --vk-a-lime:#bff74f; --vk-a-orange:#ffa000; --vk-a-fire:#f05c44;
+  --vk-a-peach:#f9b54f; --vk-a-pink:#f685ff; --vk-a-purple:#735ce6; --vk-a-raspberry:#e03fab;
+  --vk-a-red:#ff3347; --vk-a-secondary:#3f8ae0; --vk-a-violet:#792ec0;
+  --vk-shadow-strength:.5;
+}
+/* движение — токены VKUI */
+:root{
+  --vk-dur-s:.1s; --vk-dur-m:.2s; --vk-dur-l:.4s;
+  --vk-ease:cubic-bezier(0.3,0.3,0.5,1);
+  --vk-ease-platform:cubic-bezier(0.4,0,0.2,1);
+  --vk-e1:0 0 2px rgba(0,0,0,.10), 0 2px 2px rgba(0,0,0,.20);
+  --vk-e2:0 4px 8px rgba(0,0,0,.15), 0 0 4px rgba(0,0,0,.20);
+  --vk-e3:0 0 2px rgba(0,0,0,.30), 0 4px 16px rgba(0,0,0,.30);
+  --vk-e4:0 0 8px rgba(0,0,0,.10), 0 16px 16px rgba(0,0,0,.20);
+}
+
+/* ============ БАЗА ============ */
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--ui-ground);color:var(--ui-ink);
+  font-family:"Golos Text","Helvetica Neue",Arial,sans-serif;
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+a{color:inherit}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+:focus-visible{outline:2px solid var(--ui-mark);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+/* топбар */
+.top{
+  position:sticky;top:0;z-index:50;background:var(--ui-ground);
+  border-bottom:1px solid var(--ui-line);
+}
+.top-in{display:flex;align-items:center;gap:16px;height:56px;flex-wrap:wrap}
+.brand{font-family:"Unbounded","Golos Text","Helvetica Neue",Arial,sans-serif;font-weight:600;font-size:15px;letter-spacing:-.03em;white-space:nowrap}
+.top nav{display:flex;gap:2px;overflow-x:auto;flex:1;scrollbar-width:none}
+.top nav::-webkit-scrollbar{display:none}
+.top nav a{
+  font-size:12.5px;color:var(--ui-ink2);text-decoration:none;padding:6px 9px;border-radius:6px;
+  white-space:nowrap;transition:background .15s ease-out,color .15s ease-out;
+}
+.top nav a:hover{background:var(--ui-line-soft);color:var(--ui-ink)}
+
+.seg{display:flex;gap:2px;padding:2px;border:1px solid var(--ui-line);border-radius:8px;background:var(--ui-surface)}
+.seg button{
+  font:500 12px/1 "Golos Text",sans-serif;border:0;background:transparent;color:var(--ui-ink2);
+  padding:7px 11px;border-radius:6px;cursor:pointer;transition:background .15s ease-out,color .15s ease-out;
+}
+.seg button[aria-pressed="true"]{background:var(--ui-mark);color:var(--ui-mark-ink)}
+
+/* шапка */
+header.hero{padding:64px 0 40px;border-bottom:1px solid var(--ui-line)}
+.hero h1{
+  font-family:"Unbounded","Golos Text","Helvetica Neue",Arial,sans-serif;font-weight:600;letter-spacing:-.045em;
+  font-size:clamp(34px,6vw,64px);line-height:1.02;
+}
+.hero .lede{max-width:62ch;margin-top:18px;color:var(--ui-ink2);font-size:16px}
+.facts{display:flex;flex-wrap:wrap;gap:0;margin-top:32px;border-top:1px solid var(--ui-line)}
+.fact{flex:1 1 160px;padding:14px 18px 14px 0;border-right:1px solid var(--ui-line-soft)}
+.fact:last-child{border-right:0}
+.fact b{display:block;font-family:"Unbounded","Golos Text","Helvetica Neue",Arial,sans-serif;font-size:20px;font-weight:400;letter-spacing:-.02em}
+.fact span{font-size:11.5px;color:var(--ui-ink3);text-transform:uppercase;letter-spacing:.08em}
+
+/* секции */
+section{padding:56px 0;border-bottom:1px solid var(--ui-line)}
+.eyebrow{
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ui-ink3);margin-bottom:10px;
+}
+section h2{font-family:"Unbounded","Golos Text","Helvetica Neue",Arial,sans-serif;font-weight:400;font-size:clamp(22px,3vw,30px);letter-spacing:-.035em}
+section > .wrap > .note{max-width:62ch;margin-top:12px;color:var(--ui-ink2);font-size:14.5px}
+h3.sub{
+  font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ui-ink3);
+  margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--ui-line-soft);
+}
+
+/* холст с компонентами VK */
+.canvas{
+  background:var(--vk-bg);border:1px solid var(--ui-line);border-radius:14px;padding:24px;
+  margin-top:16px;color:var(--vk-text);overflow:hidden;
+}
+.canvas.tight{padding:18px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.stack{display:flex;flex-direction:column;gap:12px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+
+/* палитра */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:16px}
+.sw{border:1px solid var(--ui-line);border-radius:10px;overflow:hidden;background:var(--ui-surface)}
+.sw .chip{height:56px;border-bottom:1px solid var(--ui-line-soft)}
+.sw .meta{padding:8px 10px 10px}
+.sw .name{font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.35;word-break:break-all}
+.sw .hex{margin-top:5px;display:flex;gap:8px;font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ui-ink3);font-variant-numeric:tabular-nums}
+.sw .hex b{font-weight:400;color:var(--ui-ink2)}
+
+/* таблицы токенов */
+.tbl{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+.tbl th{
+  text-align:left;font:500 11px/1 "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ui-ink3);padding:0 12px 8px 0;border-bottom:1px solid var(--ui-line);
+}
+.tbl td{padding:9px 12px 9px 0;border-bottom:1px solid var(--ui-line-soft);vertical-align:middle}
+.tbl td.m{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--ui-ink2)}
+.scroll{overflow-x:auto}
+
+/* типографика */
+.type-row{display:flex;gap:20px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--ui-line-soft);flex-wrap:wrap}
+.type-row .spec{
+  flex:0 0 190px;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ui-ink3);
+  font-variant-numeric:tabular-nums;
+}
+.type-row .spec b{display:block;color:var(--ui-ink);font-weight:500;font-size:11.5px}
+.type-row .sample{flex:1 1 260px;color:var(--ui-ink)}
+
+/* ===== компоненты VK ===== */
+.vk-btn{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:0;border-radius:8px;padding:0 16px;height:36px;cursor:pointer;overflow:hidden;
+  font:500 14px/1 "Golos Text",sans-serif;
+  background:var(--vk-acc);color:var(--vk-on-acc);
+  transition:background-color .15s ease-out,color .15s ease-out,opacity .15s ease-out;
+}
+.vk-btn:hover{background:var(--vk-acc-h)}
+.vk-btn:active{background:var(--vk-acc-a)}
+.vk-btn.sec{background:var(--vk-alpha);color:var(--vk-text)}
+.vk-btn.sec:hover{background:var(--vk-hover)}
+.vk-btn.ter{background:transparent;color:var(--vk-accent)}
+.vk-btn.ter:hover{background:var(--vk-hover)}
+.vk-btn.out{background:transparent;color:var(--vk-accent);box-shadow:inset 0 0 0 1px currentColor}
+.vk-btn.neg{background:var(--vk-neg);color:#fff}
+.vk-btn.pos{background:var(--vk-pos);color:#fff}
+.vk-btn.round{border-radius:48px}
+.vk-btn.xs{height:24px;padding:0 10px;font-size:12px}
+.vk-btn.s{height:30px;padding:0 12px;font-size:13px}
+.vk-btn.l{height:44px;padding:0 20px;font-size:15px}
+.vk-btn[disabled]{opacity:.64;cursor:default}
+.vk-btn.wide{width:100%}
+
+.vk-search{
+  display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;
+  background:var(--vk-searchfield);color:var(--vk-text2);font-size:14px;
+  transition:background-color .15s ease-out;
+}
+.vk-search:hover{filter:brightness(1.06)}
+.vk-field{
+  width:100%;height:44px;padding:0 12px;border-radius:8px;border:1px solid var(--vk-sep);
+  background:var(--vk-field);color:var(--vk-text);font:400 15px/1 "Golos Text",sans-serif;
+  transition:border-color .15s ease-out,background-color .15s ease-out;
+}
+.vk-field::placeholder{color:var(--vk-text3)}
+.vk-field:focus{outline:none;border-color:var(--vk-accent)}
+.vk-field.err{border-color:var(--vk-neg)}
+.flabel{display:block;font-size:13px;color:var(--vk-subhead);margin-bottom:6px}
+.fhint{font-size:12.5px;margin-top:6px;color:var(--vk-text2)}
+.fhint.neg{color:var(--vk-text-neg)}
+
+.vk-card{background:var(--vk-content);border-radius:12px;overflow:hidden}
+.vk-card.sec{background:var(--vk-secondary)}
+.vk-pad{padding:14px 16px}
+
+.vk-cell{
+  position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;
+  cursor:pointer;overflow:hidden;transition:background-color .15s ease-out;
+}
+.vk-cell:hover{background:var(--vk-hover)}
+.vk-cell:active{background:var(--vk-active)}
+.vk-cell .t{font-size:15px;line-height:20px}
+.vk-cell .s{font-size:13px;line-height:16px;color:var(--vk-text2)}
+.vk-cell .aside{margin-left:auto;font-size:12px;color:var(--vk-text3)}
+
+.av{border-radius:50%;background:var(--vk-secondary);flex:0 0 auto;display:block;object-fit:cover;
+  background-image:linear-gradient(135deg,var(--vk-a-azure),var(--vk-a-violet))}
+.av.s24{width:24px;height:24px}.av.s32{width:32px;height:32px}.av.s40{width:40px;height:40px}
+.av.s48{width:48px;height:48px}.av.s96{width:96px;height:96px}
+.av-wrap{position:relative;display:inline-block}
+.online{position:absolute;right:0;bottom:0;width:12px;height:12px;border-radius:50%;
+  background:var(--vk-pos);box-shadow:0 0 0 3px var(--vk-content)}
+
+.counter{
+  min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--vk-neg);color:#fff;
+  font:600 11px/18px "Golos Text",sans-serif;text-align:center;display:inline-block;
+  font-variant-numeric:tabular-nums;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--vk-neg);display:inline-block}
+
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{
+  border:0;background:transparent;color:var(--vk-text2);font:500 14px/1 "Golos Text",sans-serif;
+  padding:8px 12px;border-radius:8px;cursor:pointer;transition:background-color .15s ease-out,color .15s ease-out;
+}
+.tabs button:hover{background:var(--vk-hover);color:var(--vk-text)}
+.tabs button[aria-selected="true"]{background:var(--vk-alpha);color:var(--vk-text)}
+.utabs{display:flex;gap:18px;border-bottom:1px solid var(--vk-sep)}
+.utabs button{
+  border:0;background:transparent;padding:10px 0;cursor:pointer;position:relative;
+  font:500 14px/1 "Golos Text",sans-serif;color:var(--vk-text2);
+}
+.utabs button[aria-selected="true"]{color:var(--vk-text)}
+.utabs button[aria-selected="true"]::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:var(--vk-accent);
+}
+
+.sw-toggle{width:34px;height:14px;border-radius:7px;background:var(--vk-text3);position:relative;
+  border:0;cursor:pointer;padding:0;transition:background-color .2s var(--vk-ease)}
+.sw-toggle .pin{position:absolute;top:-3px;left:-1px;width:20px;height:20px;border-radius:50%;
+  background:#fff;box-shadow:var(--vk-e1);transition:transform .2s var(--vk-ease)}
+.sw-toggle[aria-checked="true"]{background:var(--vk-acc);opacity:.6}
+.sw-toggle[aria-checked="true"] .pin{transform:translateX(15px);background:var(--vk-acc)}
+.chk{width:16px;height:16px;border-radius:4px;border:2px solid var(--vk-text3);display:inline-flex;
+  align-items:center;justify-content:center;cursor:pointer;background:transparent;padding:0;
+  transition:background-color .15s ease-out,border-color .15s ease-out}
+.chk[aria-checked="true"]{background:var(--vk-acc);border-color:var(--vk-acc)}
+.chk svg{opacity:0;transition:opacity .1s ease-out}
+.chk[aria-checked="true"] svg{opacity:1}
+
+.tint{border-radius:8px;padding:12px 14px;font-size:14px;line-height:1.4}
+.tint.neg{background:var(--vk-neg-tint);color:var(--vk-text-neg)}
+.tint.pos{background:var(--vk-pos-tint);color:var(--vk-text-pos)}
+.tint.warn{background:var(--vk-warn-tint);color:var(--vk-text)}
+.tint.info{background:var(--vk-info-tint);color:var(--vk-text)}
+
+.skel{position:relative;overflow:hidden;background:var(--vk-skel-from);border-radius:8px}
+.skel::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,var(--vk-skel-to),transparent);
+  transform:translateX(-100%);animation:skeletonSweep 1.2s linear infinite;
+}
+@keyframes skeletonSweep{to{transform:translateX(100%)}}
+
+.spinner{width:24px;height:24px;border-radius:50%;border:2px solid var(--vk-sep);
+  border-top-color:var(--vk-accent);animation:rotate360 .8s linear infinite}
+@keyframes rotate360{0%{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+.track{height:4px;border-radius:2px;background:var(--vk-sep);overflow:hidden}
+.track i{display:block;height:100%;width:62%;background:var(--vk-acc);border-radius:2px}
+
+.story{width:94px;flex:0 0 auto}
+.story .ring{width:94px;height:120px;border-radius:12px;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,var(--vk-a-violet),var(--vk-a-fire))}
+.story .ava{position:absolute;left:8px;top:8px;width:32px;height:32px;border-radius:50%;
+  border:2px solid var(--vk-a-azure);background:var(--vk-secondary)}
+.story .cap{font-size:11px;color:var(--vk-text2);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.snackbar{display:flex;align-items:center;gap:12px;background:var(--vk-modal);border-radius:12px;
+  padding:12px 14px;box-shadow:var(--vk-e3);max-width:420px}
+.snackbar .ic{width:32px;height:32px;border-radius:50%;background:var(--vk-pos);flex:0 0 auto;
+  display:grid;place-items:center;color:#fff}
+
+.modal{background:var(--vk-modal);border-radius:12px;box-shadow:var(--vk-e4);padding:24px;max-width:340px}
+
+/* ripple */
+.ripple-host{position:relative;overflow:hidden}
+.wave{
+  position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;pointer-events:none;
+  background:var(--vk-active);animation:vkWave .3s var(--vk-ease-platform) forwards;
+}
+@keyframes vkWave{0%{opacity:1;transform:scale(1)}30%{opacity:1}to{opacity:0;transform:scale(8)}}
+
+/* ===== стенды анимаций ===== */
+.anim-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:14px;margin-top:18px}
+.anim{border:1px solid var(--ui-line);border-radius:12px;background:var(--ui-surface);overflow:hidden;display:flex;flex-direction:column}
+.anim .stage{
+  height:150px;background:var(--vk-bg);display:grid;place-items:center;position:relative;overflow:hidden;
+  border-bottom:1px solid var(--ui-line-soft);
+}
+.anim .info{padding:12px 14px 14px}
+.anim .info h4{margin:0;font-size:14px;font-weight:600}
+.anim .info .m{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ui-ink3);margin-top:4px;
+  word-break:break-all;
+}
+.anim .info p{font-size:12.5px;color:var(--ui-ink2);margin-top:8px}
+.replay{
+  margin-top:10px;border:1px solid var(--ui-line);background:transparent;color:var(--ui-ink2);
+  font:500 11.5px/1 "Golos Text",sans-serif;padding:6px 10px;border-radius:6px;cursor:pointer;
+  transition:background-color .15s ease-out,color .15s ease-out;
+}
+.replay:hover{background:var(--ui-mark);color:var(--ui-mark-ink);border-color:var(--ui-mark)}
+
+.box{width:64px;height:64px;border-radius:12px;background:var(--vk-acc)}
+.sheet{width:150px;height:76px;border-radius:12px 12px 0 0;background:var(--vk-modal);
+  box-shadow:var(--vk-e3);align-self:end}
+.card-s{width:170px;border-radius:10px;background:var(--vk-modal);box-shadow:var(--vk-e2);padding:12px;
+  font-size:12px;color:var(--vk-text)}
+.pillbar{width:170px;height:36px;border-radius:10px;background:var(--vk-modal);box-shadow:var(--vk-e2)}
+
+.run-fade{animation:vkFadeIn .1s ease-in both}
+@keyframes vkFadeIn{0%{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.run-view{animation:vkViewNext .2s var(--vk-ease-platform) both}
+@keyframes vkViewNext{0%{opacity:0;transform:translateY(80px)}to{opacity:1;transform:translateY(0)}}
+.run-alert{animation:vkAlertUp .2s var(--vk-ease-platform) both}
+@keyframes vkAlertUp{0%{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.run-sheet{animation:vkSheetUp .3s var(--vk-ease-platform) both}
+@keyframes vkSheetUp{0%{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
+.run-snack{animation:vkSnackIn .3s var(--vk-ease) both}
+@keyframes vkSnackIn{0%{opacity:0;transform:translateY(80px)}to{opacity:1;transform:translateY(0)}}
+.run-grow{animation:vkGrowIn .3s var(--vk-ease) both}
+@keyframes vkGrowIn{0%{max-height:0;margin-top:0;opacity:0}to{max-height:120px;margin-top:8px;opacity:1}}
+.run-tremble{animation:vkTremble .3s var(--vk-ease-platform) both}
+@keyframes vkTremble{0%{transform:translateX(0)}25%{transform:translateX(2px)}50%{transform:translateX(-2px)}75%{transform:translateX(1px)}to{transform:translateX(0)}}
+.run-outline{animation:vkOutline .1s ease-in-out 10ms both}
+@keyframes vkOutline{0%{outline-offset:8px}to{outline-offset:2px}}
+.run-acc .body{animation:vkAccordion .2s var(--vk-ease) both;overflow:hidden}
+@keyframes vkAccordion{0%{height:0}to{height:56px}}
+
+.pulse-host{position:relative;width:12px;height:12px}
+.pulse-host i{position:absolute;inset:0;border-radius:50%;background:var(--vk-neg)}
+.pulse-host i.ring{animation:vkPulse 1.6s var(--vk-ease) infinite}
+@keyframes vkPulse{0%{opacity:.8;transform:scale(1)}70%{transform:scale(3);opacity:0}to{transform:scale(3);opacity:0}}
+
+.hl{animation:vkHighlight 1.6s ease-in-out infinite}
+@keyframes vkHighlight{0%{opacity:.2}30%{opacity:1}to{opacity:.2}}
+
+.reaction{position:absolute;bottom:8px;font-size:22px;animation:vkReaction 1.8s linear infinite}
+@keyframes vkReaction{0%{transform:translateY(0)}85%{opacity:1}to{transform:translateY(-110px);opacity:0}}
+
+/* кривые easing */
+.curves{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:16px}
+.curve{border:1px solid var(--ui-line);border-radius:12px;background:var(--ui-surface);padding:14px}
+.curve svg{display:block;width:100%;height:auto}
+.curve .n{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ui-ink3);margin-top:8px;word-break:break-all}
+.curve .l{font-size:13px;font-weight:600;margin-top:4px}
+
+pre.code{
+  margin:10px 0 0;background:var(--ui-sunk);border:1px solid var(--ui-line-soft);border-radius:8px;
+  padding:10px 12px;font-family:"JetBrains Mono",monospace;font-size:10.5px;line-height:1.55;
+  overflow-x:auto;color:var(--ui-ink2);white-space:pre;
+}
+
+/* тени */
+.elev{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:18px}
+.elev .e{background:var(--vk-content);border-radius:12px;height:96px;display:grid;place-items:center;
+  font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--vk-text2)}
+
+/* радиусы */
+.radii{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+.radii .r{width:88px}
+.radii .r i{display:block;height:64px;background:var(--vk-secondary);border:1px solid var(--vk-sep)}
+.radii .r span{display:block;font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--vk-text2);margin-top:6px}
+
+/* иконки */
+.icon-set{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.icon-set figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px;
+  border-radius:8px;transition:background-color .15s ease-out;color:var(--vk-icon)}
+.icon-set figure:hover{background:var(--vk-hover)}
+.icon-set figcaption{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--vk-text3)}
+.ladder{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap;color:var(--vk-icon)}
+.ladder .u{text-align:center}
+.ladder .u span{display:block;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--vk-text3);margin-top:8px}
+.tone{display:flex;gap:22px;flex-wrap:wrap;margin-top:4px}
+.tone .u{text-align:center}
+.tone .u span{display:block;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--vk-text3);margin-top:8px}
+
+footer{padding:40px 0 64px;color:var(--ui-ink3);font-size:12.5px}
+footer a{color:var(--ui-ink2)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::after,*::before{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+</style>
+
+<div class="top">
+  <div class="wrap top-in">
+    <span class="brand">Витрина VKUI</span>
+    <nav>
+      <a href="#palette">Палитра</a>
+      <a href="#type">Типографика</a>
+      <a href="#form">Форма</a>
+      <a href="#icons">Иконки</a>
+      <a href="#layout">Раскладка</a>
+      <a href="#specs">Экраны</a>
+      <a href="#components">Компоненты</a>
+      <a href="#motion">Анимации</a>
+      <a href="#cheat">Шпаргалка</a>
+    </nav>
+    <div class="seg" role="group" aria-label="Схема VK">
+      <button id="vkLight" aria-pressed="false">Светлая</button>
+      <button id="vkDark" aria-pressed="true">Тёмная</button>
+    </div>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Из чего собран&nbsp;vk.ru</h1>
+    <p class="lede">Разбор живой вёрстки ВКонтакте: 1060 CSS-переменных VKUI, снятых прямо со страниц входа, ленты, профиля и музыки — и 152 keyframes, из которых состоит вся моторика интерфейса. Значения ниже не реконструированы по документации, а прочитаны из вычисленных стилей продакшена.</p>
+    <div class="facts">
+      <div class="fact"><b>1060</b><span>CSS-переменных</span></div>
+      <div class="fact"><b>113</b><span>цветовых токенов ×2 схемы</span></div>
+      <div class="fact"><b>21</b><span>шрифтовая роль</span></div>
+      <div class="fact"><b>152</b><span>keyframes</span></div>
+      <div class="fact"><b>0</b><span>stroke у иконок</span></div>
+      <div class="fact"><b>.15s</b><span>самый частый переход</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="scheme">
+  <div class="wrap">
+    <div class="eyebrow">Как устроена тема</div>
+    <h2>Три слоя: схема, токен, состояние</h2>
+    <p class="note">Тема переключается одним классом на <code>&lt;html&gt;</code>: <code>vkui--vkBase--dark</code> в продукте, <code>vkui--vkAccessibility--dark</code> на экране входа (у неё выше контраст и другой акцент). Каждый цветовой токен существует в трёх версиях: базовой, <code>--hover</code> и <code>--active</code> — интерфейс никогда не считает состояния через opacity или filter.</p>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Токен</th><th>Базовое</th><th>Hover</th><th>Active</th></tr></thead>
+        <tbody id="statesTbl"></tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:18px">Отдельно живёт <code>color_transparent--hover / --active</code> — это «слой состояния» (state layer), который VKUI кладёт поверх любой кликабельной поверхности: <code>rgba(255,255,255,.04)</code> и <code>.08</code> в тёмной, <code>rgba(0,16,61,.04)</code> и <code>.08</code> в светлой. Ниже все ячейки и кнопки используют именно его.</p>
+  </div>
+</section>
+
+<section id="palette">
+  <div class="wrap">
+    <div class="eyebrow">Палитра</div>
+    <h2>Цветовые токены</h2>
+    <p class="note">Слева — значение в текущей схеме (переключатель в шапке), под именем — обе схемы сразу: <b>тёмная</b> / <b>светлая</b>.</p>
+
+    <h3 class="sub">Акценты</h3>
+    <div class="swatches" id="swAccent"></div>
+
+    <h3 class="sub">Фоны и поверхности</h3>
+    <div class="swatches" id="swBg"></div>
+
+    <h3 class="sub">Текст</h3>
+    <div class="swatches" id="swText"></div>
+
+    <h3 class="sub">Иконки и разделители</h3>
+    <div class="swatches" id="swIcon"></div>
+
+    <h3 class="sub">Семантика</h3>
+    <div class="swatches" id="swSem"></div>
+
+    <h3 class="sub">Градиенты</h3>
+    <div class="grid g3" style="margin-top:16px" id="grads"></div>
+  </div>
+</section>
+
+<section id="type">
+  <div class="wrap">
+    <div class="eyebrow">Типографика</div>
+    <h2>21 роль, один системный шрифт</h2>
+    <p class="note">VK не грузит веб-шрифт: <code>font_family_base</code> — это <code>-apple-system, system-ui, "Helvetica Neue", Roboto, sans-serif</code>. Вся выразительность идёт через размер, интерлиньяж и вес. Ниже — шкала <em>regular</em>; в компактной плотности (десктоп, узкие экраны) часть ролей уменьшается на 1–2px.</p>
+    <div id="typeScale" style="margin-top:20px"></div>
+  </div>
+</section>
+
+<section id="form">
+  <div class="wrap">
+    <div class="eyebrow">Форма</div>
+    <h2>Радиусы, размеры, тени</h2>
+
+    <h3 class="sub">Радиусы</h3>
+    <div class="canvas tight">
+      <div class="radii">
+        <div class="r"><i style="border-radius:4px"></i><span>check<br>4px</span></div>
+        <div class="r"><i style="border-radius:8px"></i><span>border_radius<br>8px</span></div>
+        <div class="r"><i style="border-radius:12px"></i><span>paper<br>12px</span></div>
+        <div class="r"><i style="border-radius:48px"></i><span>rounded<br>48px</span></div>
+        <div class="r"><i style="border-radius:50%"></i><span>avatar<br>50%</span></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Тени — elevation 1…4</h3>
+    <div class="canvas tight">
+      <div class="elev">
+        <div class="e" style="box-shadow:var(--vk-e1)">elevation1</div>
+        <div class="e" style="box-shadow:var(--vk-e2)">elevation2</div>
+        <div class="e" style="box-shadow:var(--vk-e3)">elevation3</div>
+        <div class="e" style="box-shadow:var(--vk-e4)">elevation4</div>
+      </div>
+    </div>
+
+    <h3 class="sub">Размеры</h3>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Токен</th><th>Regular</th><th>Compact</th><th>Где встречается</th></tr></thead>
+        <tbody id="sizeTbl"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="icons">
+  <div class="wrap">
+    <div class="eyebrow">Иконки</div>
+    <h2>Заливка, currentColor, квадратная сетка</h2>
+    <p class="note">VK не использует иконочный шрифт и не подключает внешний спрайт: каждая иконка — это инлайновый <code>&lt;svg class="vkuiIcon vkuiIcon--24 vkuiIcon--w-24 vkuiIcon--h-24"&gt;</code>, отрендеренный React-компонентом из библиотеки <b>@vkontakte/icons</b>. Размер задаётся классом, а не атрибутами; <code>viewBox</code> всегда квадратный и равен номинальному размеру (<code>0 0 24 24</code>) — исключение только логотип, <code>0 0 136 24</code>.</p>
+
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Свойство</th><th>Что намерено</th></tr></thead>
+        <tbody>
+          <tr><td>Способ отрисовки</td><td class="m">fill — 100%, stroke: none — 100%</td></tr>
+          <tr><td>Цвет</td><td class="m">fill="currentColor" → наследуется из color_icon_*</td></tr>
+          <tr><td>Размеры на странице «Музыка»</td><td class="m">20px ×43 · 24px ×32 · 16px ×30 · 12px ×25 · 48px ×7 · 28px ×2</td></tr>
+          <tr><td>Базовая UI-иконка</td><td class="m">--vkui--size_icon_u_i = 16px</td></tr>
+          <tr><td>Легаси-спрайт &lt;symbol&gt;</td><td class="m">5 штук на всю страницу (мессенджер: телефон, торт, стрелка)</td></tr>
+          <tr><td>Всего иконок на странице</td><td class="m">142 инлайновых svg</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Одна сетка — шесть кеглей</h3>
+    <div class="canvas">
+      <div class="ladder" id="ladder"></div>
+    </div>
+
+    <h3 class="sub">Иерархия через цветовые токены</h3>
+    <div class="canvas">
+      <div class="tone" id="tone"></div>
+    </div>
+
+    <h3 class="sub">Пластика: контур, нарисованный заливкой</h3>
+    <div class="canvas">
+      <div class="icon-set" id="iconSet"></div>
+    </div>
+    <h3 class="sub">Какой размер где стоит</h3>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Размер</th><th>Где</th><th>Цветовой токен</th></tr></thead>
+        <tbody>
+          <tr><td class="m">12</td><td>Шевроны и стрелки внутри строк, «Ещё ›», «Укажите информацию о себе ›»</td><td class="m">icon_secondary</td></tr>
+          <tr><td class="m">14</td><td>Сердце лайка комментария, галочка верификации в строке беседы</td><td class="m">icon_secondary / icon_accent</td></tr>
+          <tr><td class="m">16</td><td>Лупа в поиске, действия поста, иконка в табе профиля. Это базовый размер — <code>size_icon_u_i</code></td><td class="m">icon_medium</td></tr>
+          <tr><td class="m">18–20</td><td>Кнопки шапки чата, композер, «Прикрепить / Стикеры / Микрофон», иконки строки списка</td><td class="m">icon_medium</td></tr>
+          <tr><td class="m">22–24</td><td>Пункты левого меню, крупные действия в шапке сайта</td><td class="m">icon_medium → icon_primary у активного</td></tr>
+          <tr><td class="m">26–28</td><td>Плюс вложения в композере, иерархия в разделе иконок</td><td class="m">icon_accent</td></tr>
+          <tr><td class="m">48</td><td>Пустые состояния: лупа в поиске бесед, заглушки разделов</td><td class="m">icon_tertiary</td></tr>
+          <tr><td class="m">136×24</td><td>Логотип — единственная неквадратная иконка</td><td class="m">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Именование в библиотеке</h3>
+    <p class="note" style="margin-top:0">Компоненты <b>@vkontakte/icons</b> названы по схеме <code>Icon{размер}{Имя}</code> — <code>Icon24Search</code>, <code>Icon16Done</code>, <code>Icon28ChevronRight</code>. Один и тот же символ рисуется заново под каждый размер, а не масштабируется: у 16-пиксельной версии линии толще относительно габарита, чем у 28-й, поэтому иконка остаётся читаемой в мелком кегле. Именно поэтому в размерной лестнице выше нельзя просто задать <code>width</code> — нужен компонент нужного размера.</p>
+
+    <p class="note" style="margin-top:14px">Ключевая особенность: то, что выглядит как «контурная» иконка, у VK нарисовано сплошным путём с дыркой (<code>fill-rule: evenodd</code>) — ни одного <code>stroke</code> на 142 иконки. Поэтому толщина линии не плывёт при масштабировании и иконка одинаково ложится на любой фон. Глифы выше нарисованы по тем же правилам — как иллюстрация системы, а не копия набора VK.</p>
+  </div>
+</section>
+
+<section id="layout">
+  <div class="wrap">
+    <div class="eyebrow">Раскладка</div>
+    <h2>Три колонки на 1420</h2>
+    <p class="note">Ширины сняты с продакшена: контейнер vk.ru держит 1420px, внутри — левое меню, колонка контента 912px и правая колонка. Шапка сайта фиксированная, 48px. Мессенджер не расширяется на всю страницу: он живёт в той же колонке контента, что и лента, а справа от него остаётся пустое место.</p>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Элемент</th><th>Значение</th><th>Замечание</th></tr></thead>
+        <tbody>
+          <tr><td>Контейнер</td><td class="m">1420px</td><td>по центру, поля 12–16px</td></tr>
+          <tr><td>Левое меню</td><td class="m">164–180px</td><td>липкое, пункт 36px, радиус 8</td></tr>
+          <tr><td>Колонка контента</td><td class="m">912px</td><td>лента, профиль, мессенджер, музыка</td></tr>
+          <tr><td>Правая колонка</td><td class="m">280px</td><td>липкая; на мессенджере пустая</td></tr>
+          <tr><td>Зазор между колонками</td><td class="m">16px</td><td></td></tr>
+          <tr><td>Шапка сайта</td><td class="m">48px</td><td>фон header_background, тень 0 0 0 1px separator_secondary</td></tr>
+          <tr><td>Карточка</td><td class="m">радиус 12px</td><td>background_content, без тени</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="specs">
+  <div class="wrap">
+    <div class="eyebrow">Экраны</div>
+    <h2>Спецификации, снятые поэлементно</h2>
+
+    <h3 class="sub">Мессенджер</h3>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Элемент</th><th>Размеры</th><th>Цвет и радиус</th></tr></thead>
+        <tbody>
+          <tr><td>Колонка списка</td><td class="m">319px</td><td class="m">background_content</td></tr>
+          <tr><td>Поле переписки</td><td class="m">остальная ширина</td><td class="m">color_background — темнее списка</td></tr>
+          <tr><td>Строка беседы</td><td class="m">60px, padding 6/12</td><td class="m">радиус 8, аватар 48 круглый</td></tr>
+          <tr><td>Имя беседы</td><td class="m">13/16, вес 500</td><td class="m">text_primary</td></tr>
+          <tr><td>Превью и дата</td><td class="m">13/18, одной строкой «текст… · 3ч»</td><td class="m">text_subhead / text_tertiary</td></tr>
+          <tr><td>Счётчик непрочитанных</td><td class="m">18×18, 12/18 вес 500</td><td class="m">background_accent_themed — в тёмной теме светлый, не красный</td></tr>
+          <tr><td>Шапка чата</td><td class="m">56px, padding 4/8</td><td class="m">background_content</td></tr>
+          <tr><td>Баббл</td><td class="m">padding 8/10, max-width 530px</td><td class="m">радиус 14; входящий #333333 / #ffffff, исходящий #1e2f42 / #cfe0f5</td></tr>
+          <tr><td>Текст сообщения</td><td class="m">13/18</td><td class="m">text_primary</td></tr>
+          <tr><td>Время в баббле</td><td class="m">11/11, справа внизу</td><td class="m">text_secondary</td></tr>
+          <tr><td>Зазор между сообщениями</td><td class="m">padding 4px сверху и снизу блока</td><td>итого 8px</td></tr>
+          <tr><td>Разделитель даты</td><td class="m">13/16, по центру</td><td>без плашки, просто текст</td></tr>
+          <tr><td>Композер</td><td class="m">44px на всю ширину, padding 0 6</td><td class="m">радиус 12, background_tertiary; плюс 36×44 внутри слева</td></tr>
+          <tr><td>Табы поиска</td><td class="m">28px, padding 2/8</td><td class="m">радиус 8, активный на #323232</td></tr>
+          <tr><td>Ряд «Важные»</td><td class="m">ячейка 76×91, аватар 56, подпись 12/14</td><td class="m">заголовок секции 12/14 вес 600, uppercase</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Комментарии и действия поста</h3>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Элемент</th><th>Размеры</th><th>Замечание</th></tr></thead>
+        <tbody>
+          <tr><td>Аватар комментария</td><td class="m">28px</td><td>круглый</td></tr>
+          <tr><td>Имя автора</td><td class="m">14/18, вес 500</td><td>дальше эмодзи-статус и галочка</td></tr>
+          <tr><td>Текст</td><td class="m">14/18</td><td>без плашки — прямо на фоне карточки</td></tr>
+          <tr><td>Мета-строка</td><td class="m">13/16, text_secondary</td><td>«дата · Ответить · Поделиться»</td></tr>
+          <tr><td>Лайк комментария</td><td class="m">сердце 14 + число</td><td>прижат вправо, активный — text_negative</td></tr>
+          <tr><td>Длинный текст</td><td class="m">4 строки</td><td>дальше «Показать ещё»</td></tr>
+          <tr><td>Поле комментария</td><td class="m">38px, padding 8 96 8 12</td><td class="m">радиус 8, background_tertiary; иконки внутри справа</td></tr>
+          <tr><td>Сортировка</td><td class="m">14/18, вес 500</td><td>«Сначала интересные ⌄»</td></tr>
+          <tr><td>Действия поста</td><td class="m">24px, padding 0 8, 13/16 вес 500</td><td class="m">радиус 8, фон прозрачный — не залитые пилюли</td></tr>
+          <tr><td>Сводка реакций</td><td class="m">13/16, стопка эмодзи 16px</td><td>«Оценили N человек» над строкой действий</td></tr>
+          <tr><td>Время поста</td><td class="m">13/16, text_tertiary</td><td>в конце строки действий, а не под автором</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Профиль</h3>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Элемент</th><th>Значение</th><th>Замечание</th></tr></thead>
+        <tbody>
+          <tr><td>Карточка шапки</td><td class="m">321px высотой</td><td>обложка 250 + полоса имени 71</td></tr>
+          <tr><td>Обложка</td><td class="m">250px</td><td>при отсутствии своей — размытый аватар</td></tr>
+          <tr><td>Аватар</td><td class="m">150px</td><td>выносится вверх на обложку, синий «+» в углу</td></tr>
+          <tr><td>Имя</td><td class="m">22/24, вес 600</td><td>эмодзи-статус тем же кеглем, без плашки</td></tr>
+          <tr><td>Ссылка под именем</td><td class="m">13/16, text_link</td><td>«Укажите информацию о себе ›»</td></tr>
+          <tr><td>Табы разделов</td><td class="m">пилюли с иконкой 16</td><td>Музыка / Фото / Видео / Альбомы / Клипы / Статьи</td></tr>
+          <tr><td>Обложки альбомов</td><td class="m">104×104, подпись в 2 строки</td><td>горизонтальный скролл</td></tr>
+          <tr><td>Треки</td><td class="m">две колонки</td><td>обложка 40, радиус 6</td></tr>
+          <tr><td>Счётчиков под шапкой нет</td><td class="m">—</td><td>друзья, подарки и подписки живут в правой колонке</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="components">
+  <div class="wrap">
+    <div class="eyebrow">Компоненты</div>
+    <h2>Собрано из тех же переменных</h2>
+    <p class="note">Всё ниже нарисовано токенами из этой витрины — кликните по кнопке или строке списка, чтобы увидеть волну Tappable: настоящую, с теми же 0.3s и <code>cubic-bezier(0.4,0,0.2,1)</code>.</p>
+
+    <h3 class="sub">Кнопки</h3>
+    <div class="canvas">
+      <div class="stack">
+        <div class="row">
+          <button class="vk-btn ripple-host">Основная</button>
+          <button class="vk-btn sec ripple-host">Вторичная</button>
+          <button class="vk-btn ter ripple-host">Третичная</button>
+          <button class="vk-btn out ripple-host">Контурная</button>
+          <button class="vk-btn round ripple-host">Скруглённая</button>
+        </div>
+        <div class="row">
+          <button class="vk-btn xs">XS · 24</button>
+          <button class="vk-btn s">S · 30</button>
+          <button class="vk-btn">M · 36</button>
+          <button class="vk-btn l">L · 44</button>
+        </div>
+        <div class="row">
+          <button class="vk-btn neg ripple-host">Удалить</button>
+          <button class="vk-btn pos ripple-host">Подтвердить</button>
+          <button class="vk-btn" disabled>Недоступна</button>
+          <button class="vk-btn"><span class="spinner" style="width:16px;height:16px;border-width:2px;border-top-color:var(--vk-on-acc);border-color:rgba(0,0,0,.2);border-top-color:var(--vk-on-acc)"></span> Загрузка</button>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Поля ввода</h3>
+    <div class="canvas">
+      <div class="grid g2">
+        <div>
+          <div class="vk-search" style="max-width:420px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11 3a8 8 0 1 0 4.9 14.3l3.4 3.4a1.2 1.2 0 0 0 1.7-1.7l-3.4-3.4A8 8 0 0 0 11 3Zm0 2.4a5.6 5.6 0 1 1 0 11.2 5.6 5.6 0 0 1 0-11.2Z"/></svg>
+            Поиск
+          </div>
+          <div style="margin-top:14px">
+            <label class="flabel" for="f1">Имя</label>
+            <input class="vk-field" id="f1" placeholder="Денис">
+            <div class="fhint">Так вас увидят другие пользователи</div>
+          </div>
+        </div>
+        <div>
+          <label class="flabel" for="f2">Телефон</label>
+          <input class="vk-field err" id="f2" value="+7 999 000-00-0" aria-invalid="true">
+          <div class="fhint neg">Не хватает одной цифры</div>
+          <div style="margin-top:14px" class="row">
+            <button class="sw-toggle" role="switch" aria-checked="true" aria-label="Уведомления"><span class="pin"></span></button>
+            <span style="font-size:14px">Уведомления</span>
+            <button class="chk" role="checkbox" aria-checked="true" aria-label="Согласие" style="margin-left:16px">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none" aria-hidden="true"><path d="M1 4l2.5 2.5L9 1" stroke="var(--vk-on-acc)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <span style="font-size:14px">Запомнить</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Списки и карточки</h3>
+    <div class="canvas">
+      <div class="grid g2">
+        <div class="vk-card" style="padding:6px">
+          <div class="vk-cell ripple-host">
+            <span class="av-wrap"><span class="av s48"></span><span class="online"></span></span>
+            <span><span class="t">Мессенджер</span><br><span class="s">3 новых сообщения</span></span>
+            <span class="aside"><span class="counter">3</span></span>
+          </div>
+          <div class="vk-cell ripple-host">
+            <span class="av s48" style="background-image:linear-gradient(135deg,var(--vk-a-fire),var(--vk-a-peach))"></span>
+            <span><span class="t">Сообщества</span><br><span class="s">64 подписки</span></span>
+            <span class="aside">›</span>
+          </div>
+          <div class="vk-cell ripple-host">
+            <span class="av s48" style="background-image:linear-gradient(135deg,var(--vk-a-green),var(--vk-a-cyan))"></span>
+            <span><span class="t">Музыка</span><br><span class="s">Плейлист дня обновлён</span></span>
+            <span class="aside"><span class="dot"></span></span>
+          </div>
+        </div>
+        <div class="vk-card">
+          <div class="vk-pad row" style="gap:10px">
+            <span class="av s40"></span>
+            <span style="flex:1"><b style="font-size:15px;font-weight:500">Документолог</b><br><span style="font-size:13px;color:var(--vk-text2)">сегодня в 19:22</span></span>
+            <button class="vk-btn s sec ripple-host">Подписаться</button>
+          </div>
+          <div style="height:150px;background:linear-gradient(140deg,var(--vk-a-blue),var(--vk-a-violet))"></div>
+          <div class="vk-pad" style="font-size:15px;line-height:20px">Обновили интерфейс: карточки теперь 12px, кнопки — 8px.</div>
+          <div class="vk-pad row" style="gap:18px;padding-top:0;color:var(--vk-icon2);font-size:13px">
+            <span>♥ 128</span><span>💬 12</span><span>↗ 4</span><span style="margin-left:auto">1,2K</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Навигация</h3>
+    <div class="canvas">
+      <div class="stack" style="gap:20px">
+        <div class="tabs">
+          <button aria-selected="true">Главная</button>
+          <button aria-selected="false">Моя музыка</button>
+          <button aria-selected="false">Обзор</button>
+          <button aria-selected="false">Радио</button>
+        </div>
+        <div class="utabs">
+          <button aria-selected="true">Музыка</button>
+          <button aria-selected="false">Фото</button>
+          <button aria-selected="false">Видео</button>
+          <button aria-selected="false">Клипы</button>
+        </div>
+        <div class="row" style="gap:8px;overflow-x:auto">
+          <div class="story"><div class="ring"><div class="ava"></div></div><div class="cap">История</div></div>
+          <div class="story"><div class="ring" style="background:linear-gradient(160deg,var(--vk-a-azure),var(--vk-a-cyan))"><div class="ava"></div></div><div class="cap">Bird Bone</div></div>
+          <div class="story"><div class="ring" style="background:linear-gradient(160deg,var(--vk-a-raspberry),var(--vk-a-orange))"><div class="ava"></div></div><div class="cap">'90s</div></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Статусы и обратная связь</h3>
+    <div class="canvas">
+      <div class="grid g2">
+        <div class="stack">
+          <div class="tint pos">Профиль сохранён</div>
+          <div class="tint neg">Не удалось загрузить фото — попробуйте файл меньше 50 МБ</div>
+          <div class="tint warn">Сессия истекает через 5 минут</div>
+          <div class="tint info">Включите уведомления, чтобы не пропустить ответы</div>
+        </div>
+        <div class="stack">
+          <div class="snackbar">
+            <span class="ic">✓</span>
+            <span style="flex:1;font-size:14px">Ссылка скопирована</span>
+            <button class="vk-btn ter s ripple-host">Отменить</button>
+          </div>
+          <div class="row" style="gap:16px">
+            <span class="spinner"></span>
+            <div class="track" style="flex:1"><i></i></div>
+          </div>
+          <div class="vk-card sec" style="padding:12px">
+            <div class="row" style="gap:12px">
+              <div class="skel" style="width:40px;height:40px;border-radius:50%"></div>
+              <div style="flex:1"><div class="skel" style="height:12px;width:60%"></div><div class="skel" style="height:10px;width:38%;margin-top:8px"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="sub">Модальное окно и аватары</h3>
+    <div class="canvas">
+      <div class="row" style="gap:28px;align-items:flex-start">
+        <div class="modal">
+          <div style="font-size:20px;line-height:24px;font-weight:500">Выйти из аккаунта?</div>
+          <div style="font-size:15px;line-height:20px;color:var(--vk-text2);margin-top:8px">Историю переписки это не затронет.</div>
+          <div class="row" style="margin-top:20px;gap:8px">
+            <button class="vk-btn sec ripple-host" style="flex:1">Отмена</button>
+            <button class="vk-btn ripple-host" style="flex:1">Выйти</button>
+          </div>
+        </div>
+        <div class="row" style="gap:14px;align-items:flex-end">
+          <span class="av s24"></span><span class="av s32"></span><span class="av s40"></span>
+          <span class="av-wrap"><span class="av s48"></span><span class="online"></span></span>
+          <span class="av s96"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="motion">
+  <div class="wrap">
+    <div class="eyebrow">Анимации</div>
+    <h2>Моторика интерфейса</h2>
+    <p class="note">Настоящие keyframes из продакшен-CSS: имена, длительности и кривые — как в исходниках. Нажмите «Повторить», чтобы проиграть.</p>
+
+    <div class="anim-grid" id="animGrid"></div>
+
+    <h3 class="sub">Кривые</h3>
+    <div class="curves" id="curves"></div>
+
+    <h3 class="sub">Длительности</h3>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Токен</th><th>Значение</th><th>Для чего</th></tr></thead>
+        <tbody>
+          <tr><td class="m">--vkui--animation_duration_s</td><td class="m">0.1s</td><td>Появление и исчезновение мелких слоёв: подсказки, фокусное кольцо</td></tr>
+          <tr><td class="m">--vkui--animation_duration_m</td><td class="m">0.2s</td><td>Смена экрана, раскрытие аккордеона, алерт</td></tr>
+          <tr><td class="m">--vkui--animation_duration_l</td><td class="m">0.4s</td><td>Тяжёлые переходы, шторки на мобильных</td></tr>
+          <tr><td class="m">на практике</td><td class="m">0.15s ease-out</td><td>Самый частый переход в CSS (фон и цвет у любой кликабельной поверхности)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="cheat">
+  <div class="wrap">
+    <div class="eyebrow">Шпаргалка</div>
+    <h2>Что забрать в свой проект</h2>
+    <div class="grid g2" style="margin-top:20px">
+      <div>
+        <h3 class="sub" style="margin-top:0">Правила, которые держат систему</h3>
+        <ul style="margin:0;padding-left:18px;font-size:14.5px;color:var(--ui-ink2);line-height:1.7">
+          <li><b style="color:var(--ui-ink)">Состояния — токены, а не фильтры.</b> У каждого фона есть <code>--hover</code> и <code>--active</code>: цвет сдвигается на ~3% светлоты, а не через <code>opacity</code>.</li>
+          <li><b style="color:var(--ui-ink)">Слой состояния поверх, а не вместо.</b> Кликабельная область получает absolute-слой с <code>color_transparent--hover</code> — работает поверх картинок и градиентов.</li>
+          <li><b style="color:var(--ui-ink)">Два радиуса на всё.</b> 8px — контролы, 12px — «бумага» (карточки, модалки). Остальное — 4px чекбокс, 48px пилюля, 50% аватар.</li>
+          <li><b style="color:var(--ui-ink)">Иконки — заливка и currentColor.</b> Ни одного <code>stroke</code>: контур рисуется путём с дыркой, цвет приходит из <code>color_icon_*</code>, размер — классом.</li>
+          <li><b style="color:var(--ui-ink)">Никакого веб-шрифта.</b> Системный стек и 21 роль вместо кастомной гарнитуры — страница рисуется без FOUT.</li>
+          <li><b style="color:var(--ui-ink)">Две плотности.</b> Каждый размер имеет <code>--regular</code> и <code>--compact</code>; компакт включается по <code>pointer</code> и высоте вьюпорта, а не по ширине.</li>
+          <li><b style="color:var(--ui-ink)">Анимации через переменные.</b> Начальные смещения вынесены в <code>--vkui_internal--*</code>, поэтому один keyframe обслуживает и вход, и выход, и мобильный вариант.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="sub" style="margin-top:0">Стартовый набор переменных</h3>
+        <pre class="code" id="cheatCode"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Значения сняты с живых страниц vk.ru 30 августа 2026: экран входа (схема <code>vkAccessibility</code>), лента, профиль, музыка (схема <code>vkBase</code>). Витрина воспроизводит токены и анимации VKUI в учебных целях; товарные знаки принадлежат их правообладателям.
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- переключатель схемы VK ---------- */
+  var root = document.documentElement;
+  var bL = document.getElementById('vkLight'), bD = document.getElementById('vkDark');
+  function setVk(scheme){
+    root.setAttribute('data-vk', scheme);
+    bL.setAttribute('aria-pressed', scheme === 'light');
+    bD.setAttribute('aria-pressed', scheme === 'dark');
+    try { localStorage.setItem('vk-scheme', scheme); } catch(e){}
+    paintSwatches();
+  }
+  bL.addEventListener('click', function(){ setVk('light'); });
+  bD.addEventListener('click', function(){ setVk('dark'); });
+
+  // тема витрины читается из самого CSS — надёжнее, чем matchMedia внутри фрейма
+  var chromeDark = getComputedStyle(root).getPropertyValue('--ui-is-dark').trim() === '1';
+  var initial = chromeDark ? 'dark' : 'light';
+  try {
+    var saved = localStorage.getItem('vk-scheme');
+    if (saved === 'light' || saved === 'dark') initial = saved;
+  } catch(e){}
+
+  /* ---------- данные ---------- */
+  // [имя, тёмная, светлая]
+  var ACCENT = [
+    ['accent_azure','#5d9ee9','#3f8ae0'], ['accent_blue','#397dcc','#5181b8'],
+    ['accent_secondary','#3f8ae0','#3f8ae0'], ['accent_violet','#a94fff','#792ec0'],
+    ['accent_purple','#937ff5','#735ce6'], ['accent_raspberry_pink','#f060c0','#e03fab'],
+    ['accent_pink','#f899ff','#f685ff'], ['accent_red','#ff3347','#ff3347'],
+    ['accent_orange_fire','#f05c44','#f05c44'], ['accent_orange','#ffa000','#ffa000'],
+    ['accent_orange_peach','#ffc062','#f9b54f'], ['accent_lime','#caf96c','#bff74f'],
+    ['accent_green','#4bb34b','#4bb34b'], ['accent_cyan','#55f1d2','#7cf4dc'],
+    ['accent_gray','#aeb7c2','#aeb7c2']
+  ];
+  var BG = [
+    ['background','#141414','#edeef0'], ['background_content','#222222','#ffffff'],
+    ['background_secondary','#333333','#f0f2f5'], ['background_tertiary','#292929','#fafbfc'],
+    ['background_modal','#292929','#ffffff'], ['header_background','#222222','#ffffff'],
+    ['field_background','#292929','#ffffff'], ['search_field_background','#424242','#edeef0'],
+    ['background_accent_themed','#e1e3e6','#447bba'], ['background_accent','#71aaeb','#447bba'],
+    ['background_secondary_alpha','rgba(255,255,255,.08)','rgba(39,63,92,.07)'],
+    ['image_placeholder','rgba(255,255,255,.08)','rgba(0,28,61,.08)']
+  ];
+  var TEXT = [
+    ['text_primary','#e1e3e6','#000000'], ['text_secondary','#828282','#818c99'],
+    ['text_subhead','#939393','#626d7a'], ['text_tertiary','#656565','#99a2ad'],
+    ['text_link','#71aaeb','#2a5885'], ['text_accent','#71aaeb','#447bba'],
+    ['text_muted','#cccccc','#333333'], ['text_contrast','#ffffff','#ffffff'],
+    ['text_contrast_themed','#222222','#ffffff']
+  ];
+  var ICON = [
+    ['icon_primary','#e1e3e6','#2c2d2e'], ['icon_medium','#939393','#6f7985'],
+    ['icon_secondary','#828282','#99a2ad'], ['icon_tertiary','#656565','#aeb7c2'],
+    ['icon_accent','#71aaeb','#447bba'], ['separator_primary','#363738','#dce1e6'],
+    ['separator_secondary','#292929','#e7e8ec'], ['skeleton_from','#292929','rgba(3,11,23,.02)'],
+    ['skeleton_to','#333333','rgba(3,11,23,.1)'], ['overlay_primary','rgba(0,0,0,.4)','rgba(0,0,0,.4)']
+  ];
+  var SEM = [
+    ['background_positive','#4bb34b','#4bb34b'], ['background_negative','#ff5c5c','#e64646'],
+    ['background_positive_tint','#2f422f','#e8f9e8'], ['background_negative_tint','#522e2e','#faebeb'],
+    ['background_warning','#473315','#fff2d6'], ['background_info_tint','#1c3954','#deeeff'],
+    ['text_positive','#4bb34b','#4bb34b'], ['text_negative','#ff5c5c','#e64646'],
+    ['icon_warning','#edb055','#f8a01c'], ['track_background','#828282','#d3d9de']
+  ];
+
+  var GRADS = [
+    ['gradient_crimson','#ff7373 0%, #e53949 50%, #bf1c38 100%'],
+    ['gradient_green','#6cd97e 0%, #12b312 100%'],
+    ['gradient_yellow','#ffc44d 0%, #f07300 100%'],
+    ['gradient_valentine','#ff8a65 0%, #f25383 50%, #8f13db 100%'],
+    ['gradient_sberkot','#9df19d 0%, #31c2a7 33%, #21a19a 67%, #107f8c 100%']
+  ];
+
+  var STATES = [
+    ['color_transparent','transparent','rgba(255,255,255,.04)','rgba(255,255,255,.08)'],
+    ['color_background_content','#222222','#2b2b2b','#343434'],
+    ['color_background_secondary','#333333','#3b3b3b','#434343'],
+    ['color_background_accent_themed','#e1e3e6','#d8dbdf','#cfd2d8'],
+    ['color_search_field_background','#424242','#4a4a4a','#515151'],
+    ['color_background_negative','#ff5c5c','#ff6363','#ff6969'],
+    ['color_separator_primary','#363738','#3e3f40','#464748']
+  ];
+
+  // [роль, размер, интерлиньяж, вес, caps]
+  var TYPE = [
+    ['title1',24,28,600,0], ['display_title1',23,28,600,0], ['display_title2',21,26,600,0],
+    ['title2',20,24,500,0], ['display_title3',19,24,600,0], ['title3',17,22,600,0],
+    ['display_title4',17,22,600,0], ['headline1',16,20,500,0], ['headline',16,20,500,0],
+    ['text',16,20,400,0], ['headline2',15,20,500,0], ['paragraph',15,20,400,0],
+    ['subhead',14,18,400,0], ['footnote',13,16,400,0], ['footnote_caps',13,16,600,1],
+    ['caption1',12,14,400,0], ['caption1_caps',12,14,600,1], ['caption2',11,14,400,0],
+    ['caption2_caps',11,14,600,1], ['caption3',9,12,400,0], ['caption3_caps',9,12,600,1]
+  ];
+
+  var SIZES = [
+    ['size_border_radius','8px','—','Кнопки, поля, ячейки'],
+    ['size_border_radius_paper','12px','—','Карточки, модалки, посты'],
+    ['size_border_radius_rounded','48px','—','Пилюли, фильтры'],
+    ['size_check_border_radius','4px','—','Чекбокс'],
+    ['size_button_extra_small_height','24px','22px','Инлайновые действия'],
+    ['size_button_small_height','30px','28px','Кнопка в шапке карточки'],
+    ['size_button_medium_height','36px','32px','Основной размер в вебе'],
+    ['size_button_large_height','44px','36px','Формы, экран входа'],
+    ['size_field_height','44px','36px','Поле ввода'],
+    ['size_search_height','36px','32px','Строка поиска'],
+    ['size_cell_height','48px','44px','Строка списка'],
+    ['size_panel_header_height','48px','48px','Шапка панели'],
+    ['size_avatar_x_s / s / m / l / x_l','24 / 32 / 48 / 96 / 128px','—','Аватары'],
+    ['size_badge_s / m / l / x_l','16 / 24 / 44 / 56px','—','Бейджи и счётчики'],
+    ['size_popup_small / medium / large','430 / 680 / 880px','—','Ширина модалок'],
+    ['size_popup_base_padding','32px','20px','Внутренний отступ модалки'],
+    ['size_icon_u_i','16px','—','Базовая UI-иконка']
+  ];
+
+  var ANIMS = [
+    { key:'wave',  title:'Tappable — волна',  meta:'vkuiTappable__animationWave · 0.3s · cubic-bezier(0.4,0,0.2,1)',
+      desc:'Круг 16px разрастается в 8 раз и гаснет. Ставится в точку клика поверх любой поверхности.',
+      code:'0%   { opacity:1; transform:scale(1) }\n30%  { opacity:1 }\n100% { opacity:0; transform:scale(8) }',
+      stage:'<button class="vk-btn l ripple-host" data-auto-ripple>Нажмите сюда</button>', replay:'ripple' },
+    { key:'fade',  title:'Появление слоя', meta:'vkuistyles__animationFadeIn · 0.1s · ease-in',
+      desc:'Тултипы, поповеры, дропдауны: масштаб 0.8 → 1 вместе с прозрачностью.',
+      code:'0%   { opacity:0; transform:scale(.8) }\n100% { opacity:1; transform:scale(1) }',
+      stage:'<div class="card-s" data-run="run-fade">Подсказка</div>', replay:'class' },
+    { key:'view',  title:'Смена экрана', meta:'vkuiView__animationViewNextForward · 0.2s · platform',
+      desc:'Новый экран поднимается на 80px и проявляется. Обратный переход — тот же keyframe наоборот.',
+      code:'0%   { opacity:0; transform:translateY(80px) }\n100% { opacity:1; transform:translateY(0) }',
+      stage:'<div class="pillbar" data-run="run-view"></div>', replay:'class' },
+    { key:'alert', title:'Alert', meta:'vkuiAlert__animationAlertScaleUp · 0.2s · platform',
+      desc:'Стартовый масштаб вынесен в переменную: 0.95 на вход, 1.05 на выход.',
+      code:'0%   { opacity:0; transform:scale(.95) }\n100% { opacity:1; transform:scale(1) }',
+      stage:'<div class="card-s" data-run="run-alert">Выйти из аккаунта?</div>', replay:'class' },
+    { key:'sheet', title:'ActionSheet', meta:'vkuiActionSheet__animationActionSheetSlideUp · 0.3s',
+      desc:'Шторка выезжает на 100% высоты снизу; на десктопе смещение уменьшается до 5%.',
+      code:'0%   { opacity:0; transform:translateY(100%) }\n100% { opacity:1; transform:translateY(0) }',
+      stage:'<div class="sheet" data-run="run-sheet"></div>', replay:'class' },
+    { key:'snack', title:'Snackbar', meta:'vkuiSnackbar__animationSnackbarSlideIn + GrowIn · 0.3s',
+      desc:'Две анимации сразу: плашка въезжает, а обёртка раскрывает max-height, раздвигая соседей.',
+      code:'slideIn: opacity 0→1, transform из переменной\ngrowIn:  max-height 0 → 100vh; margin-top 0 → N',
+      stage:'<div class="card-s" data-run="run-snack">Ссылка скопирована</div>', replay:'class' },
+    { key:'acc',   title:'Аккордеон', meta:'vkuiAccordion__animationAccordionExpand · 0.2s',
+      desc:'Высота анимируется в явных пикселях: реальное значение измеряется и кладётся в переменную.',
+      code:'0%   { height:0 }\n100% { height:var(--AccordionContent_height) }',
+      stage:'<div class="card-s run-acc" data-run="run-acc" style="width:170px">Подробнее<div class="body" style="color:var(--vk-text2);font-size:11px;padding-top:6px">Высота считается заранее и подставляется переменной, поэтому переход честный.</div></div>', replay:'class' },
+    { key:'skel',  title:'Скелетон', meta:'vkuiSkeleton__animationSkeleton · linear · infinite',
+      desc:'Не пульсация прозрачности, а градиентная полоса, которая едет через блок.',
+      code:'100% { transform: translateX(100vw) }',
+      stage:'<div style="width:180px"><div class="skel" style="height:14px"></div><div class="skel" style="height:14px;width:66%;margin-top:10px"></div></div>', replay:'none' },
+    { key:'spin',  title:'Спиннер', meta:'rotate360 / round_spinner · 0.8s · linear · infinite',
+      desc:'Единственная бесконечная анимация в ядре — простой поворот на 360°.',
+      code:'0%   { transform: rotate(0deg) }\n100% { transform: rotate(360deg) }',
+      stage:'<span class="spinner" style="width:36px;height:36px;border-width:3px"></span>', replay:'none' },
+    { key:'prog',  title:'Прогресс — подсветка', meta:'Progress__highlight · 1.6s · infinite',
+      desc:'Неопределённый прогресс: прозрачность ходит 0.2 → 1 → 0.2, без движения.',
+      code:'0%   { opacity:.2 }\n30%  { opacity:1 }\n100% { opacity:.2 }',
+      stage:'<div class="track" style="width:170px"><i class="hl" style="width:100%"></i></div>', replay:'none' },
+    { key:'trem',  title:'Отказ — дрожь', meta:'PopupWrapper__horizontalTremble · 0.3s',
+      desc:'Реакция на невалидный ввод: 2px вправо, 2px влево, 1px вправо — и на место.',
+      code:'0% 0 · 25% 2px · 50% -2px · 75% 1px · 100% 0',
+      stage:'<div class="card-s" data-run="run-tremble">Неверный код</div>', replay:'class' },
+    { key:'pulse', title:'Прямой эфир — пульс', meta:'textlive_pulse · 1.6s · infinite',
+      desc:'Метка живой трансляции: точка разрастается втрое и растворяется.',
+      code:'0%   { opacity:.8; transform:scale(1) }\n70%  { opacity:0;  transform:scale(3) }',
+      stage:'<span class="pulse-host"><i class="ring"></i><i></i></span>', replay:'none' },
+    { key:'react', title:'Реакция в звонке', meta:'calls-reaction-up · linear · infinite',
+      desc:'Эмодзи всплывает на высоту колонки и гаснет в последние 15% пути.',
+      code:'0%   { transform: translateY(colH) }\n85%  { opacity:1 }\n100% { transform: translateY(0); opacity:0 }',
+      stage:'<span class="reaction">❤️</span>', replay:'none' },
+    { key:'focus', title:'Фокусное кольцо', meta:'vkuistyles__animationOutlineOffset · 0.1s · ease-in-out',
+      desc:'Кольцо «схлопывается» к элементу: offset 8px → 2px за 100 мс с задержкой 10 мс.',
+      code:'0%   { outline-offset: 8px }\n100% { outline-offset: 2px }',
+      stage:'<div class="box" data-run="run-outline" style="outline:2px solid var(--vk-accent);outline-offset:2px"></div>', replay:'class' }
+  ];
+
+  var CURVES = [
+    ['animation_easing_default','cubic-bezier(0.3, 0.3, 0.5, 1)',[.3,.3,.5,1]],
+    ['animation_easing_platform','cubic-bezier(0.4, 0, 0.2, 1)',[.4,0,.2,1]],
+    ['самая частая в CSS','cubic-bezier(.1, 0, .25, 1)',[.1,0,.25,1]]
+  ];
+
+  /* ---------- отрисовка палитры ---------- */
+  function swatchHTML(row){
+    return '<div class="sw"><div class="chip" data-dark="' + row[1] + '" data-light="' + row[2] + '"></div>' +
+      '<div class="meta"><div class="name">' + row[0] + '</div>' +
+      '<div class="hex"><span>D <b>' + row[1] + '</b></span><span>L <b>' + row[2] + '</b></span></div></div></div>';
+  }
+  function fill(id, rows){
+    var el = document.getElementById(id);
+    if (el) el.innerHTML = rows.map(swatchHTML).join('');
+  }
+  fill('swAccent', ACCENT); fill('swBg', BG); fill('swText', TEXT);
+  fill('swIcon', ICON); fill('swSem', SEM);
+
+  function paintSwatches(){
+    var light = root.getAttribute('data-vk') === 'light';
+    var chips = document.querySelectorAll('.sw .chip');
+    for (var i = 0; i < chips.length; i++){
+      chips[i].style.background = chips[i].getAttribute(light ? 'data-light' : 'data-dark');
+    }
+  }
+
+  document.getElementById('grads').innerHTML = GRADS.map(function(g){
+    return '<div class="sw"><div class="chip" style="height:76px;background:linear-gradient(135deg,' + g[1] + ')"></div>' +
+      '<div class="meta"><div class="name">' + g[0] + '</div></div></div>';
+  }).join('');
+
+  /* ---------- иконки ---------- */
+  var ICONS = [
+    ['search','<path fill-rule="evenodd" d="M11 3a8 8 0 1 0 4.9 14.3l3.4 3.4a1.2 1.2 0 0 0 1.7-1.7l-3.4-3.4A8 8 0 0 0 11 3Zm0 2.4a5.6 5.6 0 1 1 0 11.2 5.6 5.6 0 0 1 0-11.2Z"/>'],
+    ['home','<path d="M13.2 3.3a2 2 0 0 0-2.4 0L4.3 8.4A2 2 0 0 0 3.5 10v8.5A2.5 2.5 0 0 0 6 21h2.2a1 1 0 0 0 1-1v-4.6a1 1 0 0 1 1-1h3.6a1 1 0 0 1 1 1V20a1 1 0 0 0 1 1H18a2.5 2.5 0 0 0 2.5-2.5V10a2 2 0 0 0-.8-1.6l-6.5-5.1Z"/>'],
+    ['message','<path d="M12 3c-5 0-9 3.6-9 8 0 2.5 1.3 4.7 3.3 6.2V21a.8.8 0 0 0 1.2.7l2.6-1.5c.6.1 1.2.1 1.9.1 5 0 9-3.6 9-8s-4-8-9-8Z"/>'],
+    ['bell','<path d="M12 2.5a6 6 0 0 0-6 6v3.2l-1.3 2.6A1.5 1.5 0 0 0 6 16.5h12a1.5 1.5 0 0 0 1.3-2.2L18 11.7V8.5a6 6 0 0 0-6-6ZM9.5 18a2.5 2.5 0 0 0 5 0h-5Z"/>'],
+    ['user','<path d="M12 3a4.2 4.2 0 1 0 0 8.4A4.2 4.2 0 0 0 12 3Zm0 10.2c-3.9 0-7 2.2-7 4.9C5 20 7.8 21 12 21s7-1 7-2.9c0-2.7-3.1-4.9-7-4.9Z"/>'],
+    ['gallery','<path fill-rule="evenodd" d="M4.5 3h15A2.5 2.5 0 0 1 22 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 18.5v-13A2.5 2.5 0 0 1 4.5 3Zm0 2a.5.5 0 0 0-.5.5v9.6l3.6-3.4a1.5 1.5 0 0 1 2 0l2.3 2.1 3.3-3.6a1.5 1.5 0 0 1 2.2 0L20 13V5.5a.5.5 0 0 0-.5-.5h-15ZM8.5 7a1.8 1.8 0 1 0 0 3.6A1.8 1.8 0 0 0 8.5 7Z"/>'],
+    ['music','<path d="M20 3.4a1 1 0 0 0-1.2-1L10 4.3a1 1 0 0 0-.8 1v9.3a3.6 3.6 0 1 0 2 3.2V8.2l6.8-1.5v5.6a3.6 3.6 0 1 0 2 3.2V3.4Z"/>'],
+    ['like','<path d="M12 20.3c-.4 0-.8-.2-1.1-.4C6.3 16.1 3 13 3 9.3 3 6.3 5.3 4 8.2 4c1.5 0 2.9.7 3.8 1.8A5 5 0 0 1 15.8 4C18.7 4 21 6.3 21 9.3c0 3.7-3.3 6.8-7.9 10.6-.3.2-.7.4-1.1.4Z"/>'],
+    ['bookmark','<path d="M6 4.5A2.5 2.5 0 0 1 8.5 2h7A2.5 2.5 0 0 1 18 4.5v15.8a1 1 0 0 1-1.6.8L12 17.8l-4.4 3.3A1 1 0 0 1 6 20.3V4.5Z"/>'],
+    ['more','<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>'],
+    ['add','<path d="M12 3.5a1.2 1.2 0 0 1 1.2 1.2v6.1h6.1a1.2 1.2 0 0 1 0 2.4h-6.1v6.1a1.2 1.2 0 0 1-2.4 0v-6.1H4.7a1.2 1.2 0 0 1 0-2.4h6.1V4.7A1.2 1.2 0 0 1 12 3.5Z"/>'],
+    ['done','<path d="M20.3 6.3a1.2 1.2 0 0 1 0 1.7l-9.4 9.4a1.2 1.2 0 0 1-1.7 0l-4.5-4.5a1.2 1.2 0 1 1 1.7-1.7l3.6 3.6 8.6-8.5a1.2 1.2 0 0 1 1.7 0Z"/>'],
+  ];
+  function svgIcon(body, size){
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + body + '</svg>';
+  }
+  var byName = {};
+  ICONS.forEach(function(i){ byName[i[0]] = i[1]; });
+
+  document.getElementById('iconSet').innerHTML = ICONS.map(function(i){
+    return '<figure>' + svgIcon(i[1], 24) + '<figcaption>' + i[0] + '</figcaption></figure>';
+  }).join('');
+
+  document.getElementById('ladder').innerHTML = [12,16,20,24,28,48].map(function(s){
+    return '<div class="u">' + svgIcon(byName.search, s) + '<span>' + s + '</span></div>';
+  }).join('');
+
+  document.getElementById('tone').innerHTML = [
+    ['icon_primary','var(--vk-icon)'], ['icon_medium','var(--vk-icon-med)'],
+    ['icon_secondary','var(--vk-icon2)'], ['icon_tertiary','var(--vk-icon3)'],
+    ['icon_accent','var(--vk-icon-acc)'], ['icon_negative','var(--vk-neg)']
+  ].map(function(t){
+    return '<div class="u" style="color:' + t[1] + '">' + svgIcon(byName.bell, 28) + '<span>' + t[0] + '</span></div>';
+  }).join('');
+
+  /* ---------- таблица состояний ---------- */
+  document.getElementById('statesTbl').innerHTML = STATES.map(function(s){
+    function cell(v){
+      var box = (v === 'transparent') ? 'repeating-linear-gradient(45deg,var(--ui-line-soft) 0 4px,transparent 4px 8px)' : v;
+      return '<td class="m"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:7px;background:' + box + ';border:1px solid var(--ui-line)"></span>' + v + '</td>';
+    }
+    return '<tr><td class="m" style="color:var(--ui-ink)">' + s[0] + '</td>' + cell(s[1]) + cell(s[2]) + cell(s[3]) + '</tr>';
+  }).join('');
+
+  /* ---------- типографика ---------- */
+  document.getElementById('typeScale').innerHTML = TYPE.map(function(t){
+    var caps = t[4] ? 'text-transform:uppercase;letter-spacing:.03em;' : '';
+    var sample = t[4] ? 'Раздел' : 'Съешь ещё этих мягких булок';
+    return '<div class="type-row"><div class="spec"><b>font_' + t[0] + '</b>' +
+      t[1] + ' / ' + t[2] + ' · ' + t[3] + '</div>' +
+      '<div class="sample" style="font-size:' + t[1] + 'px;line-height:' + t[2] + 'px;font-weight:' + t[3] + ';' + caps + '">' + sample + '</div></div>';
+  }).join('');
+
+  /* ---------- размеры ---------- */
+  document.getElementById('sizeTbl').innerHTML = SIZES.map(function(s){
+    return '<tr><td class="m" style="color:var(--ui-ink)">' + s[0] + '</td><td class="m">' + s[1] +
+      '</td><td class="m">' + s[2] + '</td><td>' + s[3] + '</td></tr>';
+  }).join('');
+
+  /* ---------- анимации ---------- */
+  document.getElementById('animGrid').innerHTML = ANIMS.map(function(a){
+    var btn = a.replay === 'none' ? '' : '<button class="replay" data-key="' + a.key + '">Повторить</button>';
+    return '<div class="anim" data-card="' + a.key + '"><div class="stage">' + a.stage + '</div>' +
+      '<div class="info"><h4>' + a.title + '</h4><div class="m">' + a.meta + '</div>' +
+      '<p>' + a.desc + '</p><pre class="code">' + a.code + '</pre>' + btn + '</div></div>';
+  }).join('');
+
+  function replay(card){
+    var target = card.querySelector('[data-run]');
+    if (target){
+      var cls = target.getAttribute('data-run');
+      target.classList.remove(cls);
+      void target.offsetWidth;
+      target.classList.add(cls);
+      return;
+    }
+    var host = card.querySelector('[data-auto-ripple]');
+    if (host) spawnWave(host, host.clientWidth / 2, host.clientHeight / 2);
+  }
+  document.getElementById('animGrid').addEventListener('click', function(e){
+    var b = e.target.closest('.replay');
+    if (!b) return;
+    replay(b.closest('.anim'));
+  });
+
+  /* ---------- волна Tappable ---------- */
+  function spawnWave(host, x, y){
+    var w = document.createElement('span');
+    w.className = 'wave';
+    w.style.left = x + 'px';
+    w.style.top = y + 'px';
+    host.appendChild(w);
+    setTimeout(function(){ w.remove(); }, 320);
+  }
+  document.addEventListener('pointerdown', function(e){
+    var host = e.target.closest('.ripple-host');
+    if (!host) return;
+    var r = host.getBoundingClientRect();
+    spawnWave(host, e.clientX - r.left, e.clientY - r.top);
+  });
+
+  /* ---------- кривые ---------- */
+  function bez(p, t){
+    var mt = 1 - t;
+    return {
+      x: 3*mt*mt*t*p[0] + 3*mt*t*t*p[2] + t*t*t,
+      y: 3*mt*mt*t*p[1] + 3*mt*t*t*p[3] + t*t*t
+    };
+  }
+  document.getElementById('curves').innerHTML = CURVES.map(function(c){
+    var pts = [];
+    for (var i = 0; i <= 40; i++){
+      var pt = bez(c[2], i/40);
+      pts.push((10 + pt.x*100).toFixed(1) + ',' + (110 - pt.y*100).toFixed(1));
+    }
+    return '<div class="curve"><svg viewBox="0 0 120 120" role="img" aria-label="Кривая ' + c[1] + '">' +
+      '<rect x="10" y="10" width="100" height="100" fill="none" stroke="var(--ui-line-soft)"/>' +
+      '<line x1="10" y1="110" x2="110" y2="10" stroke="var(--ui-line-soft)" stroke-dasharray="3 3"/>' +
+      '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--ui-mark)" stroke-width="2.5" stroke-linecap="round"/>' +
+      '</svg><div class="l">' + c[0] + '</div><div class="n">' + c[1] + '</div></div>';
+  }).join('');
+
+  /* ---------- шпаргалка ---------- */
+  document.getElementById('cheatCode').textContent =
+    ':root {\n' +
+    '  --bg:            #141414;  /* light #edeef0 */\n' +
+    '  --content:       #222222;  /* light #ffffff */\n' +
+    '  --secondary:     #333333;  /* light #f0f2f5 */\n' +
+    '  --text:          #e1e3e6;  /* light #000000 */\n' +
+    '  --text-2:        #828282;  /* light #818c99 */\n' +
+    '  --accent:        #71aaeb;  /* light #447bba */\n' +
+    '  --separator:     #363738;  /* light #dce1e6 */\n' +
+    '  --hover:  rgba(255,255,255,.04);\n' +
+    '  --active: rgba(255,255,255,.08);\n\n' +
+    '  --radius:        8px;\n' +
+    '  --radius-paper: 12px;\n' +
+    '  --dur-s: .1s; --dur-m: .2s; --dur-l: .4s;\n' +
+    '  --ease:          cubic-bezier(.3,.3,.5,1);\n' +
+    '  --ease-platform: cubic-bezier(.4,0,.2,1);\n' +
+    '}\n\n' +
+    '.control {\n' +
+    '  transition: background-color .15s ease-out,\n' +
+    '              color            .15s ease-out;\n' +
+    '}';
+
+  setVk(initial);
+})();
+</script>
+</body>
+</html>
