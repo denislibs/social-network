@@ -45,4 +45,16 @@ describe('RegisterForm', () => {
     await fill()
     expect(await screen.findByText('Логин занят')).toBeInTheDocument()
   })
+
+  it('associates the error text with the login field for assistive tech', async () => {
+    register.mockRejectedValue(
+      Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }),
+    )
+    render(<RegisterForm onSuccess={vi.fn()} />)
+    await fill()
+    const msg = await screen.findByText('Логин занят')
+    const input = screen.getByLabelText('Логин')
+    expect(input).toHaveAttribute('aria-describedby', msg.id)
+    expect(msg.id).toBeTruthy()
+  })
 })

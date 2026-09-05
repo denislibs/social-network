@@ -36,7 +36,13 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
   return (
     <form onSubmit={submit} noValidate>
       <FormLayoutGroup mode="vertical">
-        <FormItem htmlFor="reg-login" top="Логин" status={status('login')} bottom={bottom('login')}>
+        <FormItem
+          htmlFor="reg-login"
+          top="Логин"
+          status={status('login')}
+          bottom={bottom('login')}
+          bottomId="reg-login-error"
+        >
           <Input
             id="reg-login"
             name="login"
@@ -44,6 +50,11 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
             value={form.login}
             onChange={set('login')}
             disabled={busy}
+            slotProps={{
+              input: {
+                'aria-describedby': error?.field === 'login' ? 'reg-login-error' : undefined,
+              },
+            }}
           />
         </FormItem>
         <FormItem htmlFor="reg-first" top="Имя">
@@ -71,6 +82,7 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
           top="Пароль"
           status={status('password')}
           bottom={bottom('password')}
+          bottomId="reg-password-error"
         >
           <Input
             id="reg-password"
@@ -80,11 +92,22 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
             value={form.password}
             onChange={set('password')}
             disabled={busy}
+            slotProps={{
+              input: {
+                'aria-describedby':
+                  error?.field === 'password'
+                    ? 'reg-password-error'
+                    : error?.field === 'form'
+                      ? 'reg-form-error'
+                      : undefined,
+              },
+            }}
           />
         </FormItem>
         <FormItem
           status={error?.field === 'form' ? 'error' : 'default'}
           bottom={error?.field === 'form' ? error.text : undefined}
+          bottomId="reg-form-error"
         >
           <Button type="submit" size="l" stretched mode="primary" loading={busy}>
             Зарегистрироваться

@@ -38,4 +38,16 @@ describe('LoginForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Войти' }))
     expect(await screen.findByText('Неверный логин или пароль')).toBeInTheDocument()
   })
+
+  it('associates the error text with the field for assistive tech', async () => {
+    login.mockRejectedValue(Object.assign(new Error('bad'), { status: 422, code: 'invalid_login' }))
+    render(<LoginForm onSuccess={vi.fn()} />)
+    await userEvent.type(screen.getByLabelText('Логин'), 'ab')
+    await userEvent.type(screen.getByLabelText('Пароль'), 'password123')
+    await userEvent.click(screen.getByRole('button', { name: 'Войти' }))
+    const msg = await screen.findByText('3–32 символа: латиница, цифры, _ .')
+    const input = screen.getByLabelText('Логин')
+    expect(input).toHaveAttribute('aria-describedby', msg.id)
+    expect(msg.id).toBeTruthy()
+  })
 })

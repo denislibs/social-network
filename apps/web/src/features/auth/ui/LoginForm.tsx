@@ -36,6 +36,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
           top="Логин"
           status={status('login')}
           bottom={error?.field === 'login' ? error.text : undefined}
+          bottomId="login-error"
         >
           <Input
             id="login"
@@ -44,6 +45,11 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
             value={login}
             onChange={(e) => setLogin(e.target.value)}
             disabled={busy}
+            slotProps={{
+              input: {
+                'aria-describedby': error?.field === 'login' ? 'login-error' : undefined,
+              },
+            }}
           />
         </FormItem>
         <FormItem
@@ -51,6 +57,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
           top="Пароль"
           status={status('password')}
           bottom={error?.field === 'password' ? error.text : undefined}
+          bottomId="password-error"
         >
           <Input
             id="password"
@@ -60,11 +67,22 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={busy}
+            slotProps={{
+              input: {
+                'aria-describedby':
+                  error?.field === 'password'
+                    ? 'password-error'
+                    : error?.field === 'form'
+                      ? 'form-error'
+                      : undefined,
+              },
+            }}
           />
         </FormItem>
         <FormItem
           status={error?.field === 'form' ? 'error' : 'default'}
           bottom={error?.field === 'form' ? error.text : undefined}
+          bottomId="form-error"
         >
           <Button type="submit" size="l" stretched mode="primary" loading={busy}>
             Войти
