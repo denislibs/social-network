@@ -16,6 +16,10 @@
 - Кастомный CSS допустим только для лейаута (grid/flex/gap/overflow) и только на токенах VKUI.
 - Ревью любого UI-кода начинать с проверки: нет ли компонента, цвета, размера или иконки не из VKUI.
 
+## Архитектура фронта: FSD
+
+`apps/web/src` строго по Feature-Sliced Design: слои `app → pages → widgets → features → entities → shared`, импорты только сверху вниз, слайсы одного слоя друг друга не импортируют, в слайс заходят только через его `index.ts`. Сегменты внутри слайса: `ui/`, `model/`, `api/`, `lib/`. Проверяется тремя способами, все обязательны: Steiger (`bun run lint:fsd`), oxlint (`no-restricted-imports` по слоям) и тест `vkui-only.test.ts`. Новая страница = слайс в `pages/`, собранный из `widgets`/`features`/`entities`; логика в `pages/` не живёт.
+
 ## Инструменты
 
 - Runtime и пакетный менеджер — Bun. TypeScript 7. Линтер — oxlint, форматтер — Biome (после миграции фронта; см. план).

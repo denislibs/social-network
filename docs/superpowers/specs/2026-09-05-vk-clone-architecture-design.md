@@ -30,7 +30,7 @@
 
 | Слой | Выбор | Почему |
 |---|---|---|
-| Фронт | SolidJS 1.9, Vite, TypeScript, `@solidjs/router`, `@tanstack/solid-query` | Ближе всего к прототипу, маленький бандл, быстрый список |
+| Фронт | React 19, TypeScript 7, VKUI 8 (`@vkontakte/vkui`, `@vkontakte/icons`), react-router 7, TanStack Query, FSD | Решение от 2026-09-06: готовая библиотека компонентов VK вместо своего ui-kit; см. `2026-09-06-web-react-vkui-migration-design.md` |
 | Бэк | Bun, Elysia, Drizzle ORM, Eden Treaty | Одна кодовая база TypeScript, типы end-to-end без кодогена |
 | ML | Python 3.12, FastAPI, LightGBM, sentence-transformers, uv | Стандартный ML-инструментарий, CPU-only |
 | БД | PostgreSQL 17 + pgvector | Единая БД, векторный поиск без отдельного движка |
@@ -223,6 +223,8 @@ LightGBM, бинарная классификация «будет вовлеч�
 Вставка через `COPY`. Ориентир: стадии 2–4 за 5–10 минут на ноутбуке. Создаются аккаунты `demo` (пароль из env, 150 друзей, 20 пабликов) и «Денис Кораблев» из прототипа.
 
 ## 10. Фронт
+
+> Раздел заменён спеком `docs/superpowers/specs/2026-09-06-web-react-vkui-migration-design.md` (React 19 + VKUI + FSD). Текст ниже описывает реализацию подсистемы 1 на SolidJS и оставлен как история.
 
 Структура `apps/web/src`:
 
