@@ -2802,14 +2802,19 @@ import { User } from './user'
 import { Login, Password } from './value-objects'
 import { FakeHasher } from '../application/testing/fakes'
 
+/** Код доменной ошибки, брошенной fn (сообщения — часть HTTP-контракта, по ним не матчим). */
+const codeOf = (fn: () => unknown): string | undefined => {
+  try { fn() } catch (e) { return (e as { code?: string }).code }
+  return undefined
+}
 describe('Login', () => {
   it('normalizes and validates', () => {
     expect(Login.create('  Denis_01 ').value).toBe('denis_01')
-    for (const bad of ['ab', 'с кириллицей', 'a'.repeat(33), 'has space']) expect(() => Login.create(bad)).toThrow('invalid_login')
+    for (const bad of ['ab', 'с кириллицей', 'a'.repeat(33), 'has space']) expect(codeOf(() => Login.create(bad))).toBe('invalid_login')
   })
 })
 describe('Password', () => {
-  it('rejects short', () => { expect(() => Password.assertStrong('1234567')).toThrow('weak_password') })
+  it('rejects short', () => { expect(codeOf(() => Password.assertStrong('1234567'))).toBe('weak_password') })
 })
 describe('User.register', () => {
   it('hashes password, emits UserRegistered, verifies password', async () => {
@@ -2964,6 +2969,7 @@ import type { Command } from '../../../../kernel/command-bus'
 import { ConflictError } from '../../../../kernel/errors'
 import type { EventBus } from '../../../../kernel/event-bus'
 import { User } from '../../domain/user'
+import { Login } from '../../domain/value-objects'
 import { toUserDto, type UserDto } from '../dto'
 import type { PasswordHasher, SessionStore, UserRepository } from '../ports'
 
@@ -2973,8 +2979,9 @@ export class RegisterUser implements Command<{ user: UserDto; token: string }> {
 }
 export function registerUserHandler(d: { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; events: EventBus }) {
   return async (cmd: RegisterUser) => {
+    // Проверяем занятость логина ДО хэширования пароля: argon2 дорогой, иначе дубли логинов — дешёвый DoS.
+    if (await d.users.findByLogin(Login.create(cmd.input.login).value)) throw new ConflictError('login_taken', 'Login is already taken')
     const user = await User.register(cmd.input, d.hasher)
-    if (await d.users.findByLogin(user.login.value)) throw new ConflictError('login_taken', 'Login is already taken')
     const saved = await d.users.save(user)
     const token = await d.sessions.create(saved.id!, { ua: cmd.input.ua })
     await d.events.publish(saved.pullEvents())
@@ -2995,10 +3002,13 @@ export class Login implements Command<{ user: UserDto; token: string }> {
   declare readonly __result: { user: UserDto; token: string }
   constructor(readonly input: { login: string; password: string; ua?: string }) {}
 }
-export function loginHandler(d: { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; events: EventBus }) {
+/** dummyHash — заранее посчитанный хэш случайного пароля (см. registerIdentityHandlers), нужен только для выравнивания времени. */
+export function loginHandler(d: { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; events: EventBus; dummyHash: string }) {
   return async (cmd: Login) => {
     const user = await d.users.findByLogin(cmd.input.login.trim().toLowerCase())
-    if (!user || !(await user.verifyPassword(cmd.input.password, d.hasher))) throw new UnauthorizedError('invalid_credentials', 'Wrong login or password')
+    // При неизвестном логине всё равно проверяем пароль против фиктивного хэша, чтобы время ответа не выдавало существование аккаунта.
+    const ok = user ? await user.verifyPassword(cmd.input.password, d.hasher) : (await d.hasher.verify(cmd.input.password, d.dummyHash), false)
+    if (!user || !ok) throw new UnauthorizedError('invalid_credentials', 'Wrong login or password')
     const token = await d.sessions.create(user.id!, { ua: cmd.input.ua })
     await d.events.publish([{ type: 'UserLoggedIn', occurredAt: new Date(), payload: { userId: user.id } }])
     return { user: toUserDto(user), token }
@@ -3042,9 +3052,10 @@ import type { PasswordHasher, SessionStore, UserRepository } from './ports'
 import { GetMe, getMeHandler } from './queries/get-me'
 
 export type IdentityDeps = { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; commands: CommandBus; queries: QueryBus; events: EventBus }
-export function registerIdentityHandlers(d: IdentityDeps): void {
+export async function registerIdentityHandlers(d: IdentityDeps): Promise<void> {
+  const dummyHash = await d.hasher.hash(crypto.randomUUID())
   d.commands.register(RegisterUser, registerUserHandler(d))
-  d.commands.register(Login, loginHandler(d))
+  d.commands.register(Login, loginHandler({ ...d, dummyHash }))
   d.commands.register(Logout, logoutHandler(d))
   d.commands.register(LogoutAll, logoutAllHandler(d))
   d.queries.register(GetMe, getMeHandler(d))
@@ -3068,11 +3079,11 @@ import { registerIdentityHandlers } from './register'
 import { FakeHasher, InMemorySessions, InMemoryUsers } from './testing/fakes'
 
 let commands: CommandBus, queries: QueryBus, sessions: InMemorySessions, published: string[]
-beforeEach(() => {
+beforeEach(async () => {
   commands = new CommandBus(); queries = new QueryBus(); sessions = new InMemorySessions(); published = []
   const events = new EventBus()
   events.subscribe('UserRegistered', (e) => { published.push(`reg:${(e.payload as { userId: number }).userId}`) })
-  registerIdentityHandlers({ users: new InMemoryUsers(), sessions, hasher: new FakeHasher(), commands, queries, events })
+  await registerIdentityHandlers({ users: new InMemoryUsers(), sessions, hasher: new FakeHasher(), commands, queries, events })
 })
 const input = { login: 'denis', password: 'password123', firstName: 'Денис', lastName: 'Кораблев' }
 
@@ -3500,10 +3511,10 @@ import { RedisSessionStore } from './infrastructure/redis-session-store'
 import { identityRoutes } from './presentation/routes'
 import { authPlugin } from './presentation/auth-macro'
 
-export function identityModule(d: { db: Db; redis: Redis; commands: CommandBus; queries: QueryBus; events: EventBus; cookieSecure: boolean }) {
+export async function identityModule(d: { db: Db; redis: Redis; commands: CommandBus; queries: QueryBus; events: EventBus; cookieSecure: boolean }) {
   const users = new DrizzleUserRepository(d.db)
   const sessions = new RedisSessionStore(d.redis)
-  registerIdentityHandlers({ users, sessions, hasher: new BunPasswordHasher(), commands: d.commands, queries: d.queries, events: d.events })
+  await registerIdentityHandlers({ users, sessions, hasher: new BunPasswordHasher(), commands: d.commands, queries: d.queries, events: d.events })
   return { plugin: identityRoutes({ commands: d.commands, queries: d.queries, sessions, cookieSecure: d.cookieSecure }), auth: authPlugin(sessions), sessions }
 }
 ```
@@ -3521,8 +3532,8 @@ import { identityModule } from './modules/identity'
 
 export type AppDeps = { db: Db; redis: Redis; commands: CommandBus; queries: QueryBus; events: EventBus; cookieSecure: boolean }
 
-export function buildApp(deps: AppDeps) {
-  const identity = identityModule(deps)
+export async function buildApp(deps: AppDeps) {
+  const identity = await identityModule(deps)
   return new Elysia({ prefix: '/api/v1' })
     .onError(({ error, set, code }) => {
       if (error instanceof AppError) {
@@ -3557,7 +3568,7 @@ import { CommandBus } from './kernel/command-bus'
 import { QueryBus } from './kernel/query-bus'
 import { EventBus } from './kernel/event-bus'
 
-const app = buildApp({ db: createDb(config.databaseUrl), redis: createRedis(config.redisUrl), commands: new CommandBus(), queries: new QueryBus(), events: new EventBus(), cookieSecure: config.cookieSecure })
+const app = await buildApp({ db: createDb(config.databaseUrl), redis: createRedis(config.redisUrl), commands: new CommandBus(), queries: new QueryBus(), events: new EventBus(), cookieSecure: config.cookieSecure })
 app.listen(config.apiPort)
 console.log(`api on http://localhost:${config.apiPort}/api/v1/health`)
 ```
@@ -3577,7 +3588,7 @@ export type TestApp = { app: App; db: Db; redis: Redis; close(): Promise<void> }
 export async function createTestApp(): Promise<TestApp> {
   const db = await testDb()
   const redis = testRedis()
-  const app = buildApp({ db, redis, commands: new CommandBus(), queries: new QueryBus(), events: new EventBus({ error: () => {} }), cookieSecure: false })
+  const app = await buildApp({ db, redis, commands: new CommandBus(), queries: new QueryBus(), events: new EventBus({ error: () => {} }), cookieSecure: false })
   return { app, db, redis, close: async () => { await db.$client.close(); redis.disconnect() } }
 }
 export function cookieFrom(res: Response): string {
