@@ -2,6 +2,7 @@ import { AdaptivityProvider, AppRoot, ConfigProvider } from '@vkontakte/vkui'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
+import { SessionProvider } from '@/entities/session'
 import { useColorScheme } from '@/shared/lib'
 import { QueryProvider } from './composition/QueryProvider'
 import { router } from './router'
@@ -14,7 +15,9 @@ function App() {
       <AdaptivityProvider density="compact" hasPointer>
         <AppRoot mode="full">
           <QueryProvider>
-            <RouterProvider router={router} />
+            <SessionProvider>
+              <RouterProvider router={router} />
+            </SessionProvider>
           </QueryProvider>
         </AppRoot>
       </AdaptivityProvider>
