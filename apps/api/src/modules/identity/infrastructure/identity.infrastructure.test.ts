@@ -47,6 +47,11 @@ describe('DrizzleUserRepository', () => {
 })
 
 describe('RedisSessionStore', () => {
+  it('surfaces per-command MULTI errors instead of silently succeeding', async () => {
+    const store = new RedisSessionStore(redis, { ttlSeconds: 100 })
+    await redis.set('user_sessions:9', 'not-a-set') // WRONGTYPE for SADD
+    await expect(store.create(9, {})).rejects.toThrow(/WRONGTYPE/)
+  })
   it('creates token, reads it back, tracks per-user set, deletes', async () => {
     const store = new RedisSessionStore(redis, { ttlSeconds: 100 })
     const t1 = await store.create(7, { ua: 'test' })

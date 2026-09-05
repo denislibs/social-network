@@ -3,6 +3,13 @@ import type { SessionStore } from '../application/ports'
 
 const DAY = 86400
 
+/** ioredis: exec() резолвится массивом [err, result] на команду (или null при аборте) — ошибки не бросаются сами. */
+async function execOrThrow(multi: ReturnType<Redis['multi']>): Promise<void> {
+  const results = await multi.exec()
+  if (!results) throw new Error('redis transaction aborted')
+  for (const [err] of results) if (err) throw err
+}
+
 export class RedisSessionStore implements SessionStore {
   private ttl: number
   private touchBelow: number
@@ -21,7 +28,7 @@ export class RedisSessionStore implements SessionStore {
   }
   async create(userId: number, meta: { ua?: string }) {
     const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex')
-    await this.redis
+    const m = this.redis
       .multi()
       .set(
         this.key(token),
@@ -31,7 +38,7 @@ export class RedisSessionStore implements SessionStore {
       )
       .sadd(this.userKey(userId), token)
       .expire(this.userKey(userId), this.ttl)
-      .exec()
+    await execOrThrow(m)
     return token
   }
   async get(token: string) {
@@ -47,13 +54,13 @@ export class RedisSessionStore implements SessionStore {
     const s = await this.get(token)
     const m = this.redis.multi().del(this.key(token))
     if (s) m.srem(this.userKey(s.userId), token)
-    await m.exec()
+    await execOrThrow(m)
   }
   async deleteAllForUser(userId: number) {
     const tokens = await this.redis.smembers(this.userKey(userId))
     const m = this.redis.multi()
     for (const t of tokens) m.del(this.key(t))
     m.del(this.userKey(userId))
-    await m.exec()
+    await execOrThrow(m)
   }
 }
