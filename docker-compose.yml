@@ -38,6 +38,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["8080:80"]
+    environment:
+      API_UPSTREAM: host.docker.internal:3000
+      WEB_UPSTREAM: host.docker.internal:5173
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ./infra/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/nginx-health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 volumes:
   pgdata:
   redisdata:
