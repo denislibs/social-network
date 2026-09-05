@@ -1,5 +1,6 @@
 import type { JSX } from 'solid-js'
 import { createContext, createSignal, For, useContext } from 'solid-js'
+import { Portal } from 'solid-js/web'
 import { Button } from '../Button/Button'
 import s from './Snackbar.module.css'
 
@@ -38,27 +39,29 @@ export function SnackbarHost(props: { children: JSX.Element }) {
   return (
     <Ctx.Provider value={api}>
       {props.children}
-      <div class={s.host} aria-live="polite">
-        <For each={items()}>
-          {(x) => (
-            <div class={`${s.snack} ${x.appearance === 'negative' ? s.negative : ''}`}>
-              <span class={s.text}>{x.text}</span>
-              {x.action && (
-                <Button
-                  mode="tertiary"
-                  size="s"
-                  onClick={() => {
-                    x.action?.onClick()
-                    setItems((xs) => xs.filter((y) => y.id !== x.id))
-                  }}
-                >
-                  {x.action.label}
-                </Button>
-              )}
-            </div>
-          )}
-        </For>
-      </div>
+      <Portal>
+        <div class={s.host} aria-live="polite">
+          <For each={items()}>
+            {(x) => (
+              <div class={`${s.snack} ${x.appearance === 'negative' ? s.negative : ''}`}>
+                <span class={s.text}>{x.text}</span>
+                {x.action && (
+                  <Button
+                    mode="tertiary"
+                    size="s"
+                    onClick={() => {
+                      x.action?.onClick()
+                      setItems((xs) => xs.filter((y) => y.id !== x.id))
+                    }}
+                  >
+                    {x.action.label}
+                  </Button>
+                )}
+              </div>
+            )}
+          </For>
+        </div>
+      </Portal>
     </Ctx.Provider>
   )
 }

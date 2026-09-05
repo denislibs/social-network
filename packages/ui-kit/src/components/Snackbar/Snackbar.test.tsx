@@ -1,5 +1,5 @@
-import { fireEvent, render } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SnackbarHost, useSnackbar } from './Snackbar'
 
 function Trigger() {
@@ -18,19 +18,20 @@ function Trigger() {
     </button>
   )
 }
+afterEach(cleanup)
 describe('Snackbar', () => {
   it('shows message with action and hides after duration', () => {
     vi.useFakeTimers()
-    const { getByText, queryByText } = render(() => (
+    render(() => (
       <SnackbarHost>
         <Trigger />
       </SnackbarHost>
     ))
-    fireEvent.click(getByText('go'))
-    expect(getByText('Ссылка скопирована')).toBeInTheDocument()
-    expect(getByText('Отменить')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('go'))
+    expect(screen.getByText('Ссылка скопирована')).toBeInTheDocument()
+    expect(screen.getByText('Отменить')).toBeInTheDocument()
     vi.advanceTimersByTime(1100)
-    expect(queryByText('Ссылка скопирована')).toBeNull()
+    expect(screen.queryByText('Ссылка скопирована')).toBeNull()
     vi.useRealTimers()
   })
 })
