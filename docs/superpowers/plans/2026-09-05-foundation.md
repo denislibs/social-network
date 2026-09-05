@@ -4194,7 +4194,7 @@ export function generateUsers(cfg: SeedConfig, rng: Rng): SeedUser[] {
     let login = `${translit(firstName)}.${translit(lastName)}`.replace(/\.+/g, '.').slice(0, 28)
     if (login.length < 3) login = `user${i + 1}`
     if (used.has(login)) login = `${login}${rng.int(10, 9999)}`
-    while (used.has(login)) login = `${login.replace(/\d+$/, '')}${rng.int(10, 99999)}`
+    while (used.has(login)) login = `${login.replace(/\d+$/, '').slice(0, 27)}${rng.int(10, 99999)}` // ≤ 32 символов всегда
     used.add(login)
     const tier: Tier = i < stars ? 'star' : i < notable + stars ? 'notable' : 'regular'
     const rank = tier === 'star' ? i + 1 : tier === 'notable' ? stars + 1 + (ranks[i]! % notable) : stars + notable + 1 + (ranks[i]! % Math.max(1, N - stars - notable)) * 3
@@ -4255,6 +4255,19 @@ git commit -m "feat(seeder): users with interests and zipf popularity, communiti
 ```
 
 ---
+
+### Task 17.5: City case forms, login cap (follow-up from reviews of Tasks 16–17)
+
+**Files:**
+- Create: `apps/seeder/src/generate/cities.ts`, `cities.test.ts`
+- Modify: `apps/seeder/src/generate/users.ts` (импорт `CITIES` из `cities.ts`, cap логина), `src/generate/text.ts` + `text.test.ts` (`{city:gen}`, `{city:loc}`), `src/corpus/corpus.test.ts` (запрет `{city}` после предлогов), все `src/corpus/topics/*.ts` (переписать `{city}` после предлогов на нужную форму)
+
+**Interfaces:**
+- Produces: `CITIES: readonly string[]` (40 городов, порядок как раньше), `CITY_FORMS: Record<string, { gen: string; loc: string }>` (родительный и предложный падежи для каждого города: Москва → {gen:'Москвы', loc:'Москве'}, Санкт-Петербург → {gen:'Санкт-Петербурга', loc:'Санкт-Петербурге'}, Нижний Новгород → {gen:'Нижнего Новгорода', loc:'Нижнем Новгороде'}, Ростов-на-Дону → {gen:'Ростова-на-Дону', loc:'Ростове-на-Дону'}, Набережные Челны → {gen:'Набережных Челнов', loc:'Набережных Челнах'}, Чебоксары → {gen:'Чебоксар', loc:'Чебоксарах'}, Набережные/Чебоксары — pluralia tantum), `cityForm(name, form: 'nom'|'gen'|'loc'): string` (неизвестный город → как есть).
+- `generatePost` подставляет `{city}` → nom, `{city:gen}` → gen, `{city:loc}` → loc.
+- Тест корпуса: ни один пост/personalPost/комментарий не содержит `{city}` сразу после предлогов `в, во, на, о, об, обо, при` (нужен `{city:loc}`) и `из, до, у, для, от, около, возле, после, вокруг, напротив, мимо, среди` (нужен `{city:gen}`); также запрещены `{city:loc}`/`{city:gen}` без предлога перед ними в той же фразе не проверяем (слишком сложно).
+
+Steps: (1) `cities.test.ts`: все 40 городов имеют формы, формы не равны nom для склоняемых (исключение — несклоняемых нет в списке), `cityForm('Москва','loc')==='Москве'`, `cityForm('Неизвестск','gen')==='Неизвестск'`; (2) `text.test.ts`: `'из {city:gen} в {city:loc}'` с city 'Казань' → `'из Казани в Казани'`, `{city}` → 'Казань'; (3) скриптом (`bun` one-off, не коммитить) заменить в корпусах `\b(в|во|на|о|об|обо|при) \{city\}` → `$1 {city:loc}` и `\b(из|до|у|для|от|около|возле|после|вокруг|напротив|мимо|среди) \{city\}` → `$1 {city:gen}`; оставшиеся `{city}` после существительных (`улиц {city}`, `набережной {city}`, `района {city}`) поправить руками на `{city:gen}`; (4) тест корпуса из Interfaces; (5) `bun test`, typecheck, lint; коммит `fix(seeder): city case forms in templates; cap generated login length`.
 
 ### Task 18: Seeder stage 3: social graph
 
