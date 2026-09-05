@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build:icons": "bun scripts/build-icons.ts",
-    "test": "vitest run",
+    "test": "bun test scripts && vitest run",
     "typecheck": "tsc -p tsconfig.json",
     "catalog": "vite --config vite.config.ts"
   },
