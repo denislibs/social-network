@@ -165,3 +165,8 @@
 .navItemIdle {
   font-weight: 400;
 }
+
+/* Идёт после медиазапросов: при равной специфичности побеждает более позднее правило. */
+.bare {
+  grid-template-columns: minmax(0, 1fr);
+}

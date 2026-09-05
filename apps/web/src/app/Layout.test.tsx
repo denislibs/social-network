@@ -1,6 +1,24 @@
 import { createMemoryHistory, MemoryRouter, Route } from '@solidjs/router'
 import { render } from '@solidjs/testing-library'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('~/shared/session/session', () => ({
+  useSession: () => ({
+    user: () => ({
+      id: 1,
+      login: 'demo',
+      firstName: 'Демо',
+      lastName: 'Пользователь',
+      screenName: null,
+      createdAt: '',
+    }),
+    status: () => 'authed',
+    setUser: vi.fn(),
+    refresh: vi.fn(),
+    logout: vi.fn(),
+  }),
+}))
+
 import { Layout } from './Layout'
 
 function mount(path: string) {

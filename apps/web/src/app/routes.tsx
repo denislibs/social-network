@@ -1,17 +1,23 @@
 import { Navigate, Route } from '@solidjs/router'
 import { lazy } from 'solid-js'
+import { RequireAuth } from './RequireAuth'
 
 const FeedPage = lazy(() => import('~/features/feed/pages/FeedPage'))
-
-// TODO(Task 22): заменить на реальные страницы `~/features/auth/pages/{LoginPage,RegisterPage}`
-const LoginPage = () => <div>login</div>
-const RegisterPage = () => <div>register</div>
+const LoginPage = lazy(() => import('~/features/auth/pages/LoginPage'))
+const RegisterPage = lazy(() => import('~/features/auth/pages/RegisterPage'))
 
 export function AppRoutes() {
   return (
     <>
       <Route path="/" component={() => <Navigate href="/feed" />} />
-      <Route path="/feed" component={FeedPage} />
+      <Route
+        path="/feed"
+        component={() => (
+          <RequireAuth>
+            <FeedPage />
+          </RequireAuth>
+        )}
+      />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       <Route path="*" component={() => <div>Страница не найдена</div>} />

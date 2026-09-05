@@ -1,6 +1,7 @@
-import { A, useNavigate } from '@solidjs/router'
-import { Avatar, Counter, Icon, type IconName, Tappable } from '@vkc/ui-kit'
+import { A, useLocation, useNavigate } from '@solidjs/router'
+import { Avatar, Button, Counter, Icon, type IconName, Tappable } from '@vkc/ui-kit'
 import { createSignal, For, type JSX, Show } from 'solid-js'
+import { useSession } from '~/shared/session/session'
 import s from './Layout.module.css'
 import { getTheme, setTheme, type Theme } from './theme'
 
@@ -43,6 +44,16 @@ function HeaderLink(props: {
 
 export function Layout(props: { children?: JSX.Element; aside?: JSX.Element }) {
   const [theme, setLocalTheme] = createSignal<Theme>(getTheme())
+  const navigate = useNavigate()
+  const location = useLocation()
+  const session = useSession()
+  /** Страницы входа и регистрации показываются без навигации и правой колонки. */
+  const bare = () =>
+    location.pathname.startsWith('/login') || location.pathname.startsWith('/register')
+  const signOut = async () => {
+    await session.logout()
+    navigate('/login')
+  }
   const toggle = () => {
     const next: Theme = theme() === 'dark' ? 'light' : 'dark'
     setTheme(next)
@@ -69,35 +80,49 @@ export function Layout(props: { children?: JSX.Element; aside?: JSX.Element }) {
         >
           <Icon name={theme() === 'dark' ? 'sun_outline_24' : 'moon_outline_20'} size={24} />
         </Tappable>
-        <HeaderLink href="/profile" class={s.me} label="Профиль">
-          <Avatar size={32} seed="me" />
-        </HeaderLink>
+        <Show when={session.status() === 'authed'}>
+          <HeaderLink href="/profile" class={s.me} label="Профиль">
+            <Avatar size={32} seed={session.user()?.id ?? 'me'} />
+          </HeaderLink>
+          <Button mode="secondary" size="s" onClick={signOut}>
+            Выйти
+          </Button>
+        </Show>
+        <Show when={session.status() === 'guest' && !bare()}>
+          <Button mode="secondary" size="s" onClick={() => navigate('/login')}>
+            Войти
+          </Button>
+        </Show>
       </header>
-      <div class={s.body}>
-        <nav class={s.nav} aria-label="Основная навигация">
-          <For each={NAV}>
-            {(item) => (
-              <A
-                href={item.href}
-                class={s.navItem}
-                activeClass={s.navItemActive ?? 'is-active'}
-                inactiveClass={s.navItemIdle ?? 'is-idle'}
-              >
-                <Icon name={item.icon} size={22} />
-                <span class={s.navLabel}>{item.label}</span>
-                <Show when={item.count}>
-                  {(count) => (
-                    <Counter size="s" mode="prominent">
-                      {count()}
-                    </Counter>
-                  )}
-                </Show>
-              </A>
-            )}
-          </For>
-        </nav>
+      <div class={`${s.body} ${bare() ? s.bare : ''}`}>
+        <Show when={!bare()}>
+          <nav class={s.nav} aria-label="Основная навигация">
+            <For each={NAV}>
+              {(item) => (
+                <A
+                  href={item.href}
+                  class={s.navItem}
+                  activeClass={s.navItemActive ?? 'is-active'}
+                  inactiveClass={s.navItemIdle ?? 'is-idle'}
+                >
+                  <Icon name={item.icon} size={22} />
+                  <span class={s.navLabel}>{item.label}</span>
+                  <Show when={item.count}>
+                    {(count) => (
+                      <Counter size="s" mode="prominent">
+                        {count()}
+                      </Counter>
+                    )}
+                  </Show>
+                </A>
+              )}
+            </For>
+          </nav>
+        </Show>
         <main class={s.main}>{props.children}</main>
-        <aside class={s.aside}>{props.aside}</aside>
+        <Show when={!bare()}>
+          <aside class={s.aside}>{props.aside}</aside>
+        </Show>
       </div>
     </div>
   )
