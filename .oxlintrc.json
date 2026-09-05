@@ -1,0 +1,155 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "import", "react", "react-hooks", "jsx-a11y", "unicorn"],
+  "env": { "browser": true, "es2024": true },
+  "settings": { "react": { "version": "19.2" } },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/drizzle/**",
+    "docs/reference/**",
+    "apps/web/playwright-report/**",
+    "apps/web/test-results/**"
+  ],
+  "categories": { "correctness": "error", "suspicious": "warn" },
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": "error",
+    "import/no-cycle": ["error", { "maxDepth": 4 }],
+    "react/jsx-key": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "jsx-a11y/alt-text": "error",
+    "jsx-a11y/label-has-associated-control": "off",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          { "name": "solid-js", "message": "Фронт на React" },
+          { "name": "@vkc/ui-kit", "message": "ui-kit удалён, используйте @vkontakte/vkui" }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["apps/api/**", "apps/seeder/**", "packages/**", "scripts/**"],
+      "rules": { "react-hooks/rules-of-hooks": "off", "react-hooks/exhaustive-deps": "off" }
+    },
+    {
+      "files": ["apps/web/src/shared/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/entities/*",
+                  "@/features/*",
+                  "@/widgets/*",
+                  "@/pages/*",
+                  "@/app/*",
+                  "**/entities/**",
+                  "**/features/**",
+                  "**/widgets/**",
+                  "**/pages/**",
+                  "**/app/**"
+                ],
+                "message": "FSD: shared не импортирует слои выше"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/entities/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/features/*",
+                  "@/widgets/*",
+                  "@/pages/*",
+                  "@/app/*",
+                  "**/features/**",
+                  "**/widgets/**",
+                  "**/pages/**",
+                  "**/app/**"
+                ],
+                "message": "FSD: entities не импортирует features/widgets/pages/app"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/features/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/widgets/*",
+                  "@/pages/*",
+                  "@/app/*",
+                  "**/widgets/**",
+                  "**/pages/**",
+                  "**/app/**"
+                ],
+                "message": "FSD: features не импортирует widgets/pages/app"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/widgets/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/pages/*", "@/app/*", "**/pages/**", "**/app/**"],
+                "message": "FSD: widgets не импортирует pages/app"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/pages/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/app/*", "**/app/**"],
+                "message": "FSD: pages не импортирует app"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.test-d.ts"],
+      "rules": { "typescript/no-non-null-assertion": "off" }
+    },
+    {
+      "files": ["**/*.test-d.ts"],
+      "rules": { "no-unused-expressions": "off" }
+    }
+  ]
+}
