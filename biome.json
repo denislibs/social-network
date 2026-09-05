@@ -21,6 +21,10 @@
     {
       "includes": ["packages/ui-kit/src/tokens/*.css"],
       "formatter": { "enabled": false }
+    },
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "**/*.test-d.ts", "apps/seeder/src/**"],
+      "linter": { "rules": { "style": { "noNonNullAssertion": "off" } } }
     }
   ]
 }
