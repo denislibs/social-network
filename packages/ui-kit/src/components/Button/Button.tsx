@@ -49,8 +49,12 @@ export function Button(props: ButtonProps) {
       .trim()
   const handleClick: JSX.EventHandler<HTMLElement, MouseEvent> = (e) => {
     if (local.loading || local.disabled) return
-    if (typeof local.onClick === 'function') {
-      local.onClick(e as MouseEvent & { currentTarget: HTMLButtonElement; target: Element })
+    const h = local.onClick
+    if (typeof h === 'function') {
+      h(e as MouseEvent & { currentTarget: HTMLButtonElement; target: Element })
+    } else if (Array.isArray(h)) {
+      // Solid bound-handler form [fn, data]
+      h[0](h[1], e as MouseEvent & { currentTarget: HTMLButtonElement; target: Element })
     }
   }
   return (

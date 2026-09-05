@@ -32,4 +32,11 @@ describe('Button', () => {
     expect(getByTestId('b')).toBeInTheDocument()
     expect(getByTestId('a')).toBeInTheDocument()
   })
+  it('supports Solid bound-handler form [fn, data]', () => {
+    const fn = vi.fn()
+    const { getByRole } = render(() => <Button onClick={[fn, 42]}>X</Button>)
+    fireEvent.click(getByRole('button'))
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(fn.mock.calls[0]?.[0]).toBe(42)
+  })
 })
