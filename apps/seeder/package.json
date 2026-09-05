@@ -1,0 +1,19 @@
+{
+  "name": "@vkc/seeder",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "bun src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "@vkc/api": "workspace:*",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

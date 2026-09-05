@@ -23,6 +23,18 @@
         "drizzle-kit": "^0.31.10",
       },
     },
+    "apps/seeder": {
+      "name": "@vkc/seeder",
+      "version": "0.0.1",
+      "dependencies": {
+        "@faker-js/faker": "^10.6.0",
+        "@vkc/api": "workspace:*",
+        "drizzle-orm": "^0.45.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+    },
     "packages/contracts": {
       "name": "@vkc/contracts",
       "version": "0.0.1",
@@ -184,6 +196,8 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
 
+    "@faker-js/faker": ["@faker-js/faker@10.6.0", "", {}, "sha512-3RQHgEtvL1Frl/d1cSreo7qhJ3Gk1OdNUai/CtZ8G+wYeRQnJih3s9xJ9/kgYekPQRdwgh0HXRPqMlzWGwivIQ=="],
+
     "@ioredis/commands": ["@ioredis/commands@1.10.0", "", {}, "sha512-UmeW7z4LfctwoQ5wkhVzgq8tXkreED2xZGpX+Bg+zA+WJFZCT6c062AfCK/Dfk81xZnnwdhJCUMkitihRaoC2Q=="],
 
     "@jridgewell/gen-mapping": ["@jridgewell/gen-mapping@0.3.13", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA=="],
@@ -311,6 +325,8 @@
     "@vkc/api": ["@vkc/api@workspace:apps/api"],
 
     "@vkc/contracts": ["@vkc/contracts@workspace:packages/contracts"],
+
+    "@vkc/seeder": ["@vkc/seeder@workspace:apps/seeder"],
 
     "@vkc/ui-kit": ["@vkc/ui-kit@workspace:packages/ui-kit"],
 
