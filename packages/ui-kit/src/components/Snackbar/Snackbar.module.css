@@ -1,0 +1,41 @@
+.host {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 110;
+}
+.snack {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 12px 16px;
+  border-radius: var(--vk-radius-paper);
+  background: var(--vk-background_content);
+  box-shadow: var(--vk-elevation-3);
+  animation: slideIn var(--vk-duration-l) var(--vk-ease-platform);
+}
+.negative {
+  box-shadow:
+    var(--vk-elevation-3),
+    inset 0 0 0 1px var(--vk-background_negative);
+}
+.text {
+  flex: 1;
+  font-size: 15px;
+  line-height: 20px;
+}
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
