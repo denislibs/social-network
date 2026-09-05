@@ -1,0 +1,45 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--vk-size-cell);
+  padding: 6px 16px;
+  width: 100%;
+  color: var(--vk-text_primary);
+  text-decoration: none;
+}
+.before,
+.after {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.after {
+  color: var(--vk-icon_secondary);
+  margin-left: auto;
+}
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+.title {
+  font-size: 15px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.multiline {
+  white-space: normal;
+}
+.subtitle {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--vk-text_secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
