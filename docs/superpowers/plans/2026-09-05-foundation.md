@@ -1312,7 +1312,9 @@ export function Button(props: ButtonProps) {
       aria-busy={local.loading ? 'true' : undefined}
       onClick={(e: MouseEvent & { currentTarget: HTMLButtonElement; target: Element }) => {
         if (local.loading || local.disabled) return
-        if (typeof local.onClick === 'function') local.onClick(e)
+        const h = local.onClick
+        if (typeof h === 'function') h(e)
+        else if (Array.isArray(h)) h[0](h[1], e) // Solid bound-handler form [fn, data]
       }}
       {...rest}
     >
