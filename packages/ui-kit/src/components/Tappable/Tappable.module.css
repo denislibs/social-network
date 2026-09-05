@@ -1,0 +1,59 @@
+.root {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--vk-duration-s) var(--vk-ease-default),
+    opacity var(--vk-duration-s) var(--vk-ease-default);
+}
+.root:where(button) {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+}
+.bg:hover {
+  background-color: var(--vk-state_hover);
+}
+.bg:active {
+  background-color: var(--vk-state_active);
+}
+.op:hover {
+  opacity: 0.8;
+}
+.op:active {
+  opacity: 0.6;
+}
+.disabled {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.wave {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: var(--vk-state_active);
+  pointer-events: none;
+  animation: wave var(--vk-duration-l) var(--vk-ease-platform) forwards;
+}
+@keyframes wave {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(8);
+  }
+}

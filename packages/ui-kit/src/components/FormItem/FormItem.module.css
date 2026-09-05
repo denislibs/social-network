@@ -1,0 +1,19 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+}
+.top {
+  font-size: 14px;
+  line-height: 18px;
+  color: var(--vk-text_subhead);
+}
+.bottom {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--vk-text_secondary);
+}
+.error {
+  color: var(--vk-text_negative);
+}

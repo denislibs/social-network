@@ -5,3 +5,9 @@ seed-data/
 .venv/
 __pycache__/
 .DS_Store
+.superpowers/
+apps/web/dist/
+apps/web/playwright-report/
+apps/web/test-results/
+apps/ml/.venv/
+*.log

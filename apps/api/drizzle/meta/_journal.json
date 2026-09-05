@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788613116663,
+      "tag": "0000_lame_korath",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788613124949,
+      "tag": "0001_events_partitioned",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788635433947,
+      "tag": "0002_posts_index_nulls_first",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+.root {
+  background: var(--vk-background_content);
+  border-radius: var(--vk-radius-paper);
+  box-shadow: 0 0 0 1px var(--vk-separator_secondary);
+  overflow: hidden;
+}
+.padded {
+  padding: 12px 16px;
+}
+.header {
+  padding: 12px 16px 8px;
+  font: 500 15px / 20px var(--vk-font-family);
+  color: var(--vk-text_primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

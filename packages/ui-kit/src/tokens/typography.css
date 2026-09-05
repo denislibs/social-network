@@ -1,0 +1,21 @@
+.vk-title1 { font: 600 24px/28px var(--vk-font-family); }
+.vk-display_title1 { font: 600 23px/28px var(--vk-font-family); }
+.vk-display_title2 { font: 600 21px/26px var(--vk-font-family); }
+.vk-title2 { font: 500 20px/24px var(--vk-font-family); }
+.vk-display_title3 { font: 600 19px/24px var(--vk-font-family); }
+.vk-title3 { font: 600 17px/22px var(--vk-font-family); }
+.vk-display_title4 { font: 600 17px/22px var(--vk-font-family); }
+.vk-headline1 { font: 500 16px/20px var(--vk-font-family); }
+.vk-headline { font: 500 16px/20px var(--vk-font-family); }
+.vk-text { font: 400 16px/20px var(--vk-font-family); }
+.vk-headline2 { font: 500 15px/20px var(--vk-font-family); }
+.vk-paragraph { font: 400 15px/20px var(--vk-font-family); }
+.vk-subhead { font: 400 14px/18px var(--vk-font-family); }
+.vk-footnote { font: 400 13px/16px var(--vk-font-family); }
+.vk-footnote_caps { font: 600 13px/16px var(--vk-font-family); text-transform: uppercase; letter-spacing: 0.02em; }
+.vk-caption1 { font: 400 12px/14px var(--vk-font-family); }
+.vk-caption1_caps { font: 600 12px/14px var(--vk-font-family); text-transform: uppercase; letter-spacing: 0.02em; }
+.vk-caption2 { font: 400 11px/14px var(--vk-font-family); }
+.vk-caption2_caps { font: 600 11px/14px var(--vk-font-family); text-transform: uppercase; letter-spacing: 0.02em; }
+.vk-caption3 { font: 400 9px/12px var(--vk-font-family); }
+.vk-caption3_caps { font: 600 9px/12px var(--vk-font-family); text-transform: uppercase; letter-spacing: 0.02em; }

@@ -36,7 +36,7 @@
 | БД | PostgreSQL 17 + pgvector | Единая БД, векторный поиск без отдельного движка |
 | Кэш и realtime | Redis 7 | Сессии, онлайн, кэш ленты, pub/sub, Redis Streams как шина событий |
 | Файлы | MinIO (S3 API) | Локально и на VPS одинаково, заменяется на любой S3 |
-| Инфра | Docker Compose, Caddy на проде, GitHub Actions | Один compose локально и на VPS |
+| Инфра | Docker Compose, nginx как единый вход (локально и на проде), GitHub Actions | Один compose и один nginx-шаблон локально и на VPS |
 
 Иконки: пакет `@vkontakte/icons` содержит React-компоненты, но внутри каждого лежит обычный SVG. Скрипт сборки достаёт SVG и генерирует спрайт с типизированным списком имён; React в рантайме отсутствует.
 
@@ -251,7 +251,7 @@ LightGBM, бинарная классификация «будет вовлеч�
 
 ## 12. Деплой и эксплуатация
 
-`docker-compose.yml` для локали, `compose.prod.yml` с оверрайдами для VPS: Caddy с автоматическим TLS, образы в GitHub Container Registry, `docker compose pull && up -d`. Postgres и MinIO на volume, ежедневный `pg_dump` в MinIO. Секреты в `.env` на сервере, в репозитории `.env.example`. Ориентир по железу: 4 vCPU, 8 GB.
+`docker-compose.yml` для локали, `compose.prod.yml` с оверрайдами для VPS: тот же nginx-шаблон с upstream'ами на контейнеры `api`/`web` и TLS (certbot), образы в GitHub Container Registry, `docker compose pull && up -d`. Postgres и MinIO на volume, ежедневный `pg_dump` в MinIO. Секреты в `.env` на сервере, в репозитории `.env.example`. Ориентир по железу: 4 vCPU, 8 GB.
 
 Наблюдаемость: структурированные логи в stdout (pino, structlog), `/health` у каждого сервиса, задержка ленты и доля ответов ML в логах.
 

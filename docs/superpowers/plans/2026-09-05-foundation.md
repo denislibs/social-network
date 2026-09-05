@@ -201,10 +201,10 @@ git commit -m "chore: monorepo root with bun workspaces, biome, base tsconfig"
 ### Task 2: Docker Compose infrastructure
 
 **Files:**
-- Create: `docker-compose.yml`, `.env.example`, `scripts/wait-for-infra.ts`
+- Create: `docker-compose.yml`, `.env.example`, `scripts/wait-for-infra.ts`, `scripts/pg-init.sql`, `infra/nginx/default.conf.template`
 
 **Interfaces:**
-- Produces: переменные `DATABASE_URL`, `DATABASE_URL_TEST`, `REDIS_URL`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`; сервисы `postgres:5432`, `redis:6379`, `minio:9000/9001`. База `vk` и база `vk_test` создаются при старте.
+- Produces: nginx на `http://localhost:8080` как единый origin (`/api/*` → API, остальное → Vite); переменные `DATABASE_URL`, `DATABASE_URL_TEST`, `REDIS_URL`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`; сервисы `postgres:5432`, `redis:6379`, `minio:9000/9001`. База `vk` и база `vk_test` создаются при старте.
 
 - [ ] **Step 1: docker-compose.yml**
 
@@ -318,6 +318,63 @@ while (Date.now() < deadline) {
 console.error('infra not ready after 60s')
 process.exit(1)
 ```
+
+- [ ] **Step 4b: nginx как единая точка входа**
+
+Добавить в `docker-compose.yml` сервис:
+```yaml
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["8080:80"]
+    environment:
+      API_UPSTREAM: host.docker.internal:3000
+      WEB_UPSTREAM: host.docker.internal:5173
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ./infra/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/nginx-health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+```
+
+`infra/nginx/default.conf.template` (образ nginx сам прогоняет `envsubst` по `templates/*.template`):
+```nginx
+map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+
+server {
+  listen 80;
+  server_name _;
+  client_max_body_size 50m;
+
+  location = /nginx-health { return 200 'ok'; add_header Content-Type text/plain; }
+
+  location /api/ {
+    proxy_pass http://${API_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 3600s;
+  }
+
+  location / {
+    proxy_pass http://${WEB_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+  }
+}
+```
+
+Смысл: один origin `http://localhost:8080` для фронта и API (cookie без CORS, WebSocket `/api/v1/ws` проксируется тем же путём); `location /api/` → API на хосте, всё остальное → Vite dev с HMR. На VPS тот же образ и тот же шаблон, только upstream'ы указывают на контейнеры `api`/`web` и добавляется TLS. В `.env.example` добавить `PUBLIC_ORIGIN=http://localhost:8080`. `wait-for-infra.ts` nginx не проверяет (upstream'ы в момент `infra:up` ещё не подняты — это нормально, nginx отдаёт 502 до старта API/Vite).
+
+Проверка: `curl -s localhost:8080/nginx-health` → `ok`; `curl -si localhost:8080/api/v1/health` → `502` (API не запущен) — значит маршрут доходит до nginx и проксируется.
 
 - [ ] **Step 5: Поднять и проверить**
 
@@ -1255,7 +1312,9 @@ export function Button(props: ButtonProps) {
       aria-busy={local.loading ? 'true' : undefined}
       onClick={(e: MouseEvent & { currentTarget: HTMLButtonElement; target: Element }) => {
         if (local.loading || local.disabled) return
-        if (typeof local.onClick === 'function') local.onClick(e)
+        const h = local.onClick
+        if (typeof h === 'function') h(e)
+        else if (Array.isArray(h)) h[0](h[1], e) // Solid bound-handler form [fn, data]
       }}
       {...rest}
     >
@@ -1402,6 +1461,13 @@ describe('Avatar', () => {
     expect(root.style.backgroundImage).toContain('radial-gradient')
     expect(root.querySelector('img')).toBeNull()
   })
+  it('gradient avatar is labelled when alt given and hidden otherwise', () => {
+    const named = render(() => <Avatar seed={2} alt="Денис" />).container.firstElementChild!
+    expect(named).toHaveAttribute('role', 'img')
+    expect(named).toHaveAttribute('aria-label', 'Денис')
+    const anon = render(() => <Avatar seed={3} />).container.firstElementChild!
+    expect(anon).toHaveAttribute('aria-hidden', 'true')
+  })
   it('sets size and online dot', () => {
     const { container } = render(() => <Avatar seed={1} size={96} online />)
     const root = container.firstElementChild as HTMLElement
@@ -1452,6 +1518,9 @@ export function Avatar(props: AvatarProps) {
     <span
       class={`${s.root} ${props.class ?? ''}`}
       style={{ width: `${size()}px`, height: `${size()}px`, 'background-image': props.src ? undefined : meshGradient(props.seed ?? 0) }}
+      role={!props.src && props.alt ? 'img' : undefined}
+      aria-label={!props.src && props.alt ? props.alt : undefined}
+      aria-hidden={!props.src && !props.alt ? 'true' : undefined}
     >
       <Show when={props.src}>{(src) => <img class={s.img} src={src()} alt={props.alt ?? ''} width={size()} height={size()} />}</Show>
       <Show when={props.online}><i data-online class={s.online} /></Show>
@@ -1616,32 +1685,34 @@ describe('Tabs', () => {
 })
 ```
 
-`Modal.test.tsx`:
+`Modal.test.tsx` (Modal рендерится через `<Portal>` в `document.body`, поэтому запросы через `screen`, а не через контейнер `render`):
 ```tsx
-import { fireEvent, render } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Modal } from './Modal'
 
+afterEach(cleanup)
 describe('Modal', () => {
   it('renders nothing when closed and dialog when open', () => {
-    const closed = render(() => <Modal open={false} onClose={() => {}}>x</Modal>)
-    expect(closed.queryByRole('dialog')).toBeNull()
-    const open = render(() => <Modal open onClose={() => {}} title="Выйти?">x</Modal>)
-    expect(open.getByRole('dialog')).toHaveAttribute('aria-label', 'Выйти?')
+    render(() => <Modal open={false} onClose={() => {}}>x</Modal>)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    cleanup()
+    render(() => <Modal open onClose={() => {}} title="Выйти?">x</Modal>)
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'Выйти?')
   })
   it('closes on Escape and on overlay click', () => {
     const onClose = vi.fn()
-    const { getByTestId } = render(() => <Modal open onClose={onClose}>x</Modal>)
+    render(() => <Modal open onClose={onClose}>x</Modal>)
     fireEvent.keyDown(document, { key: 'Escape' })
-    fireEvent.click(getByTestId('overlay'))
+    fireEvent.click(screen.getByTestId('overlay'))
     expect(onClose).toHaveBeenCalledTimes(2)
   })
 })
 ```
 
-`Snackbar.test.tsx`:
+`Snackbar.test.tsx` (хост рендерится через `<Portal>`, запросы через `screen`):
 ```tsx
-import { fireEvent, render } from '@solidjs/testing-library'
+import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { describe, expect, it, vi } from 'vitest'
 import { SnackbarHost, useSnackbar } from './Snackbar'
 
@@ -1652,12 +1723,12 @@ function Trigger() {
 describe('Snackbar', () => {
   it('shows message with action and hides after duration', () => {
     vi.useFakeTimers()
-    const { getByText, queryByText } = render(() => <SnackbarHost><Trigger /></SnackbarHost>)
-    fireEvent.click(getByText('go'))
-    expect(getByText('Ссылка скопирована')).toBeInTheDocument()
-    expect(getByText('Отменить')).toBeInTheDocument()
+    render(() => <SnackbarHost><Trigger /></SnackbarHost>)
+    fireEvent.click(screen.getByText('go'))
+    expect(screen.getByText('Ссылка скопирована')).toBeInTheDocument()
+    expect(screen.getByText('Отменить')).toBeInTheDocument()
     vi.advanceTimersByTime(1100)
-    expect(queryByText('Ссылка скопирована')).toBeNull()
+    expect(screen.queryByText('Ссылка скопирована')).toBeNull()
     vi.useRealTimers()
   })
 })
@@ -2626,20 +2697,35 @@ Cross-module talk goes through `kernel/event-bus` events or a module's exported 
 import { describe, expect, it } from 'bun:test'
 import { Glob } from 'bun'
 import { readFileSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
 
 const root = resolve(import.meta.dir)
+const LAYERS = ['domain', 'application', 'infrastructure', 'presentation']
 const files = [...new Glob('**/*.ts').scanSync({ cwd: root, absolute: true })].filter((f) => !f.endsWith('.test.ts'))
-const importRe = /^\s*import\s[^'"]*['"]([^'"]+)['"]/gm
+
+/** Все спецификаторы импортов/реэкспортов файла: `import x from '…'`, многострочные, `export … from '…'`, `import '…'`. */
+const specRe = /\bfrom\s*['"]([^'"]+)['"]|^\s*import\s*['"]([^'"]+)['"]/gm
+export function specsOf(src: string): string[] {
+  return [...src.matchAll(specRe)].map((m) => (m[1] ?? m[2]) as string)
+}
+const isPkg = (spec: string, pkgs: string[]) => pkgs.some((b) => spec === b || spec.startsWith(`${b}/`) || spec.startsWith(`${b}:`))
+const hitsPath = (spec: string, parts: string[]) => spec.startsWith('.') && parts.some((b) => `${spec}/`.includes(b))
 
 function moduleOf(file: string): string | null {
   const rel = relative(root, file).split('/')
-  return rel.length > 1 ? rel[0]! : null
+  return rel.length > 1 ? (rel[0] as string) : null
 }
 function layerOf(file: string): string | null {
   const rel = relative(root, file).split('/')
-  return rel[1] && ['domain', 'application', 'infrastructure', 'presentation'].includes(rel[1]) ? rel[1] : null
+  return rel[1] && LAYERS.includes(rel[1]) ? rel[1] : null
 }
+
+describe('specsOf', () => {
+  it('captures single-line, multi-line, type, side-effect imports and re-exports', () => {
+    const src = `import a from './a'\nimport type { B } from '../b'\nimport {\n  c,\n} from 'pkg/c'\nimport 'side'\nexport { d } from './d'\nexport * from '../e'\n`
+    expect(specsOf(src)).toEqual(['./a', '../b', 'pkg/c', 'side', './d', '../e'])
+  })
+})
 
 describe('module boundaries', () => {
   it('no module imports another module inner layers', () => {
@@ -2647,27 +2733,22 @@ describe('module boundaries', () => {
     for (const f of files) {
       const mod = moduleOf(f)
       if (!mod) continue
-      const src = readFileSync(f, 'utf8')
-      for (const m of src.matchAll(importRe)) {
-        const spec = m[1]!
+      for (const spec of specsOf(readFileSync(f, 'utf8'))) {
         if (!spec.startsWith('.')) continue
         const target = resolve(dirname(f), spec)
         const tmod = moduleOf(target)
-        const tlayer = layerOf(target)
-        if (tmod && tmod !== mod && tlayer) violations.push(`${relative(root, f)} -> ${spec}`)
+        if (tmod && tmod !== mod && layerOf(target)) violations.push(`${relative(root, f)} -> ${spec}`)
       }
     }
     expect(violations).toEqual([])
   })
   it('domain layer imports no framework/infrastructure', () => {
-    const banned = ['elysia', 'drizzle-orm', 'ioredis', 'bun', 'bun:', '../application', '../infrastructure', '../presentation', '/db/']
     const violations: string[] = []
     for (const f of files) {
       if (layerOf(f) !== 'domain') continue
-      const src = readFileSync(f, 'utf8')
-      for (const m of src.matchAll(importRe)) {
-        const spec = m[1]!
-        if (banned.some((b) => spec === b || spec.startsWith(b) || spec.includes(b))) violations.push(`${relative(root, f)} -> ${spec}`)
+      for (const spec of specsOf(readFileSync(f, 'utf8'))) {
+        if (isPkg(spec, ['elysia', 'drizzle-orm', 'ioredis', 'bun']) || hitsPath(spec, ['/application/', '/infrastructure/', '/presentation/', '/db/']))
+          violations.push(`${relative(root, f)} -> ${spec}`)
       }
     }
     expect(violations).toEqual([])
@@ -2676,10 +2757,9 @@ describe('module boundaries', () => {
     const violations: string[] = []
     for (const f of files) {
       if (layerOf(f) !== 'application') continue
-      const src = readFileSync(f, 'utf8')
-      for (const m of src.matchAll(importRe)) {
-        const spec = m[1]!
-        if (/\/(infrastructure|presentation)\//.test(spec) || spec.includes('../infrastructure') || spec.includes('../presentation') || ['elysia', 'drizzle-orm', 'ioredis'].some((b) => spec.startsWith(b))) violations.push(`${relative(root, f)} -> ${spec}`)
+      for (const spec of specsOf(readFileSync(f, 'utf8'))) {
+        if (isPkg(spec, ['elysia', 'drizzle-orm', 'ioredis']) || hitsPath(spec, ['/infrastructure/', '/presentation/']))
+          violations.push(`${relative(root, f)} -> ${spec}`)
       }
     }
     expect(violations).toEqual([])
@@ -2690,7 +2770,7 @@ describe('module boundaries', () => {
 - [ ] **Step 3: Запустить (модулей ещё нет — тест проходит на пустом множестве), закоммитить**
 
 Run: `cd apps/api && bun test src/modules`
-Expected: PASS (3).
+Expected: PASS (4).
 
 ```bash
 git add apps/api/src/modules
@@ -2722,14 +2802,19 @@ import { User } from './user'
 import { Login, Password } from './value-objects'
 import { FakeHasher } from '../application/testing/fakes'
 
+/** Код доменной ошибки, брошенной fn (сообщения — часть HTTP-контракта, по ним не матчим). */
+const codeOf = (fn: () => unknown): string | undefined => {
+  try { fn() } catch (e) { return (e as { code?: string }).code }
+  return undefined
+}
 describe('Login', () => {
   it('normalizes and validates', () => {
     expect(Login.create('  Denis_01 ').value).toBe('denis_01')
-    for (const bad of ['ab', 'с кириллицей', 'a'.repeat(33), 'has space']) expect(() => Login.create(bad)).toThrow('invalid_login')
+    for (const bad of ['ab', 'с кириллицей', 'a'.repeat(33), 'has space']) expect(codeOf(() => Login.create(bad))).toBe('invalid_login')
   })
 })
 describe('Password', () => {
-  it('rejects short', () => { expect(() => Password.assertStrong('1234567')).toThrow('weak_password') })
+  it('rejects short', () => { expect(codeOf(() => Password.assertStrong('1234567'))).toBe('weak_password') })
 })
 describe('User.register', () => {
   it('hashes password, emits UserRegistered, verifies password', async () => {
@@ -2884,6 +2969,7 @@ import type { Command } from '../../../../kernel/command-bus'
 import { ConflictError } from '../../../../kernel/errors'
 import type { EventBus } from '../../../../kernel/event-bus'
 import { User } from '../../domain/user'
+import { Login } from '../../domain/value-objects'
 import { toUserDto, type UserDto } from '../dto'
 import type { PasswordHasher, SessionStore, UserRepository } from '../ports'
 
@@ -2893,8 +2979,9 @@ export class RegisterUser implements Command<{ user: UserDto; token: string }> {
 }
 export function registerUserHandler(d: { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; events: EventBus }) {
   return async (cmd: RegisterUser) => {
+    // Проверяем занятость логина ДО хэширования пароля: argon2 дорогой, иначе дубли логинов — дешёвый DoS.
+    if (await d.users.findByLogin(Login.create(cmd.input.login).value)) throw new ConflictError('login_taken', 'Login is already taken')
     const user = await User.register(cmd.input, d.hasher)
-    if (await d.users.findByLogin(user.login.value)) throw new ConflictError('login_taken', 'Login is already taken')
     const saved = await d.users.save(user)
     const token = await d.sessions.create(saved.id!, { ua: cmd.input.ua })
     await d.events.publish(saved.pullEvents())
@@ -2915,10 +3002,13 @@ export class Login implements Command<{ user: UserDto; token: string }> {
   declare readonly __result: { user: UserDto; token: string }
   constructor(readonly input: { login: string; password: string; ua?: string }) {}
 }
-export function loginHandler(d: { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; events: EventBus }) {
+/** dummyHash — заранее посчитанный хэш случайного пароля (см. registerIdentityHandlers), нужен только для выравнивания времени. */
+export function loginHandler(d: { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; events: EventBus; dummyHash: string }) {
   return async (cmd: Login) => {
     const user = await d.users.findByLogin(cmd.input.login.trim().toLowerCase())
-    if (!user || !(await user.verifyPassword(cmd.input.password, d.hasher))) throw new UnauthorizedError('invalid_credentials', 'Wrong login or password')
+    // При неизвестном логине всё равно проверяем пароль против фиктивного хэша, чтобы время ответа не выдавало существование аккаунта.
+    const ok = user ? await user.verifyPassword(cmd.input.password, d.hasher) : (await d.hasher.verify(cmd.input.password, d.dummyHash), false)
+    if (!user || !ok) throw new UnauthorizedError('invalid_credentials', 'Wrong login or password')
     const token = await d.sessions.create(user.id!, { ua: cmd.input.ua })
     await d.events.publish([{ type: 'UserLoggedIn', occurredAt: new Date(), payload: { userId: user.id } }])
     return { user: toUserDto(user), token }
@@ -2962,9 +3052,10 @@ import type { PasswordHasher, SessionStore, UserRepository } from './ports'
 import { GetMe, getMeHandler } from './queries/get-me'
 
 export type IdentityDeps = { users: UserRepository; sessions: SessionStore; hasher: PasswordHasher; commands: CommandBus; queries: QueryBus; events: EventBus }
-export function registerIdentityHandlers(d: IdentityDeps): void {
+export async function registerIdentityHandlers(d: IdentityDeps): Promise<void> {
+  const dummyHash = await d.hasher.hash(crypto.randomUUID())
   d.commands.register(RegisterUser, registerUserHandler(d))
-  d.commands.register(Login, loginHandler(d))
+  d.commands.register(Login, loginHandler({ ...d, dummyHash }))
   d.commands.register(Logout, logoutHandler(d))
   d.commands.register(LogoutAll, logoutAllHandler(d))
   d.queries.register(GetMe, getMeHandler(d))
@@ -2988,11 +3079,11 @@ import { registerIdentityHandlers } from './register'
 import { FakeHasher, InMemorySessions, InMemoryUsers } from './testing/fakes'
 
 let commands: CommandBus, queries: QueryBus, sessions: InMemorySessions, published: string[]
-beforeEach(() => {
+beforeEach(async () => {
   commands = new CommandBus(); queries = new QueryBus(); sessions = new InMemorySessions(); published = []
   const events = new EventBus()
   events.subscribe('UserRegistered', (e) => { published.push(`reg:${(e.payload as { userId: number }).userId}`) })
-  registerIdentityHandlers({ users: new InMemoryUsers(), sessions, hasher: new FakeHasher(), commands, queries, events })
+  await registerIdentityHandlers({ users: new InMemoryUsers(), sessions, hasher: new FakeHasher(), commands, queries, events })
 })
 const input = { login: 'denis', password: 'password123', firstName: 'Денис', lastName: 'Кораблев' }
 
@@ -3187,6 +3278,12 @@ import type Redis from 'ioredis'
 import type { SessionStore } from '../application/ports'
 
 const DAY = 86400
+/** ioredis: exec() резолвится массивом [err, result] на команду (или null при аборте) — ошибки не бросаются сами. */
+async function execOrThrow(multi: ReturnType<Redis['multi']>): Promise<void> {
+  const results = await multi.exec()
+  if (!results) throw new Error('redis transaction aborted')
+  for (const [err] of results) if (err) throw err
+}
 export class RedisSessionStore implements SessionStore {
   private ttl: number
   private touchBelow: number
@@ -3198,11 +3295,10 @@ export class RedisSessionStore implements SessionStore {
   private userKey(id: number) { return `user_sessions:${id}` }
   async create(userId: number, meta: { ua?: string }) {
     const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex')
-    await this.redis.multi()
+    await execOrThrow(this.redis.multi()
       .set(this.key(token), JSON.stringify({ userId, createdAt: Date.now(), ua: meta.ua ?? null }), 'EX', this.ttl)
       .sadd(this.userKey(userId), token)
-      .expire(this.userKey(userId), this.ttl)
-      .exec()
+      .expire(this.userKey(userId), this.ttl))
     return token
   }
   async get(token: string) {
@@ -3218,14 +3314,14 @@ export class RedisSessionStore implements SessionStore {
     const s = await this.get(token)
     const m = this.redis.multi().del(this.key(token))
     if (s) m.srem(this.userKey(s.userId), token)
-    await m.exec()
+    await execOrThrow(m)
   }
   async deleteAllForUser(userId: number) {
     const tokens = await this.redis.smembers(this.userKey(userId))
     const m = this.redis.multi()
     for (const t of tokens) m.del(this.key(t))
     m.del(this.userKey(userId))
-    await m.exec()
+    await execOrThrow(m)
   }
 }
 ```
@@ -3420,10 +3516,10 @@ import { RedisSessionStore } from './infrastructure/redis-session-store'
 import { identityRoutes } from './presentation/routes'
 import { authPlugin } from './presentation/auth-macro'
 
-export function identityModule(d: { db: Db; redis: Redis; commands: CommandBus; queries: QueryBus; events: EventBus; cookieSecure: boolean }) {
+export async function identityModule(d: { db: Db; redis: Redis; commands: CommandBus; queries: QueryBus; events: EventBus; cookieSecure: boolean }) {
   const users = new DrizzleUserRepository(d.db)
   const sessions = new RedisSessionStore(d.redis)
-  registerIdentityHandlers({ users, sessions, hasher: new BunPasswordHasher(), commands: d.commands, queries: d.queries, events: d.events })
+  await registerIdentityHandlers({ users, sessions, hasher: new BunPasswordHasher(), commands: d.commands, queries: d.queries, events: d.events })
   return { plugin: identityRoutes({ commands: d.commands, queries: d.queries, sessions, cookieSecure: d.cookieSecure }), auth: authPlugin(sessions), sessions }
 }
 ```
@@ -3441,8 +3537,8 @@ import { identityModule } from './modules/identity'
 
 export type AppDeps = { db: Db; redis: Redis; commands: CommandBus; queries: QueryBus; events: EventBus; cookieSecure: boolean }
 
-export function buildApp(deps: AppDeps) {
-  const identity = identityModule(deps)
+export async function buildApp(deps: AppDeps) {
+  const identity = await identityModule(deps)
   return new Elysia({ prefix: '/api/v1' })
     .onError(({ error, set, code }) => {
       if (error instanceof AppError) {
@@ -3477,7 +3573,7 @@ import { CommandBus } from './kernel/command-bus'
 import { QueryBus } from './kernel/query-bus'
 import { EventBus } from './kernel/event-bus'
 
-const app = buildApp({ db: createDb(config.databaseUrl), redis: createRedis(config.redisUrl), commands: new CommandBus(), queries: new QueryBus(), events: new EventBus(), cookieSecure: config.cookieSecure })
+const app = await buildApp({ db: createDb(config.databaseUrl), redis: createRedis(config.redisUrl), commands: new CommandBus(), queries: new QueryBus(), events: new EventBus(), cookieSecure: config.cookieSecure })
 app.listen(config.apiPort)
 console.log(`api on http://localhost:${config.apiPort}/api/v1/health`)
 ```
@@ -3497,7 +3593,7 @@ export type TestApp = { app: App; db: Db; redis: Redis; close(): Promise<void> }
 export async function createTestApp(): Promise<TestApp> {
   const db = await testDb()
   const redis = testRedis()
-  const app = buildApp({ db, redis, commands: new CommandBus(), queries: new QueryBus(), events: new EventBus({ error: () => {} }), cookieSecure: false })
+  const app = await buildApp({ db, redis, commands: new CommandBus(), queries: new QueryBus(), events: new EventBus({ error: () => {} }), cookieSecure: false })
   return { app, db, redis, close: async () => { await db.$client.close(); redis.disconnect() } }
 }
 export function cookieFrom(res: Response): string {
@@ -3784,6 +3880,17 @@ describe('corpus', () => {
         expect(c.closers.length).toBeGreaterThanOrEqual(CORPUS_MIN.closers)
         expect(c.hashtags.length).toBeGreaterThanOrEqual(CORPUS_MIN.hashtags)
       })
+      it('is not templated: skeleton groups ≤ 8, length and register spread', () => {
+        const groups = new Map<string, number>()
+        for (const p of c.posts) { const k = p.split(/\s+/).slice(0, 3).join(' ').toLowerCase(); groups.set(k, (groups.get(k) ?? 0) + 1) }
+        const worst = [...groups.entries()].sort((a, b) => b[1] - a[1])[0]
+        expect(worst?.[1] ?? 0, `skeleton "${worst?.[0]}"`).toBeLessThanOrEqual(8)
+        expect(c.posts.filter((p) => p.length < 90).length, 'short posts').toBeGreaterThanOrEqual(15)
+        expect(c.posts.filter((p) => p.length > 350).length, 'long posts').toBeGreaterThanOrEqual(15)
+        expect(c.posts.filter((p) => /[«"—]\s?[А-ЯЁ]/.test(p) && /(сказал|говорит|спросил|ответил|—\s)/.test(p)).length, 'direct speech').toBeGreaterThanOrEqual(10)
+        expect(c.posts.filter((p) => /(^|\n)\s*(\d\)|\d\.|—|•)\s/m.test(p)).length, 'lists').toBeGreaterThanOrEqual(10)
+        expect(c.posts.filter((p) => p.trimEnd().endsWith('?')).length, 'questions').toBeGreaterThanOrEqual(10)
+      })
       it('strings are unique and non-empty, posts 40..1200 chars, hashtags well-formed', () => {
         assertUniqueNonEmpty(c.posts, 'posts'); assertUniqueNonEmpty(c.personalPosts, 'personal'); assertUniqueNonEmpty(c.comments, 'comments')
         assertUniqueNonEmpty(c.openers, 'openers'); assertUniqueNonEmpty(c.closers, 'closers'); assertUniqueNonEmpty(c.hashtags, 'hashtags')
@@ -3918,8 +4025,25 @@ git commit -m "feat(seeder): deterministic rng, corpus schema, cinema corpus, po
 **Interfaces:**
 - Produces: `CORPUS: Record<Topic, TopicCorpus>` со всеми 12 темами, `DIALOG_LINES: string[]` ≥ 300 реплик для личных чатов (короткие, разговорные, без имён: «ты где?», «скинь ссылку», «завтра в семь норм?», реакции, эмодзи допустимы).
 
-Выполнять в четыре прохода по 3 темы (music+memes+games, it+sport+travel, food+science+auto, fashion+city+dialogs), после каждого прохода — `bun test src/corpus` и коммит. Требования те же, что в Task 15 (минимумы, уникальность, длины, хэштеги, без реальных ныне живущих персон и действующих брендов в качестве героев). Стиль темы:
+Выполнять в четыре прохода по 3 темы (music+memes+games, it+sport+travel, food+science+auto, fashion+city+dialogs), после каждого прохода — `bun test src/corpus` и коммит. Требования те же, что в Task 15 (минимумы, уникальность, длины, хэштеги, без реальных ныне живущих персон и действующих брендов в качестве героев).
+
+**Планка качества (урок ревью cinema):** корпус не должен читаться как шаблон. На каждую тему: не больше ~8 постов с одинаковым зачином-скелетом («Факт дня: …», «Разбор: …», «Мнение: …»), большинство постов начинаются по-разному и без двоеточия-рубрики; разброс длин — минимум 15 постов короче 90 символов (реплики, вопросы, одна фраза), минимум 15 постов длиннее 350 символов (2–4 абзаца через `\n\n`), остальные между; хотя бы 10 постов с прямой речью или диалогом, 10 со списком/нумерацией, 10 с вопросом аудитории в конце. Плейсхолдер `{n}` только там, где число согласуется в любой форме («{n} дублей», «{n} человек» — да; «{n} недели» — нет). Проверка перед коммитом: сгруппировать посты по первым трём словам, ни одна группа не больше 8.
+
+Стиль темы:
 - `music` — релизы, репетиции, плейлисты, инструменты; `memes` — короткие абсурдные наблюдения, «когда…», без картинок текстом; `games` — патчи, билды, инди, ретро; `it` — релизы библиотек, инциденты, собеседования, архитектурные споры; `sport` — матчи вымышленных команд, тренировки, забеги; `travel` — маршруты, лайфхаки, города `{city}`; `food` — рецепты с шагами, обзоры мест в `{city}`; `science` — «факт дня», разборы статей без цитат; `auto` — ремонт, дороги, тесты моделей без названий брендов; `fashion` — капсулы, ткани, уход; `city` — новости района: перекрытия, ярмарки, стройки, `{city}` почти в каждом.
+
+- [ ] **Step 0: склонение при `{n}`.** В `generate/text.ts` добавить поддержку формы `{n:секунда|секунды|секунд}` (им. ед., род. ед., род. мн.) — `generatePost` подставляет число и нужную форму по правилам русского языка (1, 21, 31… → первая; 2–4, 22–24… → вторая; 5–20, 25–30… и 11–14 → третья). Тест в `text.test.ts`:
+```ts
+  it('declines nouns after {n:one|few|many}', () => {
+    const c = cinema
+    const tpl = 'снято за {n:день|дня|дней}'
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 1 })).toContain('1 день')
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 3 })).toContain('3 дня')
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 14 })).toContain('14 дней')
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 21 })).toContain('21 день')
+  })
+```
+Реализация: `export function plural(n: number, one: string, few: string, many: string): string` и замена `text.replace(/\{n:([^|}]+)\|([^|}]+)\|([^}]+)\}/g, (_, a, b, c) => \`${vars.n} ${plural(vars.n, a, b, c)}\`)` до подстановки простого `{n}`. Голый `{n}` остаётся для контекстов, где форма не меняется («{n} человек»). В существующем `cinema.ts` заменить `{n} секунд`, `{n} склеек`, `{n} месяцев`, `{n} дней`, `{n} городах`, `{n} залах`, `{n} раз` на форму с тремя вариантами. Тест `generatePost` должен по-прежнему не оставлять `{n:` в результате (добавить `expect(out).not.toMatch(/\{n[:}]/)` в тест substitutes placeholders).
 
 - [ ] **Step 1: music, memes, games** → `bun test src/corpus` → commit `feat(seeder): music, memes, games corpora`
 - [ ] **Step 2: it, sport, travel** → тест → commit `feat(seeder): it, sport, travel corpora`
@@ -4070,7 +4194,7 @@ export function generateUsers(cfg: SeedConfig, rng: Rng): SeedUser[] {
     let login = `${translit(firstName)}.${translit(lastName)}`.replace(/\.+/g, '.').slice(0, 28)
     if (login.length < 3) login = `user${i + 1}`
     if (used.has(login)) login = `${login}${rng.int(10, 9999)}`
-    while (used.has(login)) login = `${login.replace(/\d+$/, '')}${rng.int(10, 99999)}`
+    while (used.has(login)) login = `${login.replace(/\d+$/, '').slice(0, 27)}${rng.int(10, 99999)}` // ≤ 32 символов всегда
     used.add(login)
     const tier: Tier = i < stars ? 'star' : i < notable + stars ? 'notable' : 'regular'
     const rank = tier === 'star' ? i + 1 : tier === 'notable' ? stars + 1 + (ranks[i]! % notable) : stars + notable + 1 + (ranks[i]! % Math.max(1, N - stars - notable)) * 3
@@ -4101,8 +4225,8 @@ import type { SeedCommunity, SeedConfig } from './types'
 import { scaleCount, translit } from './users'
 
 export function generateCommunities(cfg: SeedConfig, rng: Rng, corpus: Record<Topic, TopicCorpus>): SeedCommunity[] {
-  const total = scaleCount(700, cfg.scale, 24)
-  const perTopic = Math.ceil(total / TOPICS.length)
+  const total = scaleCount(700, cfg.scale, 70) // минимум 70 ≈ 6 на тему, иначе интересы не на что подписывать при малом scale
+  // раздаём total по темам по кругу: floor(total/12) каждой, +1 первым total%12 темам
   const out: SeedCommunity[] = []
   const usedScreen = new Set<string>()
   const now = Date.now()
@@ -4131,6 +4255,19 @@ git commit -m "feat(seeder): users with interests and zipf popularity, communiti
 ```
 
 ---
+
+### Task 17.5: City case forms, login cap (follow-up from reviews of Tasks 16–17)
+
+**Files:**
+- Create: `apps/seeder/src/generate/cities.ts`, `cities.test.ts`
+- Modify: `apps/seeder/src/generate/users.ts` (импорт `CITIES` из `cities.ts`, cap логина), `src/generate/text.ts` + `text.test.ts` (`{city:gen}`, `{city:loc}`), `src/corpus/corpus.test.ts` (запрет `{city}` после предлогов), все `src/corpus/topics/*.ts` (переписать `{city}` после предлогов на нужную форму)
+
+**Interfaces:**
+- Produces: `CITIES: readonly string[]` (40 городов, порядок как раньше), `CITY_FORMS: Record<string, { gen: string; loc: string }>` (родительный и предложный падежи для каждого города: Москва → {gen:'Москвы', loc:'Москве'}, Санкт-Петербург → {gen:'Санкт-Петербурга', loc:'Санкт-Петербурге'}, Нижний Новгород → {gen:'Нижнего Новгорода', loc:'Нижнем Новгороде'}, Ростов-на-Дону → {gen:'Ростова-на-Дону', loc:'Ростове-на-Дону'}, Набережные Челны → {gen:'Набережных Челнов', loc:'Набережных Челнах'}, Чебоксары → {gen:'Чебоксар', loc:'Чебоксарах'}, Набережные/Чебоксары — pluralia tantum), `cityForm(name, form: 'nom'|'gen'|'loc'): string` (неизвестный город → как есть).
+- `generatePost` подставляет `{city}` → nom, `{city:gen}` → gen, `{city:loc}` → loc.
+- Тест корпуса: ни один пост/personalPost/комментарий не содержит `{city}` сразу после предлогов `в, во, на, о, об, обо, при` (нужен `{city:loc}`) и `из, до, у, для, от, около, возле, после, вокруг, напротив, мимо, среди` (нужен `{city:gen}`); также запрещены `{city:loc}`/`{city:gen}` без предлога перед ними в той же фразе не проверяем (слишком сложно).
+
+Steps: (1) `cities.test.ts`: все 40 городов имеют формы, формы не равны nom для склоняемых (исключение — несклоняемых нет в списке), `cityForm('Москва','loc')==='Москве'`, `cityForm('Неизвестск','gen')==='Неизвестск'`; (2) `text.test.ts`: `'из {city:gen} в {city:loc}'` с city 'Казань' → `'из Казани в Казани'`, `{city}` → 'Казань'; (3) скриптом (`bun` one-off, не коммитить) заменить в корпусах `\b(в|во|на|о|об|обо|при) \{city\}` → `$1 {city:loc}` и `\b(из|до|у|для|от|около|возле|после|вокруг|напротив|мимо|среди) \{city\}` → `$1 {city:gen}`; оставшиеся `{city}` после существительных (`улиц {city}`, `набережной {city}`, `района {city}`) поправить руками на `{city:gen}`; (4) тест корпуса из Interfaces; (5) `bun test`, typecheck, lint; коммит `fix(seeder): city case forms in templates; cap generated login length`.
 
 ### Task 18: Seeder stage 3: social graph
 

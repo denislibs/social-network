@@ -1,0 +1,15 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": ["**", "!playwright-report", "!test-results"]
+  },
+  "linter": {
+    "rules": {
+      "a11y": {
+        "useValidAriaRole": { "level": "error", "options": { "ignoreNonDom": true } }
+      }
+    }
+  }
+}
