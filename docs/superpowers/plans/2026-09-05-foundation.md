@@ -4225,8 +4225,8 @@ import type { SeedCommunity, SeedConfig } from './types'
 import { scaleCount, translit } from './users'
 
 export function generateCommunities(cfg: SeedConfig, rng: Rng, corpus: Record<Topic, TopicCorpus>): SeedCommunity[] {
-  const total = scaleCount(700, cfg.scale, 24)
-  const perTopic = Math.ceil(total / TOPICS.length)
+  const total = scaleCount(700, cfg.scale, 70) // минимум 70 ≈ 6 на тему, иначе интересы не на что подписывать при малом scale
+  // раздаём total по темам по кругу: floor(total/12) каждой, +1 первым total%12 темам
   const out: SeedCommunity[] = []
   const usedScreen = new Set<string>()
   const now = Date.now()
