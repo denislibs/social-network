@@ -51,6 +51,11 @@ describe('schema', () => {
       .insert(posts)
       .values({ authorType: 'user', authorId: u!.id, text: 'hi' })
       .returning()
+    // The migration created partitions around ITS wall-clock; on a long-lived dev volume "now"
+    // may have drifted past that window. Ensure the current month's partition exists BEFORE the
+    // insert: once a row for this month sits in `events_default`, the partition can no longer be
+    // created without first moving it out.
+    await db.execute(sql`SELECT ensure_events_partitions(current_date, current_date)`)
     await db.execute(
       sql`INSERT INTO events (user_id, post_id, kind, source, session_id) VALUES (${u!.id}, ${p!.id}, 'view', 'friends', 1)`,
     )

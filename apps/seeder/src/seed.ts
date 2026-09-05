@@ -1,3 +1,4 @@
+import type { SQL } from 'bun'
 import { CORPUS } from './corpus'
 import { generateCommunities } from './generate/communities'
 import { simulateEvents } from './generate/events'
@@ -179,6 +180,11 @@ export async function runSeed(o: SeedOptions): Promise<SeedSummary> {
       })),
       log,
     )
+    // Events span [SEED_NOW - days, SEED_NOW]; the migration only pre-creates partitions around
+    // its own wall-clock, so ensure the whole seed window (plus a month of slack either side)
+    // exists before inserting. Without this the rows land in `events_default`, which then blocks
+    // creating the real partition for those months.
+    await ensureEventPartitions(sql, o.days)
     await insertChunked(
       sql,
       'events',
@@ -296,4 +302,17 @@ function addDemoUsers(
   const demoId = mk('demo', 'Демо', 'Пользователь', null, 'Москва', 150, 20)
   const denisId = mk('deniscoreablev', 'Денис', 'Кораблев', 'Глажу кота', 'Санкт-Петербург', 80, 15)
   return { demoId, denisId }
+}
+
+/** `YYYY-MM-01` for the month containing `t`. */
+const monthStart = (t: number): string => new Date(t).toISOString().slice(0, 8) + '01'
+
+/**
+ * Creates the monthly `events` partitions covering the seed window. Idempotent: the SQL function
+ * uses CREATE TABLE IF NOT EXISTS, so re-running the seeder is free.
+ */
+async function ensureEventPartitions(sql: SQL, days: number): Promise<void> {
+  const from = monthStart(SEED_NOW - (days + 31) * 86400_000)
+  const to = monthStart(SEED_NOW + 31 * 86400_000)
+  await sql`SELECT ensure_events_partitions(${from}::date, ${to}::date)`
 }
