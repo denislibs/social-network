@@ -87,3 +87,27 @@ describe('corpus', () => {
     assertUniqueNonEmpty(DIALOG_LINES, 'dialog')
   })
 })
+
+describe('cross-topic', () => {
+  it('no 6-word shingle is shared between topics (posts + personalPosts)', () => {
+    const seen = new Map<string, string>()
+    const hits: string[] = []
+    for (const [topic, c] of Object.entries(CORPUS)) {
+      if (!c) continue
+      for (const text of [...c.posts, ...c.personalPosts]) {
+        const words = text
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}{}\s]/gu, ' ')
+          .split(/\s+/)
+          .filter(Boolean)
+        for (let i = 0; i + 6 <= words.length; i++) {
+          const k = words.slice(i, i + 6).join(' ')
+          const prev = seen.get(k)
+          if (prev && prev !== topic) hits.push(`${prev}/${topic}: "${k}"`)
+          else seen.set(k, topic)
+        }
+      }
+    }
+    expect(hits).toEqual([])
+  })
+})
