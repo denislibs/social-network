@@ -62,6 +62,33 @@ describe('schema', () => {
     expect(part?.relname).toBeDefined()
   })
 
+  // A plain `ORDER BY created_at DESC` sorts NULLS FIRST, so a `DESC NULLS LAST` index cannot
+  // serve it (measured: 1406 ms seq scan vs 0.065 ms index scan on the 150k-row dev database).
+  // The planner still prefers a seq scan on the handful of rows a test inserts, so assert on the
+  // index definition itself: Postgres prints the NULLS clause only when it is not the default,
+  // i.e. `created_at DESC` means DESC NULLS FIRST and `DESC NULLS LAST` is the regression.
+  it('orders the posts recency indexes DESC NULLS FIRST', async () => {
+    const [u] = await db
+      .insert(users)
+      .values({ login: 'idx', passwordHash: 'x', firstName: 'I', lastName: 'X' })
+      .returning()
+    await db.insert(posts).values(
+      Array.from({ length: 50 }, (_, i) => ({
+        authorType: 'user' as const,
+        authorId: u!.id,
+        text: `p${i}`,
+      })),
+    )
+    const rows = await db.execute<{ indexname: string; indexdef: string }>(
+      sql`SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'posts' AND indexname IN ('posts_created_idx', 'posts_author_created_idx')`,
+    )
+    expect(rows).toHaveLength(2)
+    for (const r of rows) {
+      expect(r.indexdef).toContain('created_at DESC')
+      expect(r.indexdef).not.toContain('NULLS LAST')
+    }
+  })
+
   it('allows explicit ids (identity by default) and hnsw index exists', async () => {
     await db
       .insert(users)

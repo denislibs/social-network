@@ -53,9 +53,12 @@ export const posts = pgTable(
     embedding: vector('embedding', { dimensions: 384 }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
+  // `.desc()` alone emits `DESC NULLS LAST`, which a plain `ORDER BY created_at DESC`
+  // (NULLS FIRST by default) cannot use — the planner falls back to a seq scan + sort.
+  // `.nullsFirst()` makes the index order match the default ordering of the reads.
   (t) => [
-    index('posts_author_created_idx').on(t.authorType, t.authorId, t.createdAt.desc()),
-    index('posts_created_idx').on(t.createdAt.desc()),
+    index('posts_author_created_idx').on(t.authorType, t.authorId, t.createdAt.desc().nullsFirst()),
+    index('posts_created_idx').on(t.createdAt.desc().nullsFirst()),
     index('posts_embedding_hnsw').using('hnsw', t.embedding.op('vector_cosine_ops')),
   ],
 )

@@ -15,6 +15,13 @@
       "when": 1788613124949,
       "tag": "0001_events_partitioned",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788635433947,
+      "tag": "0002_posts_index_nulls_first",
+      "breakpoints": true
     }
   ]
 }
