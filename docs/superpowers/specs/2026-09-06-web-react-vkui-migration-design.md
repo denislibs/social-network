@@ -25,7 +25,7 @@
 |---|---|
 | Сборка | Vite 8 + `@vitejs/plugin-react` |
 | UI | React 19, `@vkontakte/vkui` 8 (+ `dist/vkui.css`), `@vkontakte/icons`, токены через CSS-переменные `--vkui--*` |
-| Роутинг | `react-router` 7 (`createBrowserRouter`, `RouterProvider`, `lazy`) |
+| Роутинг | `react-router` 8 (`createBrowserRouter`, `RouterProvider`, `lazy`) |
 | Серверное состояние | `@tanstack/react-query` 5 |
 | API-клиент | `@vkc/contracts` (Eden Treaty), без изменений |
 | Линт | oxlint (`.oxlintrc.json`: плагины `react`, `react-hooks`, `jsx-a11y`, `typescript`, `import`, `unicorn` выборочно) + Steiger (официальный линтер FSD, `@feature-sliced/steiger-plugin`) |
