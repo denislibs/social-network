@@ -305,7 +305,7 @@ function addDemoUsers(
 }
 
 /** `YYYY-MM-01` for the month containing `t`. */
-const monthStart = (t: number): string => new Date(t).toISOString().slice(0, 8) + '01'
+const monthStart = (t: number): string => `${new Date(t).toISOString().slice(0, 8)}01`
 
 /**
  * Creates the monthly `events` partitions covering the seed window. Idempotent: the SQL function
