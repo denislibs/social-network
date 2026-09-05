@@ -1685,32 +1685,34 @@ describe('Tabs', () => {
 })
 ```
 
-`Modal.test.tsx`:
+`Modal.test.tsx` (Modal рендерится через `<Portal>` в `document.body`, поэтому запросы через `screen`, а не через контейнер `render`):
 ```tsx
-import { fireEvent, render } from '@solidjs/testing-library'
-import { describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Modal } from './Modal'
 
+afterEach(cleanup)
 describe('Modal', () => {
   it('renders nothing when closed and dialog when open', () => {
-    const closed = render(() => <Modal open={false} onClose={() => {}}>x</Modal>)
-    expect(closed.queryByRole('dialog')).toBeNull()
-    const open = render(() => <Modal open onClose={() => {}} title="Выйти?">x</Modal>)
-    expect(open.getByRole('dialog')).toHaveAttribute('aria-label', 'Выйти?')
+    render(() => <Modal open={false} onClose={() => {}}>x</Modal>)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    cleanup()
+    render(() => <Modal open onClose={() => {}} title="Выйти?">x</Modal>)
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-label', 'Выйти?')
   })
   it('closes on Escape and on overlay click', () => {
     const onClose = vi.fn()
-    const { getByTestId } = render(() => <Modal open onClose={onClose}>x</Modal>)
+    render(() => <Modal open onClose={onClose}>x</Modal>)
     fireEvent.keyDown(document, { key: 'Escape' })
-    fireEvent.click(getByTestId('overlay'))
+    fireEvent.click(screen.getByTestId('overlay'))
     expect(onClose).toHaveBeenCalledTimes(2)
   })
 })
 ```
 
-`Snackbar.test.tsx`:
+`Snackbar.test.tsx` (хост рендерится через `<Portal>`, запросы через `screen`):
 ```tsx
-import { fireEvent, render } from '@solidjs/testing-library'
+import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { describe, expect, it, vi } from 'vitest'
 import { SnackbarHost, useSnackbar } from './Snackbar'
 
@@ -1721,12 +1723,12 @@ function Trigger() {
 describe('Snackbar', () => {
   it('shows message with action and hides after duration', () => {
     vi.useFakeTimers()
-    const { getByText, queryByText } = render(() => <SnackbarHost><Trigger /></SnackbarHost>)
-    fireEvent.click(getByText('go'))
-    expect(getByText('Ссылка скопирована')).toBeInTheDocument()
-    expect(getByText('Отменить')).toBeInTheDocument()
+    render(() => <SnackbarHost><Trigger /></SnackbarHost>)
+    fireEvent.click(screen.getByText('go'))
+    expect(screen.getByText('Ссылка скопирована')).toBeInTheDocument()
+    expect(screen.getByText('Отменить')).toBeInTheDocument()
     vi.advanceTimersByTime(1100)
-    expect(queryByText('Ссылка скопирована')).toBeNull()
+    expect(screen.queryByText('Ссылка скопирована')).toBeNull()
     vi.useRealTimers()
   })
 })
