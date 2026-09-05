@@ -51,6 +51,10 @@ export function simulateEvents(
     if (l) l.push(p)
     else byAuthor.set(k, [p])
   }
+  // Audience model: `followers` merges follow edges and accepted friendships into one count per
+  // author, because a user's content reaches both the people who follow them AND their accepted
+  // friends. This same map feeds the `pop` regression term below and the top-5% "popular" pool,
+  // so both use the same "who actually sees this author's posts" definition.
   const followers = new Map<number, number>()
   for (const f of graph.follows) {
     const k = authorKey(f.targetType, f.targetId)

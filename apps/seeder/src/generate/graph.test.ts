@@ -96,7 +96,7 @@ describe('generateFollows', () => {
     // rest necessarily comes from the global fallback. See the scale-0.2 block below.
     expect(interestMatchShare(users, communities, follows)).toBeGreaterThan(0.5)
   })
-  it('stars get far more followers than notables', () => {
+  it('stars get more followers than notables (only ~4 stars exist here, so they saturate)', () => {
     const count = new Map<number, number>()
     for (const f of follows)
       if (f.targetType === 'user') count.set(f.targetId, (count.get(f.targetId) ?? 0) + 1)
@@ -104,7 +104,7 @@ describe('generateFollows', () => {
       const xs = users.filter((u) => u.tier === tier).map((u) => count.get(u.id) ?? 0)
       return xs.reduce((a, b) => a + b, 0) / xs.length
     }
-    expect(avg('star')).toBeGreaterThan(avg('notable') * 5)
+    expect(avg('star')).toBeGreaterThan(avg('notable') * 2)
   })
 })
 
@@ -120,5 +120,16 @@ describe('interest and city homophily at a non-degenerate scale', () => {
   it('friendships combine city and dominant-topic homophily', () => {
     const fr = generateFriendships(bUsers, brng.fork('friends'))
     expect(cityTopicShare(bUsers, fr)).toBeGreaterThan(0.25)
+  })
+  it('stars get far more followers than notables once the population is large enough not to saturate', () => {
+    const { follows } = generateFollows(bUsers, bCommunities, brng.fork('follows'))
+    const count = new Map<number, number>()
+    for (const f of follows)
+      if (f.targetType === 'user') count.set(f.targetId, (count.get(f.targetId) ?? 0) + 1)
+    const avg = (tier: string) => {
+      const xs = bUsers.filter((u) => u.tier === tier).map((u) => count.get(u.id) ?? 0)
+      return xs.reduce((a, b) => a + b, 0) / xs.length
+    }
+    expect(avg('star')).toBeGreaterThan(avg('notable') * 5)
   })
 })

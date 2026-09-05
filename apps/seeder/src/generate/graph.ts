@@ -102,10 +102,13 @@ export function generateFriendships(users: SeedUser[], rng: Rng): Friendship[] {
 
 /** mu of the per-user follow count (brief value: ln 45). */
 const FOLLOW_MU = Math.log(45)
-/** Star/notable weight exponent. Linear popularity only separates stars from notables by ~2.6x
- * at scale 0.04 (4 stars saturate at ~40% of the population), below the >5x the graph test
- * requires; squared popularity gives 5.6x there. */
-const POP_EXP = 2
+/** Star/notable weight exponent. Squared (or higher) popularity flattens the mid tier at scale 1
+ * (stars ~3700 followers vs notables ~28, a 130x ratio, versus the spec's ~10x for notables at
+ * 500-5k and stars at 10-50k). Linear popularity keeps that ratio realistic at scale 1 while
+ * still giving stars a >5x edge over notables once the population is large enough not to
+ * saturate (scale 0.2+); at scale 0.04 only ~4 stars exist and they saturate near 40% of the
+ * population, capping the ratio lower (>2x) — see graph.test.ts for where each bound applies. */
+const POP_EXP = 1
 /** Draws inside the follower's own interests before widening the community pool. */
 const TOPIC_TRIES = 3
 
