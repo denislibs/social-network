@@ -7,7 +7,8 @@ export default defineConfig({
   use: { baseURL: 'http://localhost:5173', trace: 'retain-on-failure' },
   webServer: [
     {
-      command: 'sh -c "set -a; . ../../.env; set +a; bun run --cwd ../api start"',
+      command:
+        'sh -c "set -a; [ -f ../../.env ] && . ../../.env; set +a; bun run --cwd ../api start"',
       url: 'http://localhost:3000/api/v1/health',
       reuseExistingServer: true,
       timeout: 30_000,
