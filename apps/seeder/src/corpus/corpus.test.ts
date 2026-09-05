@@ -9,12 +9,11 @@ function assertUniqueNonEmpty(arr: string[], label: string) {
 }
 
 describe('corpus', () => {
-  it.todo('covers every topic', () => {
+  it('covers every topic', () => {
     expect(Object.keys(CORPUS).sort()).toEqual([...TOPICS].sort())
   })
   for (const topic of TOPICS) {
     const c = CORPUS[topic]
-    if (!c) continue
     describe(topic, () => {
       it('meets minimum sizes', () => {
         expect(c.communities.length).toBeGreaterThanOrEqual(CORPUS_MIN.communities)
@@ -82,7 +81,7 @@ describe('corpus', () => {
       })
     })
   }
-  it.todo('dialog lines ≥ 300, unique', () => {
+  it('dialog lines ≥ 300, unique', () => {
     expect(DIALOG_LINES.length).toBeGreaterThanOrEqual(300)
     assertUniqueNonEmpty(DIALOG_LINES, 'dialog')
   })
@@ -93,7 +92,6 @@ describe('cross-topic', () => {
     const seen = new Map<string, string>()
     const hits: string[] = []
     for (const [topic, c] of Object.entries(CORPUS)) {
-      if (!c) continue
       for (const text of [...c.posts, ...c.personalPosts]) {
         const words = text
           .toLowerCase()
