@@ -1,55 +1,15 @@
 import { fakerRU } from '@faker-js/faker'
 import { cumulative, type Rng } from '../rng'
 import { TOPICS } from '../topics'
+import { CITIES } from './cities'
 import type { SeedConfig, SeedUser, Tier } from './types'
 import { SEED_NOW } from './types'
+
+export { CITIES } from './cities'
 
 export function scaleCount(base: number, scale: number, min = 1): number {
   return Math.max(min, Math.round(base * scale))
 }
-
-export const CITIES = [
-  'Москва',
-  'Санкт-Петербург',
-  'Новосибирск',
-  'Екатеринбург',
-  'Казань',
-  'Нижний Новгород',
-  'Челябинск',
-  'Самара',
-  'Омск',
-  'Ростов-на-Дону',
-  'Уфа',
-  'Красноярск',
-  'Воронеж',
-  'Пермь',
-  'Волгоград',
-  'Краснодар',
-  'Саратов',
-  'Тюмень',
-  'Тольятти',
-  'Ижевск',
-  'Барнаул',
-  'Ульяновск',
-  'Иркутск',
-  'Хабаровск',
-  'Ярославль',
-  'Владивосток',
-  'Махачкала',
-  'Томск',
-  'Оренбург',
-  'Кемерово',
-  'Новокузнецк',
-  'Рязань',
-  'Астрахань',
-  'Набережные Челны',
-  'Пенза',
-  'Липецк',
-  'Киров',
-  'Чебоксары',
-  'Тула',
-  'Калининград',
-] as const
 
 const TRANSLIT: Record<string, string> = {
   а: 'a',
@@ -125,7 +85,7 @@ export function generateUsers(cfg: SeedConfig, rng: Rng): SeedUser[] {
     login = login.replace(/^\.+|\.+$/g, '')
     if (login.length < 3) login = `user${i + 1}`
     if (used.has(login)) login = `${login}${rng.int(10, 9999)}`
-    while (used.has(login)) login = `${login.replace(/\d+$/, '')}${rng.int(10, 99999)}`
+    while (used.has(login)) login = `${login.replace(/\d+$/, '').slice(0, 27)}${rng.int(10, 99999)}`
     used.add(login)
     const tier: Tier = i < stars ? 'star' : i < notable + stars ? 'notable' : 'regular'
     const rank =

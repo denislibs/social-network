@@ -42,6 +42,17 @@ describe('corpus', () => {
         for (const h of c.hashtags) expect(h).toMatch(/^#[^\s#]+$/)
         expect(c.topic).toBe(topic)
       })
+      it('uses declined {city:loc}/{city:gen} after prepositions', () => {
+        // Note: `\b` is ASCII-only in JS regex and never matches at a Cyrillic
+        // letter boundary, so a literal `\b(в|...)` would be a silent no-op.
+        // `(^|[^а-яё])` stands in for the left word boundary instead.
+        const bad = [...c.posts, ...c.personalPosts, ...c.comments].filter((p) =>
+          /(^|[^а-яё])(в|во|на|о|об|обо|при|из|до|у|для|от|около|возле|после|вокруг|напротив|мимо|среди)\s+\{city\}/i.test(
+            p,
+          ),
+        )
+        expect(bad, 'bare {city} after preposition').toEqual([])
+      })
       it('uses {n:one|few|many} for declinable nouns', () => {
         expect(
           [...c.posts, ...c.personalPosts].filter((p) =>

@@ -14,7 +14,15 @@ describe('generatePost', () => {
     )
     expect(out).not.toMatch(/\{(name|city|year|n)\}/)
     expect(out).not.toMatch(/\{n[:}]/)
+    expect(out).not.toMatch(/\{city[:}]/)
     expect(out).toContain('Казань')
+  })
+  it('declines {city:gen} and {city:loc} while leaving bare {city} nominative', () => {
+    const out = generatePost('из {city:gen} в {city:loc}, {city}', cinema, new Rng(1), {
+      ...vars,
+      city: 'Казань',
+    })
+    expect(out).toContain('из Казани в Казани, Казань')
   })
   it('declines nouns after {n:one|few|many}', () => {
     const tpl = 'снято за {n:день|дня|дней}'

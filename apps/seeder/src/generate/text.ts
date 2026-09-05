@@ -1,5 +1,6 @@
 import type { TopicCorpus } from '../corpus/schema'
 import type { Rng } from '../rng'
+import { cityForm } from './cities'
 export type TextVars = { name: string; city: string; year: number; n: number }
 
 export function plural(n: number, one: string, few: string, many: string): string {
@@ -19,6 +20,8 @@ export function generatePost(base: string, c: TopicCorpus, rng: Rng, vars: TextV
       rng.chance(0.5) ? String(Math.max(1, Math.round(Number(m) * (0.9 + rng.next() * 0.2)))) : m,
     )
     .replaceAll('{name}', vars.name)
+    .replaceAll('{city:gen}', cityForm(vars.city, 'gen'))
+    .replaceAll('{city:loc}', cityForm(vars.city, 'loc'))
     .replaceAll('{city}', vars.city)
     .replaceAll('{year}', String(vars.year))
     .replace(

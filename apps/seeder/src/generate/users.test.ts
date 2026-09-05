@@ -36,4 +36,8 @@ describe('generateUsers', () => {
   it('is deterministic', () => {
     expect(generateUsers(cfg, new Rng(cfg.seed))[17]).toEqual(users[17])
   })
+  it('caps login length at 32 even at full scale with heavy collisions', () => {
+    const full = generateUsers({ seed: 42, scale: 1, days: 90 }, new Rng(42))
+    expect(Math.max(...full.map((u) => u.login.length))).toBeLessThanOrEqual(32)
+  })
 })
