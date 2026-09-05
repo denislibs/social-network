@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { CITIES, cityForm } from './cities'
+import { CITIES, CITY_FORMS, cityForm } from './cities'
 
 describe('cityForm', () => {
   it('has an entry for every city in CITIES', () => {
@@ -22,5 +22,19 @@ describe('cityForm', () => {
   })
   it('returns nominative unchanged for a known city', () => {
     expect(cityForm('Казань', 'nom')).toBe('Казань')
+  })
+  it('has declined gen/loc forms for all cities', () => {
+    const indeclinable = new Set(['Тольятти', 'Кемерово'])
+    for (const name of CITIES) {
+      const f = CITY_FORMS[name]
+      expect(f, name).toBeDefined()
+      if (indeclinable.has(name)) {
+        expect(f?.gen).toBe(name)
+        expect(f?.loc).toBe(name)
+        continue
+      }
+      expect(f?.gen, `${name} gen`).not.toBe(name)
+      expect(f?.loc, `${name} loc`).not.toBe(name)
+    }
   })
 })

@@ -54,6 +54,15 @@ export function translit(s: string): string {
     .join('')
 }
 
+/** Уникальный логин ≤ 32 символов: база до 28, при коллизии — база до 27 + 2–5 цифр. */
+export function uniqueLogin(base: string, used: Set<string>, rng: Rng): string {
+  let login = base.slice(0, 28)
+  if (login.length < 3) login = `user${used.size + 1}`
+  if (used.has(login)) login = `${login}${rng.int(10, 9999)}`
+  while (used.has(login)) login = `${login.replace(/\d+$/, '').slice(0, 27)}${rng.int(10, 99999)}`
+  return login
+}
+
 const STATUSES = [
   'Глажу кота',
   'на связи после 19:00',
@@ -81,11 +90,9 @@ export function generateUsers(cfg: SeedConfig, rng: Rng): SeedUser[] {
     const sex: 'male' | 'female' = rng.chance(0.5) ? 'male' : 'female'
     const firstName = fakerRU.person.firstName(sex)
     const lastName = fakerRU.person.lastName(sex)
-    let login = `${translit(firstName)}.${translit(lastName)}`.replace(/\.+/g, '.').slice(0, 28)
-    login = login.replace(/^\.+|\.+$/g, '')
-    if (login.length < 3) login = `user${i + 1}`
-    if (used.has(login)) login = `${login}${rng.int(10, 9999)}`
-    while (used.has(login)) login = `${login.replace(/\d+$/, '').slice(0, 27)}${rng.int(10, 99999)}`
+    let rawBase = `${translit(firstName)}.${translit(lastName)}`.replace(/\.+/g, '.').slice(0, 28)
+    rawBase = rawBase.replace(/^\.+|\.+$/g, '')
+    const login = uniqueLogin(rawBase, used, rng)
     used.add(login)
     const tier: Tier = i < stars ? 'star' : i < notable + stars ? 'notable' : 'regular'
     const rank =

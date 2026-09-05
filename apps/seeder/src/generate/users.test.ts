@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { Rng } from '../rng'
-import { generateUsers, scaleCount } from './users'
+import { generateUsers, scaleCount, uniqueLogin } from './users'
 
 const cfg = { seed: 42, scale: 0.02, days: 90 }
 describe('generateUsers', () => {
@@ -36,8 +36,21 @@ describe('generateUsers', () => {
   it('is deterministic', () => {
     expect(generateUsers(cfg, new Rng(cfg.seed))[17]).toEqual(users[17])
   })
-  it('caps login length at 32 even at full scale with heavy collisions', () => {
-    const full = generateUsers({ seed: 42, scale: 1, days: 90 }, new Rng(42))
-    expect(Math.max(...full.map((u) => u.login.length))).toBeLessThanOrEqual(32)
+})
+
+describe('uniqueLogin', () => {
+  it('never exceeds 32 chars even under repeated collisions', () => {
+    const rng = new Rng(1)
+    const base = 'a'.repeat(28)
+    const used = new Set<string>([base])
+    // заранее занимаем много вариантов с 2–4 цифрами, чтобы цикл сработал не один раз
+    for (let i = 10; i < 9999; i++) used.add(`${base}${i}`)
+    for (let k = 0; k < 200; k++) {
+      const l = uniqueLogin(base, used, rng)
+      expect(l.length).toBeLessThanOrEqual(32)
+      expect(l).toMatch(/^[a-z0-9_.]{3,32}$/)
+      expect(used.has(l)).toBe(false)
+      used.add(l)
+    }
   })
 })
