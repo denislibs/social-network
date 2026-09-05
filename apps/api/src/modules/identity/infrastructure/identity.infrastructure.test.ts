@@ -44,6 +44,18 @@ describe('DrizzleUserRepository', () => {
     expect((await repo.findById(saved.id!))?.login.value).toBe('denis')
     expect(await repo.findByLogin('nobody')).toBeNull()
   })
+  it('maps a concurrent duplicate login to 409 login_taken, not a 500', async () => {
+    const repo = new DrizzleUserRepository(db)
+    const hasher = new BunPasswordHasher()
+    const input = { login: 'race', password: 'password123', firstName: 'Д', lastName: 'К' }
+    await repo.save(await User.register(input, hasher))
+    // A second aggregate that never saw the first one — what the losing side of a concurrent
+    // registration holds after both passed the application-level findByLogin check.
+    await expect(repo.save(await User.register(input, hasher))).rejects.toMatchObject({
+      code: 'login_taken',
+      status: 409,
+    })
+  })
 })
 
 describe('RedisSessionStore', () => {
