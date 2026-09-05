@@ -1,0 +1,38 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 48px;
+  padding: 0 16px;
+}
+
+.search {
+  width: 340px;
+}
+
+.grow {
+  flex: 1;
+}
+
+.body {
+  padding-top: 64px;
+}
+
+.nav {
+  /* Колонка с `fixed` позиционируется от верха окна, поэтому отступ под
+     шапку ей нужен свой — padding-top у `.body` на неё не действует. */
+  padding-top: 64px;
+}
+
+.nav a[aria-current="page"] {
+  /* NavLink сам проставляет aria-current на активном пункте — берём его
+     как признак выбранного пункта, отдельного состояния у SimpleCell нет. */
+  background: var(--vkui--color_background_secondary);
+  border-radius: var(--vkui--size_border_radius--regular);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
