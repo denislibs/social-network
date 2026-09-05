@@ -5,6 +5,7 @@ import type { EventBus } from '../../kernel/event-bus'
 import type { QueryBus } from '../../kernel/query-bus'
 import { registerIdentityHandlers } from './application/register'
 import { BunPasswordHasher } from './infrastructure/bun-password-hasher'
+import { DrizzleUserReadModel } from './infrastructure/drizzle-user-read-model'
 import { DrizzleUserRepository } from './infrastructure/drizzle-user-repository'
 import { RedisSessionStore } from './infrastructure/redis-session-store'
 import { identityRoutes } from './presentation/routes'
@@ -21,6 +22,7 @@ export async function identityModule(d: {
   const sessions = new RedisSessionStore(d.redis)
   await registerIdentityHandlers({
     users,
+    usersRead: new DrizzleUserReadModel(d.db),
     sessions,
     hasher: new BunPasswordHasher(),
     commands: d.commands,

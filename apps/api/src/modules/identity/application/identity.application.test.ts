@@ -8,7 +8,7 @@ import { LogoutAll } from './commands/logout-all'
 import { RegisterUser } from './commands/register-user'
 import { GetMe } from './queries/get-me'
 import { registerIdentityHandlers } from './register'
-import { FakeHasher, InMemorySessions, InMemoryUsers } from './testing/fakes'
+import { FakeHasher, InMemorySessions, InMemoryUserReadModel, InMemoryUsers } from './testing/fakes'
 
 /** FakeHasher that counts calls, so tests can assert argon2-equivalent work was (not) done. */
 class CountingHasher extends FakeHasher {
@@ -34,8 +34,10 @@ beforeEach(async () => {
   events.subscribe('UserRegistered', (e) => {
     published.push(`reg:${(e.payload as { userId: number }).userId}`)
   })
+  const users = new InMemoryUsers()
   await registerIdentityHandlers({
-    users: new InMemoryUsers(),
+    users,
+    usersRead: new InMemoryUserReadModel(users),
     sessions,
     hasher: new FakeHasher(),
     commands,
@@ -64,6 +66,7 @@ describe('identity application', () => {
     const localCommands = new CommandBus()
     await registerIdentityHandlers({
       users,
+      usersRead: new InMemoryUserReadModel(users),
       sessions: new InMemorySessions(),
       hasher,
       commands: localCommands,
@@ -91,8 +94,10 @@ describe('identity application', () => {
   it('login with an unknown user still runs one hash verification (constant-time)', async () => {
     const hasher = new CountingHasher()
     const localCommands = new CommandBus()
+    const localUsers = new InMemoryUsers()
     await registerIdentityHandlers({
-      users: new InMemoryUsers(),
+      users: localUsers,
+      usersRead: new InMemoryUserReadModel(localUsers),
       sessions: new InMemorySessions(),
       hasher,
       commands: localCommands,

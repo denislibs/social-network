@@ -1,5 +1,6 @@
 import type { User } from '../../domain/user'
-import type { PasswordHasher, SessionStore, UserRepository } from '../ports'
+import { toUserDto } from '../dto'
+import type { PasswordHasher, SessionStore, UserReadModel, UserRepository } from '../ports'
 
 export class FakeHasher implements PasswordHasher {
   async hash(pw: string) {
@@ -22,6 +23,14 @@ export class InMemoryUsers implements UserRepository {
     if (user.id === null) user.assignId(++this.seq)
     this.rows.set(user.id!, user)
     return user
+  }
+}
+/** Read side over the same InMemoryUsers map, so a write is immediately visible to a query. */
+export class InMemoryUserReadModel implements UserReadModel {
+  constructor(private users: InMemoryUsers) {}
+  async getMe(userId: number) {
+    const u = await this.users.findById(userId)
+    return u ? toUserDto(u) : null
   }
 }
 export class InMemorySessions implements SessionStore {

@@ -5,11 +5,12 @@ import { Login, loginHandler } from './commands/login'
 import { Logout, logoutHandler } from './commands/logout'
 import { LogoutAll, logoutAllHandler } from './commands/logout-all'
 import { RegisterUser, registerUserHandler } from './commands/register-user'
-import type { PasswordHasher, SessionStore, UserRepository } from './ports'
+import type { PasswordHasher, SessionStore, UserReadModel, UserRepository } from './ports'
 import { GetMe, getMeHandler } from './queries/get-me'
 
 export type IdentityDeps = {
   users: UserRepository
+  usersRead: UserReadModel
   sessions: SessionStore
   hasher: PasswordHasher
   commands: CommandBus
