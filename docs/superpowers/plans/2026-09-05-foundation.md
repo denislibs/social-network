@@ -1461,6 +1461,13 @@ describe('Avatar', () => {
     expect(root.style.backgroundImage).toContain('radial-gradient')
     expect(root.querySelector('img')).toBeNull()
   })
+  it('gradient avatar is labelled when alt given and hidden otherwise', () => {
+    const named = render(() => <Avatar seed={2} alt="Денис" />).container.firstElementChild!
+    expect(named).toHaveAttribute('role', 'img')
+    expect(named).toHaveAttribute('aria-label', 'Денис')
+    const anon = render(() => <Avatar seed={3} />).container.firstElementChild!
+    expect(anon).toHaveAttribute('aria-hidden', 'true')
+  })
   it('sets size and online dot', () => {
     const { container } = render(() => <Avatar seed={1} size={96} online />)
     const root = container.firstElementChild as HTMLElement
@@ -1511,6 +1518,9 @@ export function Avatar(props: AvatarProps) {
     <span
       class={`${s.root} ${props.class ?? ''}`}
       style={{ width: `${size()}px`, height: `${size()}px`, 'background-image': props.src ? undefined : meshGradient(props.seed ?? 0) }}
+      role={!props.src && props.alt ? 'img' : undefined}
+      aria-label={!props.src && props.alt ? props.alt : undefined}
+      aria-hidden={!props.src && !props.alt ? 'true' : undefined}
     >
       <Show when={props.src}>{(src) => <img class={s.img} src={src()} alt={props.alt ?? ''} width={size()} height={size()} />}</Show>
       <Show when={props.online}><i data-online class={s.online} /></Show>
