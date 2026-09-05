@@ -1,0 +1,25 @@
+{
+  "name": "vk-clone",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "infra:up": "docker compose up -d && bun scripts/wait-for-infra.ts",
+    "infra:down": "docker compose down",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun run --filter '*' test",
+    "db:generate": "bun run --filter @vkc/api db:generate",
+    "db:migrate": "bun run --filter @vkc/api db:migrate",
+    "seed": "bun run --filter @vkc/seeder seed",
+    "dev:api": "bun run --filter @vkc/api dev",
+    "dev:web": "bun run --filter @vkc/web dev"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.0",
+    "typescript": "^7.0.2"
+  }
+}
