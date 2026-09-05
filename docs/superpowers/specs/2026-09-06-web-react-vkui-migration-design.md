@@ -105,3 +105,15 @@ apps/web/src/
 5. Playwright прогон; удаление `packages/ui-kit` и чистка; обновление спека и `CLAUDE.md`.
 
 Критерий готовности: `bun run lint` (oxlint + Steiger + Biome), `bun run typecheck`, `bun run test:unit`, `bun run test:integration`, Playwright — всё зелёное; `packages/ui-kit` отсутствует; в `apps/web/src` нет ни одного цвета и ни одного самодельного контрола.
+
+## 9. Отклонения при реализации
+
+Список того, что по факту получилось иначе, чем в разделах 1–8, и почему:
+
+- **Один слайс `features/auth` вместо трёх.** Вместо отдельных `features/auth/login`, `features/auth/register`, `features/auth/logout` сделан один слайс `features/auth` с сегментами `ui/` (`LoginForm`, `RegisterForm`, `LogoutButton`), `model/` (`errors.ts` — словарь кодов ошибок) и `api/` (`authApi.ts`). Формы и логаут делят один и тот же API-клиент и словарь ошибок; отдельные слайсы добавляли бы кросс-импорты одного уровня вместо реального разделения ответственности.
+- **Тема — в `shared/lib/color-scheme`, а не в `app/theme`.** `useColorScheme` (на `useSyncExternalStore`, единое состояние на модуль — общий подписчик для `ConfigProvider` в `app` и `ThemeToggle` в шапке) и `theme.ts` (анти-FOUC, чтение/запись предпочтения) живут в `shared/lib/color-scheme`, потому что тема — общая утилита без бизнес-логики уровня `app`, и её используют оба слоя (`app/main.tsx` и `features/theme`).
+- **`UserDto` реэкспортируется из `shared/api`, а не описывается в `entities/user`.** `entities/user/model/types.ts` делает `export type { UserDto } from '@/shared/api'`, а `shared/api/index.ts` — `export type { UserDto } from '@vkc/contracts'`. Тип уже есть в контрактах API; заводить для него параллельное определение в `entities/user` было бы дублированием источника истины.
+- **`app/composition` вместо `app/providers`.** Композиция провайдеров (`QueryProvider`) лежит в `app/composition/`, а не в `app/providers/`, как в разделе 3, — под именем `composition` понятнее, что это сборка `app`, а не переиспользуемые провайдеры для других слоёв.
+- **`AdaptivityProvider density="compact"` вместо `sizeY="compact"`.** VKUI 8 заменил `sizeX`/`sizeY` на `density` (авто-`sizeX`); используется `<AdaptivityProvider density="compact" hasPointer>` — актуальный API той же цели (плотная раскладка), `sizeY` в VKUI 8 больше не читается напрямую.
+- **`shared/lib/router-anchor`: адаптеры `RouterAnchor`/`NavAnchor`.** Понадобился отдельный сегмент-адаптер над `react-router`: компоненты VKUI (`SimpleCell`, `Link`, …) передают в `Component` только `href`, а `react-router` ждёт `to`. `RouterAnchor` и `NavAnchor` (для активного пункта через `NavLink`/`aria-current`) переводят `href → to`, не создавая инлайновых стрелок на каждый рендер (иначе VKUI перемонтировал бы поддерево).
+- **Steiger-конфиг — `steiger.config.mjs`, а не `.js`/`.json`.** Формат, который Steiger подхватывает по умолчанию в ESM-проекте; конфиг временно выключает `fsd/insignificant-slice` (на старте многие слайсы, например `features/theme`, используются только из одного места — правило возвращается в подсистеме 2).
