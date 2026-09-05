@@ -16,7 +16,7 @@ bun run dev:web           # http://localhost:5173
 Единая точка входа через nginx: `http://localhost:8080` (проксирует и API, и веб). Вход в демо-аккаунт: `demo / demo1234`.
 
 ## Структура
-apps/web · apps/api · apps/seeder · packages/ui-kit · packages/contracts (см. спек, раздел 3)
+apps/web (фронт: React + VKUI, см. спек 2026-09-06) · apps/api · apps/seeder · packages/contracts (см. спек, раздел 3)
 
 ## Деплой
 За TLS выставьте `COOKIE_SECURE=1` — иначе браузер примет cookie сессии, но при переходе на
