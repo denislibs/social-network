@@ -18,6 +18,12 @@ bun run dev:web           # http://localhost:5173
 ## Структура
 apps/web · apps/api · apps/seeder · packages/ui-kit · packages/contracts (см. спек, раздел 3)
 
+## Деплой
+За TLS выставьте `COOKIE_SECURE=1` — иначе браузер примет cookie сессии, но при переходе на
+HTTPS-домен она не будет помечена `Secure`. Локально (`http://localhost:8080`) оставляйте `0`:
+`Secure`-cookie по plain HTTP браузер молча выбрасывает и вход перестаёт работать. Флаг читается
+из окружения, а не из `X-Forwarded-Proto`, чтобы его нельзя было подделать запросом.
+
 ## Тесты
 `bun run test:unit`, `bun run test:integration` (нужна инфраструктура), `cd apps/web && bun run test:e2e`.
 
