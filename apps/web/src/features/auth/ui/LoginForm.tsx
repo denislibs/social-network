@@ -43,11 +43,15 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
             name="login"
             autoComplete="username"
             value={login}
-            onChange={(e) => setLogin(e.target.value)}
+            onChange={(e) => {
+              setLogin(e.target.value)
+              if (error) setError(null)
+            }}
             disabled={busy}
             slotProps={{
               input: {
                 'aria-describedby': error?.field === 'login' ? 'login-error' : undefined,
+                'aria-invalid': error?.field === 'login',
               },
             }}
           />
@@ -65,7 +69,10 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
             type="password"
             autoComplete="current-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              if (error) setError(null)
+            }}
             disabled={busy}
             slotProps={{
               input: {
@@ -75,6 +82,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
                     : error?.field === 'form'
                       ? 'form-error'
                       : undefined,
+                'aria-invalid': error?.field === 'password',
               },
             }}
           />

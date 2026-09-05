@@ -13,8 +13,10 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
   const [error, setError] = useState<FieldError | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const set = (f: Field) => (e: ChangeEvent<HTMLInputElement>) =>
+  const set = (f: Field) => (e: ChangeEvent<HTMLInputElement>) => {
     setForm((s) => ({ ...s, [f]: e.target.value }))
+    if (error) setError(null)
+  }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -53,6 +55,7 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
             slotProps={{
               input: {
                 'aria-describedby': error?.field === 'login' ? 'reg-login-error' : undefined,
+                'aria-invalid': error?.field === 'login',
               },
             }}
           />
@@ -100,6 +103,7 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
                     : error?.field === 'form'
                       ? 'reg-form-error'
                       : undefined,
+                'aria-invalid': error?.field === 'password',
               },
             }}
           />

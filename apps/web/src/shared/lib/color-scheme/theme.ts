@@ -33,7 +33,6 @@ export function nextPref(p: ColorSchemePref): ColorSchemePref {
 }
 
 export function applyDocumentAttr(scheme: ColorScheme): void {
-  document.documentElement.dataset.vkScheme = scheme
   document.documentElement.style.colorScheme = scheme
   document.documentElement.style.background = ''
 }

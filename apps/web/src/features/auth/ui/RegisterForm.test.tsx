@@ -57,4 +57,27 @@ describe('RegisterForm', () => {
     expect(input).toHaveAttribute('aria-describedby', msg.id)
     expect(msg.id).toBeTruthy()
   })
+
+  it('marks the invalid field with aria-invalid', async () => {
+    register.mockRejectedValue(
+      Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }),
+    )
+    render(<RegisterForm onSuccess={vi.fn()} />)
+    await fill()
+    await screen.findByText('Логин занят')
+    expect(screen.getByLabelText('Логин')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Пароль')).toHaveAttribute('aria-invalid', 'false')
+  })
+
+  it('clears the error once the user edits the field again', async () => {
+    register.mockRejectedValue(
+      Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }),
+    )
+    render(<RegisterForm onSuccess={vi.fn()} />)
+    await fill()
+    expect(await screen.findByText('Логин занят')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('Логин'), '2')
+    expect(screen.queryByText('Логин занят')).not.toBeInTheDocument()
+  })
 })

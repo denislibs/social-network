@@ -9,9 +9,10 @@
         try {
           var p = localStorage.getItem('vk-scheme')
           var dark = p === 'dark' || (p !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
-          document.documentElement.dataset.vkScheme = dark ? 'dark' : 'light'
           document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
-          if (dark) document.documentElement.style.background = '#19191a'
+          // vkcom dark theme's --vkui--color_background, hardcoded here because
+          // VKUI's CSS hasn't loaded yet at this point in <head>.
+          if (dark) document.documentElement.style.background = '#141414'
         } catch (e) {}
       })()
     </script>

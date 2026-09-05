@@ -1,6 +1,6 @@
-import { Avatar } from '@vkontakte/vkui'
-import type { UserDto } from '@/shared/api'
+import { Avatar, calcInitialsAvatarColor } from '@vkontakte/vkui'
 import { initials } from '@/shared/lib'
+import type { UserDto } from '../model/types'
 
 type Props = {
   user: Pick<UserDto, 'id' | 'firstName' | 'lastName'>
@@ -8,12 +8,11 @@ type Props = {
 }
 
 export function UserAvatar({ user, size = 32 }: Props) {
-  const gradient = ((user.id % 6) + 1) as 1 | 2 | 3 | 4 | 5 | 6
   return (
     <Avatar
       size={size}
       initials={initials(user.firstName, user.lastName)}
-      gradientColor={gradient}
+      gradientColor={calcInitialsAvatarColor(user.id)}
       aria-label={`${user.firstName} ${user.lastName}`}
     />
   )
