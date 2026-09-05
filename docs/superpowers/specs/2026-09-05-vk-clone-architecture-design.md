@@ -30,7 +30,7 @@
 
 | Слой | Выбор | Почему |
 |---|---|---|
-| Фронт | React 19, TypeScript 7, VKUI 8 (`@vkontakte/vkui`, `@vkontakte/icons`), react-router 7, TanStack Query, FSD | Решение от 2026-09-06: готовая библиотека компонентов VK вместо своего ui-kit; см. `2026-09-06-web-react-vkui-migration-design.md` |
+| Фронт | React 19, TypeScript 7, VKUI 8 (`@vkontakte/vkui`, `@vkontakte/icons`), react-router 8, TanStack Query, FSD | Решение от 2026-09-06: готовая библиотека компонентов VK вместо своего ui-kit; см. `2026-09-06-web-react-vkui-migration-design.md` |
 | Бэк | Bun, Elysia, Drizzle ORM, Eden Treaty | Одна кодовая база TypeScript, типы end-to-end без кодогена |
 | ML | Python 3.12, FastAPI, LightGBM, sentence-transformers, uv | Стандартный ML-инструментарий, CPU-only |
 | БД | PostgreSQL 17 + pgvector | Единая БД, векторный поиск без отдельного движка |
