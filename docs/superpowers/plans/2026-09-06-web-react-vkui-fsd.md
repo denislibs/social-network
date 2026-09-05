@@ -207,7 +207,7 @@ git commit -m "chore(lint): oxlint with FSD layer rules, steiger, biome as forma
 ### Task 3: Web scaffold — Vite/React/VKUI, app layer, shared layer, FSD skeleton
 
 **Files:**
-- Create: `apps/web/package.json`, `tsconfig.json`, `vite.config.ts`, `vitest.config.ts`, `vitest.setup.ts`, `index.html`, `src/app/main.tsx`, `src/app/router.tsx`, `src/app/providers/QueryProvider.tsx`, `src/app/styles/global.css`, `src/shared/config/{index.ts,env.ts,storage-keys.ts}`, `src/shared/lib/{index.ts,initials.ts,initials.test.ts}`, `src/shared/lib/color-scheme/{index.ts,theme.ts,theme.test.ts,useColorScheme.ts}`, `src/shared/api/{index.ts,client.ts,unauthorized.ts,client.test.ts}`, `src/pages/not-found/{index.ts,ui/NotFoundPage.tsx}`
+- Create: `apps/web/package.json`, `tsconfig.json`, `vite.config.ts`, `vitest.config.ts`, `vitest.setup.ts`, `index.html`, `src/app/main.tsx`, `src/app/router.tsx`, `src/app/composition/QueryProvider.tsx`, `src/app/styles/global.css`, `src/shared/config/{index.ts,env.ts,storage-keys.ts}`, `src/shared/lib/{index.ts,initials.ts,initials.test.ts}`, `src/shared/lib/color-scheme/{index.ts,theme.ts,theme.test.ts,useColorScheme.ts}`, `src/shared/api/{index.ts,client.ts,unauthorized.ts,client.test.ts}`, `src/pages/not-found/{index.ts,ui/NotFoundPage.tsx}`
 - Modify: root `package.json` (`test:unit` снова включает web; `lint:fsd` = `steiger apps/web/src`)
 
 **Interfaces:**
@@ -495,7 +495,7 @@ html, body, #root { height: 100%; }
 body { margin: 0; }
 ```
 
-`providers/QueryProvider.tsx`:
+`composition/QueryProvider.tsx`:
 ```tsx
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ReactNode, useState } from 'react'
@@ -539,7 +539,7 @@ import { AdaptivityProvider, AppRoot, ConfigProvider } from '@vkontakte/vkui'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
-import { QueryProvider } from './providers/QueryProvider'
+import { QueryProvider } from './composition/QueryProvider'
 import { router } from './router'
 import { useColorScheme } from '@/shared/lib'
 import './styles/global.css'
@@ -548,7 +548,7 @@ function App() {
   const { scheme } = useColorScheme()
   return (
     <ConfigProvider colorScheme={scheme} platform="vkcom">
-      <AdaptivityProvider sizeX="regular" sizeY="compact" hasPointer>
+      <AdaptivityProvider density="compact" hasPointer>
         <AppRoot mode="full">
           <QueryProvider>
             <RouterProvider router={router} />
