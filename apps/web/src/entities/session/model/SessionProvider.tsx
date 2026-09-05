@@ -7,7 +7,6 @@ export type Session = {
   user: UserDto | null
   status: SessionStatus
   setUser: (u: UserDto | null) => void
-  refresh: () => Promise<void>
   logout: () => Promise<void>
 }
 export const SessionContext = createContext<Session | null>(null)
@@ -19,7 +18,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUserState(u)
     setStatus(u ? 'authed' : 'guest')
   }, [])
-  const refresh = useCallback(async () => {
+  // Not exposed on the Session context: nothing outside this provider needs to
+  // trigger a re-fetch, it only runs once on mount below.
+  const fetchSession = useCallback(async () => {
     try {
       setUser(unwrap(await api.api.v1.me.get(), { silent401: true }).user)
     } catch (e) {
@@ -37,19 +38,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [setUser])
   useEffect(() => {
-    // Initial session fetch on mount; `refresh` sets state asynchronously once the
-    // network response arrives, not synchronously during this effect.
+    // Initial session fetch on mount; `fetchSession` sets state asynchronously once
+    // the network response arrives, not synchronously during this effect.
     // oxlint-disable-next-line react/set-state-in-effect
-    void refresh()
-  }, [refresh])
+    void fetchSession()
+  }, [fetchSession])
   useEffect(
     () =>
-      onUnauthorized(() => setStatus((s) => (s === 'authed' ? (setUserState(null), 'guest') : s))),
+      onUnauthorized(() => {
+        setUserState(null)
+        setStatus((s) => (s === 'authed' ? 'guest' : s))
+      }),
     [],
   )
-  const value = useMemo(
-    () => ({ user, status, setUser, refresh, logout }),
-    [user, status, setUser, refresh, logout],
-  )
+  const value = useMemo(() => ({ user, status, setUser, logout }), [user, status, setUser, logout])
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }

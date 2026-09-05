@@ -5,8 +5,11 @@ import { useSession } from '../model/useSession'
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { status } = useSession()
-  const { pathname } = useLocation()
+  const { pathname, search, hash } = useLocation()
   if (status === 'loading') return <PanelSpinner />
-  if (status === 'guest') return <Navigate to="/login" replace state={{ redirect: pathname }} />
+  if (status === 'guest') {
+    const redirect = `${pathname}${search}${hash}`
+    return <Navigate to="/login" replace state={{ redirect }} />
+  }
   return <>{children}</>
 }
