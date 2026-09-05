@@ -201,10 +201,10 @@ git commit -m "chore: monorepo root with bun workspaces, biome, base tsconfig"
 ### Task 2: Docker Compose infrastructure
 
 **Files:**
-- Create: `docker-compose.yml`, `.env.example`, `scripts/wait-for-infra.ts`
+- Create: `docker-compose.yml`, `.env.example`, `scripts/wait-for-infra.ts`, `scripts/pg-init.sql`, `infra/nginx/default.conf.template`
 
 **Interfaces:**
-- Produces: переменные `DATABASE_URL`, `DATABASE_URL_TEST`, `REDIS_URL`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`; сервисы `postgres:5432`, `redis:6379`, `minio:9000/9001`. База `vk` и база `vk_test` создаются при старте.
+- Produces: nginx на `http://localhost:8080` как единый origin (`/api/*` → API, остальное → Vite); переменные `DATABASE_URL`, `DATABASE_URL_TEST`, `REDIS_URL`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`; сервисы `postgres:5432`, `redis:6379`, `minio:9000/9001`. База `vk` и база `vk_test` создаются при старте.
 
 - [ ] **Step 1: docker-compose.yml**
 
@@ -318,6 +318,63 @@ while (Date.now() < deadline) {
 console.error('infra not ready after 60s')
 process.exit(1)
 ```
+
+- [ ] **Step 4b: nginx как единая точка входа**
+
+Добавить в `docker-compose.yml` сервис:
+```yaml
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["8080:80"]
+    environment:
+      API_UPSTREAM: host.docker.internal:3000
+      WEB_UPSTREAM: host.docker.internal:5173
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ./infra/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/nginx-health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+```
+
+`infra/nginx/default.conf.template` (образ nginx сам прогоняет `envsubst` по `templates/*.template`):
+```nginx
+map $http_upgrade $connection_upgrade { default upgrade; '' close; }
+
+server {
+  listen 80;
+  server_name _;
+  client_max_body_size 50m;
+
+  location = /nginx-health { return 200 'ok'; add_header Content-Type text/plain; }
+
+  location /api/ {
+    proxy_pass http://${API_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_read_timeout 3600s;
+  }
+
+  location / {
+    proxy_pass http://${WEB_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+  }
+}
+```
+
+Смысл: один origin `http://localhost:8080` для фронта и API (cookie без CORS, WebSocket `/api/v1/ws` проксируется тем же путём); `location /api/` → API на хосте, всё остальное → Vite dev с HMR. На VPS тот же образ и тот же шаблон, только upstream'ы указывают на контейнеры `api`/`web` и добавляется TLS. В `.env.example` добавить `PUBLIC_ORIGIN=http://localhost:8080`. `wait-for-infra.ts` nginx не проверяет (upstream'ы в момент `infra:up` ещё не подняты — это нормально, nginx отдаёт 502 до старта API/Vite).
+
+Проверка: `curl -s localhost:8080/nginx-health` → `ok`; `curl -si localhost:8080/api/v1/health` → `502` (API не запущен) — значит маршрут доходит до nginx и проксируется.
 
 - [ ] **Step 5: Поднять и проверить**
 
