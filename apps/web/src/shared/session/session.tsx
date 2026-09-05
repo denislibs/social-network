@@ -30,8 +30,13 @@ export function SessionProvider(props: { children: JSX.Element }) {
     }
   }
   const logout = async () => {
-    await api.api.v1.auth.logout.post()
-    setUser(null)
+    try {
+      await api.api.v1.auth.logout.post()
+    } catch (e) {
+      console.error('logout request failed; clearing local session anyway', e)
+    } finally {
+      setUser(null)
+    }
   }
   onMount(() => {
     void refresh()
