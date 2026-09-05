@@ -8,7 +8,9 @@
       "!**/drizzle/meta",
       "!**/sprite.svg",
       "!**/names.ts",
-      "!**/docs/reference"
+      "!**/docs/reference",
+      "!packages/ui-kit/src/tokens/tokens.css",
+      "!packages/ui-kit/src/tokens/typography.css"
     ]
   },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },

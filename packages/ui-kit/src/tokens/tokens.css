@@ -1,0 +1,237 @@
+/* Токены VKUI (vkBase), сняты с vk.ru 30.08.2026. Светлая схема — база. */
+:root {
+  color-scheme: light;
+  --vk-font-family: -apple-system, system-ui, "Helvetica Neue", Roboto, sans-serif;
+
+  --vk-background: #edeef0;
+  --vk-background_content: #ffffff;
+  --vk-background_secondary: #f0f2f5;
+  --vk-background_tertiary: #fafbfc;
+  --vk-background_modal: #ffffff;
+  --vk-header_background: #ffffff;
+  --vk-field_background: #ffffff;
+  --vk-search_field_background: #edeef0;
+  --vk-background_accent: #447bba;
+  --vk-background_accent_themed: #447bba;
+  --vk-background_secondary_alpha: rgba(39, 63, 92, 0.07);
+  --vk-image_placeholder: rgba(0, 28, 61, 0.08);
+
+  --vk-text_primary: #000000;
+  --vk-text_secondary: #818c99;
+  --vk-text_subhead: #626d7a;
+  --vk-text_tertiary: #99a2ad;
+  --vk-text_link: #2a5885;
+  --vk-text_accent: #447bba;
+  --vk-text_contrast: #ffffff;
+  --vk-text_contrast_themed: #ffffff;
+
+  --vk-icon_primary: #2c2d2e;
+  --vk-icon_medium: #6f7985;
+  --vk-icon_secondary: #99a2ad;
+  --vk-icon_tertiary: #aeb7c2;
+  --vk-icon_accent: #447bba;
+  --vk-separator_primary: #dce1e6;
+  --vk-separator_secondary: #e7e8ec;
+  --vk-skeleton_from: rgba(3, 11, 23, 0.02);
+  --vk-skeleton_to: rgba(3, 11, 23, 0.1);
+  --vk-overlay_primary: rgba(0, 0, 0, 0.4);
+
+  --vk-background_positive: #4bb34b;
+  --vk-background_negative: #e64646;
+  --vk-background_positive_tint: #e8f9e8;
+  --vk-background_negative_tint: #faebeb;
+  --vk-background_warning: #fff2d6;
+  --vk-background_info_tint: #deeeff;
+  --vk-text_positive: #4bb34b;
+  --vk-text_negative: #e64646;
+  --vk-icon_warning: #f8a01c;
+  --vk-track_background: #d3d9de;
+
+  --vk-accent_azure: #3f8ae0;
+  --vk-accent_blue: #5181b8;
+  --vk-accent_violet: #792ec0;
+  --vk-accent_purple: #735ce6;
+  --vk-accent_raspberry_pink: #e03fab;
+  --vk-accent_pink: #f685ff;
+  --vk-accent_red: #ff3347;
+  --vk-accent_orange_fire: #f05c44;
+  --vk-accent_orange: #ffa000;
+  --vk-accent_orange_peach: #f9b54f;
+  --vk-accent_lime: #bff74f;
+  --vk-accent_green: #4bb34b;
+  --vk-accent_cyan: #7cf4dc;
+  --vk-accent_gray: #aeb7c2;
+
+  --vk-state_hover: rgba(0, 16, 61, 0.04);
+  --vk-state_active: rgba(0, 16, 61, 0.08);
+
+  --vk-radius: 8px;
+  --vk-radius-paper: 12px;
+  --vk-radius-rounded: 48px;
+  --vk-radius-check: 4px;
+
+  --vk-size-button-xs: 24px;
+  --vk-size-button-s: 30px;
+  --vk-size-button-m: 36px;
+  --vk-size-button-l: 44px;
+  --vk-size-field: 36px;
+  --vk-size-search: 32px;
+  --vk-size-cell: 48px;
+  --vk-size-header: 48px;
+
+  --vk-elevation-1: 0 0 2px rgba(0, 0, 0, 0.06), 0 2px 2px rgba(0, 0, 0, 0.08);
+  --vk-elevation-2: 0 4px 8px rgba(0, 0, 0, 0.08), 0 0 4px rgba(0, 0, 0, 0.06);
+  --vk-elevation-3: 0 0 2px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.12);
+  --vk-elevation-4: 0 0 8px rgba(0, 0, 0, 0.06), 0 16px 16px rgba(0, 0, 0, 0.1);
+
+  --vk-duration-s: 100ms;
+  --vk-duration-m: 200ms;
+  --vk-duration-l: 300ms;
+  --vk-ease-default: cubic-bezier(0.3, 0.3, 0.5, 1);
+  --vk-ease-platform: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-vk="light"]) {
+    color-scheme: dark;
+    --vk-background: #141414;
+    --vk-background_content: #222222;
+    --vk-background_secondary: #333333;
+    --vk-background_tertiary: #292929;
+    --vk-background_modal: #292929;
+    --vk-header_background: #222222;
+    --vk-field_background: #292929;
+    --vk-search_field_background: #424242;
+    --vk-background_accent: #71aaeb;
+    --vk-background_accent_themed: #e1e3e6;
+    --vk-background_secondary_alpha: rgba(255, 255, 255, 0.08);
+    --vk-image_placeholder: rgba(255, 255, 255, 0.08);
+    --vk-text_primary: #e1e3e6;
+    --vk-text_secondary: #828282;
+    --vk-text_subhead: #939393;
+    --vk-text_tertiary: #656565;
+    --vk-text_link: #71aaeb;
+    --vk-text_accent: #71aaeb;
+    --vk-text_contrast: #ffffff;
+    --vk-text_contrast_themed: #222222;
+    --vk-icon_primary: #e1e3e6;
+    --vk-icon_medium: #939393;
+    --vk-icon_secondary: #828282;
+    --vk-icon_tertiary: #656565;
+    --vk-icon_accent: #71aaeb;
+    --vk-separator_primary: #363738;
+    --vk-separator_secondary: #292929;
+    --vk-skeleton_from: #292929;
+    --vk-skeleton_to: #333333;
+    --vk-overlay_primary: rgba(0, 0, 0, 0.4);
+    --vk-background_positive: #4bb34b;
+    --vk-background_negative: #ff5c5c;
+    --vk-background_positive_tint: #2f422f;
+    --vk-background_negative_tint: #522e2e;
+    --vk-background_warning: #473315;
+    --vk-background_info_tint: #1c3954;
+    --vk-text_positive: #4bb34b;
+    --vk-text_negative: #ff5c5c;
+    --vk-icon_warning: #edb055;
+    --vk-track_background: #828282;
+    --vk-accent_azure: #5d9ee9;
+    --vk-accent_blue: #397dcc;
+    --vk-accent_violet: #a94fff;
+    --vk-accent_purple: #937ff5;
+    --vk-accent_raspberry_pink: #f060c0;
+    --vk-accent_pink: #f899ff;
+    --vk-accent_red: #ff3347;
+    --vk-accent_orange_fire: #f05c44;
+    --vk-accent_orange: #ffa000;
+    --vk-accent_orange_peach: #ffc062;
+    --vk-accent_lime: #caf96c;
+    --vk-accent_green: #4bb34b;
+    --vk-accent_cyan: #55f1d2;
+    --vk-accent_gray: #aeb7c2;
+    --vk-state_hover: rgba(255, 255, 255, 0.04);
+    --vk-state_active: rgba(255, 255, 255, 0.08);
+    --vk-elevation-1: 0 0 2px rgba(0, 0, 0, 0.1), 0 2px 2px rgba(0, 0, 0, 0.2);
+    --vk-elevation-2: 0 4px 8px rgba(0, 0, 0, 0.15), 0 0 4px rgba(0, 0, 0, 0.2);
+    --vk-elevation-3: 0 0 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3);
+    --vk-elevation-4: 0 0 8px rgba(0, 0, 0, 0.1), 0 16px 16px rgba(0, 0, 0, 0.2);
+  }
+}
+
+:root[data-vk="dark"] {
+  /* тот же список, что в блоке @media выше, скопировать дословно */
+  color-scheme: dark;
+  --vk-background: #141414;
+  --vk-background_content: #222222;
+  --vk-background_secondary: #333333;
+  --vk-background_tertiary: #292929;
+  --vk-background_modal: #292929;
+  --vk-header_background: #222222;
+  --vk-field_background: #292929;
+  --vk-search_field_background: #424242;
+  --vk-background_accent: #71aaeb;
+  --vk-background_accent_themed: #e1e3e6;
+  --vk-background_secondary_alpha: rgba(255, 255, 255, 0.08);
+  --vk-image_placeholder: rgba(255, 255, 255, 0.08);
+  --vk-text_primary: #e1e3e6;
+  --vk-text_secondary: #828282;
+  --vk-text_subhead: #939393;
+  --vk-text_tertiary: #656565;
+  --vk-text_link: #71aaeb;
+  --vk-text_accent: #71aaeb;
+  --vk-text_contrast: #ffffff;
+  --vk-text_contrast_themed: #222222;
+  --vk-icon_primary: #e1e3e6;
+  --vk-icon_medium: #939393;
+  --vk-icon_secondary: #828282;
+  --vk-icon_tertiary: #656565;
+  --vk-icon_accent: #71aaeb;
+  --vk-separator_primary: #363738;
+  --vk-separator_secondary: #292929;
+  --vk-skeleton_from: #292929;
+  --vk-skeleton_to: #333333;
+  --vk-overlay_primary: rgba(0, 0, 0, 0.4);
+  --vk-background_positive: #4bb34b;
+  --vk-background_negative: #ff5c5c;
+  --vk-background_positive_tint: #2f422f;
+  --vk-background_negative_tint: #522e2e;
+  --vk-background_warning: #473315;
+  --vk-background_info_tint: #1c3954;
+  --vk-text_positive: #4bb34b;
+  --vk-text_negative: #ff5c5c;
+  --vk-icon_warning: #edb055;
+  --vk-track_background: #828282;
+  --vk-accent_azure: #5d9ee9;
+  --vk-accent_blue: #397dcc;
+  --vk-accent_violet: #a94fff;
+  --vk-accent_purple: #937ff5;
+  --vk-accent_raspberry_pink: #f060c0;
+  --vk-accent_pink: #f899ff;
+  --vk-accent_red: #ff3347;
+  --vk-accent_orange_fire: #f05c44;
+  --vk-accent_orange: #ffa000;
+  --vk-accent_orange_peach: #ffc062;
+  --vk-accent_lime: #caf96c;
+  --vk-accent_green: #4bb34b;
+  --vk-accent_cyan: #55f1d2;
+  --vk-accent_gray: #aeb7c2;
+  --vk-state_hover: rgba(255, 255, 255, 0.04);
+  --vk-state_active: rgba(255, 255, 255, 0.08);
+  --vk-elevation-1: 0 0 2px rgba(0, 0, 0, 0.1), 0 2px 2px rgba(0, 0, 0, 0.2);
+  --vk-elevation-2: 0 4px 8px rgba(0, 0, 0, 0.15), 0 0 4px rgba(0, 0, 0, 0.2);
+  --vk-elevation-3: 0 0 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --vk-elevation-4: 0 0 8px rgba(0, 0, 0, 0.1), 0 16px 16px rgba(0, 0, 0, 0.2);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--vk-background);
+  color: var(--vk-text_primary);
+  font-family: var(--vk-font-family);
+  font-size: 15px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, textarea { font-family: inherit; }
+a { color: var(--vk-text_link); text-decoration: none; }
+:focus-visible { outline: 2px solid var(--vk-text_accent); outline-offset: 2px; border-radius: 6px; }
