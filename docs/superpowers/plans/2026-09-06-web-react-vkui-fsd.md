@@ -883,6 +883,8 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
   )
 }
 ```
+Примечание (a11y): у каждого `FormItem` с ошибкой задавать `bottomId="<id>-error"`, а у соответствующего `Input` — `aria-describedby={error ? '<id>-error' : undefined}`; VKUI требует эту пару, чтобы скринридер читал текст ошибки при фокусе на поле.
+
 Примечание: `FormItem` с `htmlFor` рендерит `<label for>`; `getByLabelText('Логин')` находит инпут по `id`. Если VKUI 8 `FormItem` не принимает `htmlFor` (проверить `FormItem.d.ts`: `HasRootRef & React.LabelHTMLAttributes`?), задать связь через `Input aria-labelledby` + `FormItem topId`: `<FormItem topId="login-top" top="Логин">` и `<Input aria-labelledby="login-top" …>`. Так работает `getByLabelText`.
 
 `ui/RegisterForm.tsx`:
