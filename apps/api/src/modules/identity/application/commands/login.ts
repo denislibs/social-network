@@ -13,10 +13,17 @@ export function loginHandler(d: {
   sessions: SessionStore
   hasher: PasswordHasher
   events: EventBus
+  dummyHash: string
 }) {
   return async (cmd: Login) => {
     const user = await d.users.findByLogin(cmd.input.login.trim().toLowerCase())
-    if (!user || !(await user.verifyPassword(cmd.input.password, d.hasher)))
+    if (!user) {
+      // Still run a hash verification against a dummy hash so an unknown login takes the same
+      // time as a known one with a wrong password — otherwise response time leaks account existence.
+      await d.hasher.verify(cmd.input.password, d.dummyHash)
+      throw new UnauthorizedError('invalid_credentials', 'Wrong login or password')
+    }
+    if (!(await user.verifyPassword(cmd.input.password, d.hasher)))
       throw new UnauthorizedError('invalid_credentials', 'Wrong login or password')
     const token = await d.sessions.create(
       user.id!,

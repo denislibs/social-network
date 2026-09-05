@@ -3,16 +3,26 @@ import { FakeHasher } from '../application/testing/fakes'
 import { User } from './user'
 import { Login, Password } from './value-objects'
 
+/** Код доменной ошибки, брошенной fn (сообщения — часть HTTP-контракта, по ним не матчим). */
+const codeOf = (fn: () => unknown): string | undefined => {
+  try {
+    fn()
+  } catch (e) {
+    return (e as { code?: string }).code
+  }
+  return undefined
+}
+
 describe('Login', () => {
   it('normalizes and validates', () => {
     expect(Login.create('  Denis_01 ').value).toBe('denis_01')
     for (const bad of ['ab', 'с кириллицей', 'a'.repeat(33), 'has space'])
-      expect(() => Login.create(bad)).toThrow('invalid_login')
+      expect(codeOf(() => Login.create(bad))).toBe('invalid_login')
   })
 })
 describe('Password', () => {
   it('rejects short', () => {
-    expect(() => Password.assertStrong('1234567')).toThrow('weak_password')
+    expect(codeOf(() => Password.assertStrong('1234567'))).toBe('weak_password')
   })
 })
 describe('User.register', () => {

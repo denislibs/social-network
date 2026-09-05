@@ -16,9 +16,12 @@ export type IdentityDeps = {
   queries: QueryBus
   events: EventBus
 }
-export function registerIdentityHandlers(d: IdentityDeps): void {
+export async function registerIdentityHandlers(d: IdentityDeps): Promise<void> {
+  // Precompute a dummy hash once so loginHandler can run a constant-time verify() against it
+  // when the login is unknown, instead of leaking account existence via response time.
+  const dummyHash = await d.hasher.hash(crypto.randomUUID())
   d.commands.register(RegisterUser, registerUserHandler(d))
-  d.commands.register(Login, loginHandler(d))
+  d.commands.register(Login, loginHandler({ ...d, dummyHash }))
   d.commands.register(Logout, logoutHandler(d))
   d.commands.register(LogoutAll, logoutAllHandler(d))
   d.queries.register(GetMe, getMeHandler(d))

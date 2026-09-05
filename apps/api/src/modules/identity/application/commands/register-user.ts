@@ -2,6 +2,7 @@ import type { Command } from '../../../../kernel/command-bus'
 import { ConflictError } from '../../../../kernel/errors'
 import type { EventBus } from '../../../../kernel/event-bus'
 import { User } from '../../domain/user'
+import { Login } from '../../domain/value-objects'
 import { toUserDto, type UserDto } from '../dto'
 import type { PasswordHasher, SessionStore, UserRepository } from '../ports'
 
@@ -24,9 +25,12 @@ export function registerUserHandler(d: {
   events: EventBus
 }) {
   return async (cmd: RegisterUser) => {
-    const user = await User.register(cmd.input, d.hasher)
-    if (await d.users.findByLogin(user.login.value))
+    // Check for a taken login (and validate its format) before hashing the password: argon2 is
+    // expensive, so hashing first would let an attacker cheaply amplify a DoS by repeatedly
+    // "registering" an already-taken login.
+    if (await d.users.findByLogin(Login.create(cmd.input.login).value))
       throw new ConflictError('login_taken', 'Login is already taken')
+    const user = await User.register(cmd.input, d.hasher)
     const saved = await d.users.save(user)
     const token = await d.sessions.create(
       saved.id!,
