@@ -3,7 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 import { useColorScheme } from '@/shared/lib'
-import { QueryProvider } from './providers/QueryProvider'
+import { QueryProvider } from './composition/QueryProvider'
 import { router } from './router'
 import './styles/global.css'
 

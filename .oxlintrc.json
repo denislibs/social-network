@@ -17,7 +17,6 @@
     "typescript/consistent-type-imports": "error",
     "import/no-cycle": ["error", { "maxDepth": 4 }],
     "react/jsx-key": "error",
-    "react/react-in-jsx-scope": "off",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
     "jsx-a11y/alt-text": "error",
@@ -151,6 +150,10 @@
     {
       "files": ["**/*.test-d.ts"],
       "rules": { "no-unused-expressions": "off" }
+    },
+    {
+      "files": ["apps/web/**"],
+      "rules": { "react/react-in-jsx-scope": "off" }
     }
   ]
 }
