@@ -24,7 +24,7 @@
 
 ```
 .oxlintrc.json                     oxlint: плагины, правила, FSD-overrides
-steiger.config.ts                  Steiger: fsd.configs.recommended + отключения
+steiger.config.mjs                  Steiger: fsd.configs.recommended + отключения
 biome.json                         linter.enabled=false для js/ts (формат + css/json остаются)
 package.json                       scripts lint / lint:fsd / test:unit (web)
 .github/workflows/ci.yml           lint-лейн: oxlint + steiger; unit-лейн: vitest web
@@ -103,7 +103,7 @@ git add -A && git commit -m "chore(web): remove solid app and ui-kit ahead of re
 ### Task 2: oxlint + Steiger + Biome as formatter only
 
 **Files:**
-- Create: `.oxlintrc.json`, `steiger.config.ts`
+- Create: `.oxlintrc.json`, `steiger.config.mjs`
 - Modify: `biome.json`, `package.json` (root devDeps + scripts), `.github/workflows/ci.yml`
 
 **Interfaces:**
@@ -151,7 +151,7 @@ bun add -d oxlint@^1.81.0 steiger@^0.6.0 @feature-sliced/steiger-plugin@^0.7.0
 
 Если oxlint 1.81 не принимает какой-то ключ (`categories`, `settings.react`, `ignorePatterns`) — сверить с `node_modules/oxlint/configuration_schema.json` и поправить имя, не удаляя правило. Если `no-restricted-imports.patterns` с `group` не поддерживается — использовать форму `"patterns": ["@/entities/*", …]` (массив строк), сообщение потеряется, правило останется.
 
-- [ ] **Step 3: `steiger.config.ts`**
+- [ ] **Step 3: `steiger.config.mjs`**
 
 ```ts
 import fsd from '@feature-sliced/steiger-plugin'
@@ -198,7 +198,7 @@ Expected: oxlint печатает `Found 0 errors` (предупреждения
 - [ ] **Step 8: Commit**
 
 ```bash
-git add .oxlintrc.json steiger.config.ts biome.json package.json bun.lock .github
+git add .oxlintrc.json steiger.config.mjs biome.json package.json bun.lock .github
 git commit -m "chore(lint): oxlint with FSD layer rules, steiger, biome as formatter"
 ```
 
