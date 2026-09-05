@@ -20,3 +20,15 @@ apps/web · apps/api · apps/seeder · packages/ui-kit · packages/contracts (с
 
 ## Тесты
 `bun run test:unit`, `bun run test:integration` (нужна инфраструктура), `cd apps/web && bun run test:e2e`.
+
+Принадлежность к прогону определяется **именем файла**, а не списком путей:
+
+| Суффикс | Прогон | Требует инфраструктуру |
+| --- | --- | --- |
+| `*.test.ts` | `test:unit` | нет |
+| `*.integration.test.ts` | `test:integration` | postgres |
+| `*.infrastructure.test.ts` | `test:integration` | postgres + redis |
+| `*.e2e.test.ts` | `test:integration` | postgres + redis |
+
+Новый тест, которому нужна БД, обязан называться по одному из трёх суффиксов — иначе он попадёт
+в юнит-прогон и уронит его (там `DATABASE_URL` заведомо нерабочий).
