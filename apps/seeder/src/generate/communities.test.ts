@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { CORPUS } from '../corpus'
 import { Rng } from '../rng'
+import { TOPICS } from '../topics'
 import { generateCommunities } from './communities'
 
 describe('generateCommunities', () => {
@@ -11,6 +12,11 @@ describe('generateCommunities', () => {
     expect(new Set(cs.map((c) => c.screenName)).size).toBe(70)
     expect(new Set(cs.map((c) => c.topic)).size).toBe(12)
     for (const c of cs) expect(c.screenName).toMatch(/^club[a-z0-9_]+$/)
+  })
+  it('every topic is populated at the smallest scales', () => {
+    const small = generateCommunities({ seed: 1, scale: 0.04, days: 90 }, new Rng(1), CORPUS)
+    for (const t of TOPICS) expect(small.filter((c) => c.topic === t).length).toBeGreaterThan(0)
+    expect(new Set(small.map((c) => c.name)).size).toBe(small.length)
   })
   it('full scale fits in corpus without repeats', () => {
     const all = generateCommunities({ seed: 1, scale: 1, days: 90 }, new Rng(1), CORPUS)
