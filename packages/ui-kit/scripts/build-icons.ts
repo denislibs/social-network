@@ -22,6 +22,7 @@ export function buildSprite(svgRoot: string): { sprite: string; names: string[] 
       const fill = attrs.match(/\bfill="([^"]+)"/)?.[1]
       let inner = raw.slice(open[0].length).replace(/<\/svg>\s*$/, '')
       inner = inner
+        .replace(/\bxlink:href=/g, 'href=')
         .replace(/\bid="([^"]+)"/g, (_, id: string) => `id="${name}-${id}"`)
         .replace(/url\(#([^)]+)\)/g, (_, id: string) => `url(#${name}-${id})`)
         .replace(/\bhref="#([^"]+)"/g, (_, id: string) => `href="#${name}-${id}"`)
