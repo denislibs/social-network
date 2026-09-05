@@ -3880,6 +3880,17 @@ describe('corpus', () => {
         expect(c.closers.length).toBeGreaterThanOrEqual(CORPUS_MIN.closers)
         expect(c.hashtags.length).toBeGreaterThanOrEqual(CORPUS_MIN.hashtags)
       })
+      it('is not templated: skeleton groups ≤ 8, length and register spread', () => {
+        const groups = new Map<string, number>()
+        for (const p of c.posts) { const k = p.split(/\s+/).slice(0, 3).join(' ').toLowerCase(); groups.set(k, (groups.get(k) ?? 0) + 1) }
+        const worst = [...groups.entries()].sort((a, b) => b[1] - a[1])[0]
+        expect(worst?.[1] ?? 0, `skeleton "${worst?.[0]}"`).toBeLessThanOrEqual(8)
+        expect(c.posts.filter((p) => p.length < 90).length, 'short posts').toBeGreaterThanOrEqual(15)
+        expect(c.posts.filter((p) => p.length > 350).length, 'long posts').toBeGreaterThanOrEqual(15)
+        expect(c.posts.filter((p) => /[«"—]\s?[А-ЯЁ]/.test(p) && /(сказал|говорит|спросил|ответил|—\s)/.test(p)).length, 'direct speech').toBeGreaterThanOrEqual(10)
+        expect(c.posts.filter((p) => /(^|\n)\s*(\d\)|\d\.|—|•)\s/m.test(p)).length, 'lists').toBeGreaterThanOrEqual(10)
+        expect(c.posts.filter((p) => p.trimEnd().endsWith('?')).length, 'questions').toBeGreaterThanOrEqual(10)
+      })
       it('strings are unique and non-empty, posts 40..1200 chars, hashtags well-formed', () => {
         assertUniqueNonEmpty(c.posts, 'posts'); assertUniqueNonEmpty(c.personalPosts, 'personal'); assertUniqueNonEmpty(c.comments, 'comments')
         assertUniqueNonEmpty(c.openers, 'openers'); assertUniqueNonEmpty(c.closers, 'closers'); assertUniqueNonEmpty(c.hashtags, 'hashtags')
