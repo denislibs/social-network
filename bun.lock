@@ -23,6 +23,15 @@
         "drizzle-kit": "^0.31.10",
       },
     },
+    "packages/contracts": {
+      "name": "@vkc/contracts",
+      "version": "0.0.1",
+      "dependencies": {
+        "@elysia/eden": "^1.4.10",
+        "@vkc/api": "workspace:*",
+        "elysia": "^1.4.30",
+      },
+    },
     "packages/ui-kit": {
       "name": "@vkc/ui-kit",
       "version": "0.0.1",
@@ -300,6 +309,8 @@
     "@vitest/spy": ["@vitest/spy@5.0.0", "", {}, "sha512-uy+luWBAPw9XfthoHi5AkfHUnuPYEESjl0p/r+meoBnU8bxg5GDQ3Ey8MjcJ6sqahkL4PFyrvfMJJBw7LbU06g=="],
 
     "@vkc/api": ["@vkc/api@workspace:apps/api"],
+
+    "@vkc/contracts": ["@vkc/contracts@workspace:packages/contracts"],
 
     "@vkc/ui-kit": ["@vkc/ui-kit@workspace:packages/ui-kit"],
 
