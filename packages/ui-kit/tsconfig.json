@@ -5,5 +5,5 @@
     "jsxImportSource": "solid-js",
     "types": ["vite/client", "bun-types"]
   },
-  "include": ["src", "scripts", "catalog"]
+  "include": ["src", "scripts", "catalog", "vitest.setup.ts"]
 }

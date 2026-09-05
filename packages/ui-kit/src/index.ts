@@ -1,3 +1,8 @@
+export { Button, type ButtonProps } from './components/Button/Button'
+export { Counter } from './components/Counter/Counter'
+export { Separator } from './components/Separator/Separator'
+export { Spinner } from './components/Spinner/Spinner'
+export { Tappable, type TappableProps } from './components/Tappable/Tappable'
 export { Icon, type IconProps } from './icons/Icon'
 export { configureIcons } from './icons/icons.config'
 export { ICON_NAMES, type IconName } from './icons/names'

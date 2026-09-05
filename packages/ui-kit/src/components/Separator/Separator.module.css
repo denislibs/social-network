@@ -1,0 +1,9 @@
+.root {
+  border: 0;
+  height: 1px;
+  margin: 0 16px;
+  background: var(--vk-separator_primary);
+}
+.wide {
+  margin: 0;
+}
