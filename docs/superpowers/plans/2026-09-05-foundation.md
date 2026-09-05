@@ -4032,6 +4032,19 @@ git commit -m "feat(seeder): deterministic rng, corpus schema, cinema corpus, po
 Стиль темы:
 - `music` — релизы, репетиции, плейлисты, инструменты; `memes` — короткие абсурдные наблюдения, «когда…», без картинок текстом; `games` — патчи, билды, инди, ретро; `it` — релизы библиотек, инциденты, собеседования, архитектурные споры; `sport` — матчи вымышленных команд, тренировки, забеги; `travel` — маршруты, лайфхаки, города `{city}`; `food` — рецепты с шагами, обзоры мест в `{city}`; `science` — «факт дня», разборы статей без цитат; `auto` — ремонт, дороги, тесты моделей без названий брендов; `fashion` — капсулы, ткани, уход; `city` — новости района: перекрытия, ярмарки, стройки, `{city}` почти в каждом.
 
+- [ ] **Step 0: склонение при `{n}`.** В `generate/text.ts` добавить поддержку формы `{n:секунда|секунды|секунд}` (им. ед., род. ед., род. мн.) — `generatePost` подставляет число и нужную форму по правилам русского языка (1, 21, 31… → первая; 2–4, 22–24… → вторая; 5–20, 25–30… и 11–14 → третья). Тест в `text.test.ts`:
+```ts
+  it('declines nouns after {n:one|few|many}', () => {
+    const c = cinema
+    const tpl = 'снято за {n:день|дня|дней}'
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 1 })).toContain('1 день')
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 3 })).toContain('3 дня')
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 14 })).toContain('14 дней')
+    expect(generatePost(tpl, c, new Rng(1), { ...vars, n: 21 })).toContain('21 день')
+  })
+```
+Реализация: `export function plural(n: number, one: string, few: string, many: string): string` и замена `text.replace(/\{n:([^|}]+)\|([^|}]+)\|([^}]+)\}/g, (_, a, b, c) => \`${vars.n} ${plural(vars.n, a, b, c)}\`)` до подстановки простого `{n}`. Голый `{n}` остаётся для контекстов, где форма не меняется («{n} человек»). В существующем `cinema.ts` заменить `{n} секунд`, `{n} склеек`, `{n} месяцев`, `{n} дней`, `{n} городах`, `{n} залах`, `{n} раз` на форму с тремя вариантами. Тест `generatePost` должен по-прежнему не оставлять `{n:` в результате (добавить `expect(out).not.toMatch(/\{n[:}]/)` в тест substitutes placeholders).
+
 - [ ] **Step 1: music, memes, games** → `bun test src/corpus` → commit `feat(seeder): music, memes, games corpora`
 - [ ] **Step 2: it, sport, travel** → тест → commit `feat(seeder): it, sport, travel corpora`
 - [ ] **Step 3: food, science, auto** → тест → commit `feat(seeder): food, science, auto corpora`
