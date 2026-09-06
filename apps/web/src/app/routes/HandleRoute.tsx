@@ -53,15 +53,18 @@ export function HandleRoute() {
 
 /** Split out so `useHandle` (and its query) is never mounted before the session is `'authed'`. */
 function ResolvedHandleRoute({ handle }: { handle: string }) {
-  const { data, isPending, isError } = useHandle(handle)
+  const { data, isPending, showSkeleton, isError } = useHandle(handle)
 
-  if (isPending) {
+  if (showSkeleton) {
     return (
       <AppShell wide={<ProfileCardSkeleton />} rightColumn={<ProfileAsideSkeleton />}>
         {null}
       </AppShell>
     )
   }
+  // Still in flight, but under the skeleton delay: an empty shell, never the 404 placeholder —
+  // rendering «Страница не найдена» here flashed it on every cold profile load.
+  if (isPending) return <AppShell>{null}</AppShell>
   if (isError || !data) {
     return (
       <AppShell>

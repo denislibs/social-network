@@ -88,9 +88,9 @@ function ProfileCardLoaded({ profile }: { profile: ProfileDto }) {
 }
 
 export function ProfileCard({ handle }: { handle: string }) {
-  const { profile, isPending, isError } = useProfile(handle)
+  const { profile, showSkeleton, isError } = useProfile(handle)
 
-  if (isPending) return <ProfileCardSkeleton />
+  if (showSkeleton) return <ProfileCardSkeleton />
   if (isError || !profile) return null
 
   return <ProfileCardLoaded profile={profile} />

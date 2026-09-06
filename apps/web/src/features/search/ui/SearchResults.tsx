@@ -18,7 +18,7 @@ function ResultsSkeleton() {
 }
 
 export function SearchResults({ q, kind }: { q: string; kind: SearchKind }) {
-  const { users, communities, isPending, enabled } = useSearch(q, kind)
+  const { users, communities, isPending, showSkeleton, enabled } = useSearch(q, kind)
 
   if (!enabled) {
     return (
@@ -28,7 +28,9 @@ export function SearchResults({ q, kind }: { q: string; kind: SearchKind }) {
     )
   }
 
-  if (isPending) return <ResultsSkeleton />
+  if (showSkeleton) return <ResultsSkeleton />
+  // In flight but under the skeleton delay: nothing, never «Ничего не найдено».
+  if (isPending) return null
 
   const showUsers = kind !== 'communities'
   const showCommunities = kind !== 'users'

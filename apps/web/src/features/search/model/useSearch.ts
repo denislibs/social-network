@@ -3,7 +3,7 @@ import { useDeferredValue } from 'react'
 import { COMMUNITY_GATEWAY, type CommunityCellDto } from '@/entities/community'
 import { USER_GATEWAY, type UserCellDto } from '@/entities/user'
 import { useService } from '@/shared/di'
-import { queryKeys } from '@/shared/lib'
+import { queryKeys, useDelayedPending } from '@/shared/lib'
 
 export type SearchKind = 'all' | 'users' | 'communities'
 
@@ -24,6 +24,7 @@ export function useSearch(
   users: UserCellDto[]
   communities: CommunityCellDto[]
   isPending: boolean
+  showSkeleton: boolean
   enabled: boolean
 } {
   const userGateway = useService(USER_GATEWAY)
@@ -47,10 +48,14 @@ export function useSearch(
     },
   })
 
+  const isPending = enabled && query.isPending
+  const showSkeleton = useDelayedPending(isPending)
+
   return {
     users: query.data?.users ?? [],
     communities: query.data?.communities ?? [],
-    isPending: enabled && query.isPending,
+    isPending,
+    showSkeleton,
     enabled,
   }
 }

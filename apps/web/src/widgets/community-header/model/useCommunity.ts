@@ -7,6 +7,7 @@ import { queryKeys, useDelayedPending } from '@/shared/lib'
 export function useCommunity(handle: string): {
   community: CommunityDto | undefined
   isPending: boolean
+  showSkeleton: boolean
   isError: boolean
 } {
   const gateway = useService(COMMUNITY_GATEWAY)
@@ -15,7 +16,7 @@ export function useCommunity(handle: string): {
     queryKey: queryKeys.community.get(handle),
     queryFn: () => gateway.get(handle),
   })
-  const isPending = useDelayedPending(query.isPending)
+  const showSkeleton = useDelayedPending(query.isPending)
   const community = query.data
 
   // The URL handle is only one of a community's names: `/club7`, `/kino` and `/KINO` all resolve
@@ -33,5 +34,5 @@ export function useCommunity(handle: string): {
     }
   }, [community, queryClient])
 
-  return { community, isPending, isError: query.isError }
+  return { community, isPending: query.isPending, showSkeleton, isError: query.isError }
 }

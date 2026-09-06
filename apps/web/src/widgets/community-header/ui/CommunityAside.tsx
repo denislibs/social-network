@@ -13,7 +13,7 @@ import styles from './community-header.module.css'
  * `/:handle/members`. Same shape as `widgets/profile-card/ui/ProfileAside`'s «Друзья» card.
  */
 function CommunityAsideLoaded({ community }: { community: CommunityDto }) {
-  const { items: members, isPending } = useMembersPreview(community.id)
+  const { items: members, isPending, showSkeleton } = useMembersPreview(community.id)
 
   return (
     <Group mode="card">
@@ -29,9 +29,9 @@ function CommunityAsideLoaded({ community }: { community: CommunityDto }) {
       >
         {`Участники ${community.membersCount}`}
       </Header>
-      {isPending ? (
+      {showSkeleton ? (
         <MembersGridSkeleton />
-      ) : members.length === 0 ? (
+      ) : isPending ? null : members.length === 0 ? (
         <Placeholder title="Пока нет участников" />
       ) : (
         <Box paddingInline="m" paddingBlockEnd="m">
@@ -56,9 +56,9 @@ function CommunityAsideLoaded({ community }: { community: CommunityDto }) {
 }
 
 export function CommunityAside({ handle }: { handle: string }) {
-  const { community, isPending, isError } = useCommunity(handle)
+  const { community, showSkeleton, isError } = useCommunity(handle)
 
-  if (isPending) return <CommunityAsideSkeleton />
+  if (showSkeleton) return <CommunityAsideSkeleton />
   if (isError || !community) return null
 
   return <CommunityAsideLoaded community={community} />

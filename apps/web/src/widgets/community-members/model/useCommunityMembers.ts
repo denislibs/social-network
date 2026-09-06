@@ -7,6 +7,7 @@ import { queryKeys, useDelayedPending } from '@/shared/lib'
 export function useCommunityMembers(id: number): {
   items: UserCellDto[]
   isPending: boolean
+  showSkeleton: boolean
   isError: boolean
   hasNextPage: boolean
   fetchNextPage: () => void
@@ -18,11 +19,12 @@ export function useCommunityMembers(id: number): {
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
-  const isPending = useDelayedPending(query.isPending)
+  const showSkeleton = useDelayedPending(query.isPending)
   const items = query.data?.pages.flatMap((page) => page.items) ?? []
   return {
     items,
-    isPending,
+    isPending: query.isPending,
+    showSkeleton,
     isError: query.isError,
     hasNextPage: query.hasNextPage,
     fetchNextPage: () => {

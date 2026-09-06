@@ -6,6 +6,7 @@ import { queryKeys, useDelayedPending } from '@/shared/lib'
 export function useFriendRequests(dir: 'incoming' | 'outgoing'): {
   items: UserCellDto[]
   isPending: boolean
+  showSkeleton: boolean
   isError: boolean
 } {
   const gateway = useService(USER_GATEWAY)
@@ -13,6 +14,11 @@ export function useFriendRequests(dir: 'incoming' | 'outgoing'): {
     queryKey: queryKeys.user.requests(dir),
     queryFn: () => gateway.getRequests(dir, null),
   })
-  const isPending = useDelayedPending(query.isPending)
-  return { items: query.data?.items ?? [], isPending, isError: query.isError }
+  const showSkeleton = useDelayedPending(query.isPending)
+  return {
+    items: query.data?.items ?? [],
+    isPending: query.isPending,
+    showSkeleton,
+    isError: query.isError,
+  }
 }

@@ -16,6 +16,7 @@ export const FRIENDS_PREVIEW_SIZE = 6
 export function useFriendsPreview(userId: number): {
   items: UserCellDto[]
   isPending: boolean
+  showSkeleton: boolean
   isError: boolean
 } {
   const gateway = useService(USER_GATEWAY)
@@ -23,10 +24,11 @@ export function useFriendsPreview(userId: number): {
     queryKey: queryKeys.user.friendsPreview(userId),
     queryFn: () => gateway.getFriends(userId, null),
   })
-  const isPending = useDelayedPending(query.isPending)
+  const showSkeleton = useDelayedPending(query.isPending)
   return {
     items: (query.data?.items ?? []).slice(0, FRIENDS_PREVIEW_SIZE),
-    isPending,
+    isPending: query.isPending,
+    showSkeleton,
     isError: query.isError,
   }
 }

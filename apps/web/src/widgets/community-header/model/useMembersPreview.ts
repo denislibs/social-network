@@ -18,6 +18,7 @@ export const MEMBERS_PREVIEW_SIZE = 6
 export function useMembersPreview(communityId: number): {
   items: UserCellDto[]
   isPending: boolean
+  showSkeleton: boolean
   isError: boolean
 } {
   const gateway = useService(COMMUNITY_GATEWAY)
@@ -25,10 +26,11 @@ export function useMembersPreview(communityId: number): {
     queryKey: queryKeys.community.membersPreview(communityId),
     queryFn: () => gateway.members(communityId, null),
   })
-  const isPending = useDelayedPending(query.isPending)
+  const showSkeleton = useDelayedPending(query.isPending)
   return {
     items: (query.data?.items ?? []).slice(0, MEMBERS_PREVIEW_SIZE),
-    isPending,
+    isPending: query.isPending,
+    showSkeleton,
     isError: query.isError,
   }
 }

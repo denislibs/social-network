@@ -7,13 +7,14 @@ import { NotificationsListSkeleton } from './NotificationsListSkeleton'
  * preview reads the same `useNotifications` cache entry, so visiting this page after opening
  * the bell never re-fetches the first page. */
 export function NotificationsList() {
-  const { items, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useNotifications()
+  const { items, isPending, showSkeleton, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useNotifications()
 
   return (
     <Group mode="plain">
-      {isPending ? (
+      {showSkeleton ? (
         <NotificationsListSkeleton />
-      ) : items.length === 0 ? (
+      ) : isPending ? null : items.length === 0 ? (
         <Placeholder>Уведомлений пока нет</Placeholder>
       ) : (
         <>

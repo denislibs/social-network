@@ -12,7 +12,7 @@ const TABS = [
 
 export function FriendRequests() {
   const [dir, setDir] = useState<(typeof TABS)[number]['id']>('incoming')
-  const { items, isPending, isError } = useFriendRequests(dir)
+  const { items, isPending, showSkeleton, isError } = useFriendRequests(dir)
 
   return (
     <Group mode="card">
@@ -28,9 +28,9 @@ export function FriendRequests() {
           </TabsItem>
         ))}
       </Tabs>
-      {isPending ? (
+      {showSkeleton ? (
         <FriendRequestsSkeleton />
-      ) : isError ? (
+      ) : isPending ? null : isError ? (
         <Placeholder title="Не удалось загрузить заявки" />
       ) : items.length === 0 ? (
         <Placeholder title={dir === 'incoming' ? 'Нет входящих заявок' : 'Нет исходящих заявок'} />

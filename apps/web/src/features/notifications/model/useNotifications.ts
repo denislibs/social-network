@@ -12,6 +12,7 @@ import { queryKeys, useDelayedPending } from '@/shared/lib'
 export function useNotifications(): {
   items: NotificationDto[]
   isPending: boolean
+  showSkeleton: boolean
   hasNextPage: boolean
   isFetchingNextPage: boolean
   fetchNextPage(): void
@@ -23,11 +24,12 @@ export function useNotifications(): {
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
-  const isPending = useDelayedPending(query.isPending)
+  const showSkeleton = useDelayedPending(query.isPending)
   const items = query.data?.pages.flatMap((page) => page.items) ?? []
   return {
     items,
-    isPending,
+    isPending: query.isPending,
+    showSkeleton,
     hasNextPage: query.hasNextPage,
     isFetchingNextPage: query.isFetchingNextPage,
     fetchNextPage: () => {

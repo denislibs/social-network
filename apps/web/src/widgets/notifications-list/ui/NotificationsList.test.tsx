@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NotificationDto, NotificationGateway } from '@/entities/notification'
 import { fakeNotificationGateway, NOTIFICATION_GATEWAY } from '@/entities/notification'
 import { createTestContainer } from '@/shared/di'
@@ -41,9 +41,28 @@ function mount(list: NotificationGateway['list']) {
 }
 
 describe('NotificationsList', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('shows a skeleton with aria-busy while pending', async () => {
     mount(vi.fn((): Promise<never> => new Promise(() => {})))
     expect(await screen.findByLabelText('Загрузка')).toHaveAttribute('aria-busy', 'true')
+  })
+
+  it('shows neither the skeleton nor the empty placeholder before the 150 ms delay', () => {
+    vi.useFakeTimers()
+    mount(vi.fn((): Promise<never> => new Promise(() => {})))
+
+    expect(screen.queryByText('Уведомлений пока нет')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Загрузка')).not.toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(150)
+    })
+
+    expect(screen.getByLabelText('Загрузка')).toBeInTheDocument()
+    expect(screen.queryByText('Уведомлений пока нет')).not.toBeInTheDocument()
   })
 
   it('renders an empty placeholder when there are no notifications', async () => {

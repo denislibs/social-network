@@ -7,6 +7,7 @@ import { queryKeys, useDelayedPending } from '@/shared/lib'
 export function useHandle(handle: string): {
   data: HandleDto | undefined
   isPending: boolean
+  showSkeleton: boolean
   isError: boolean
 } {
   const gateway = useService(USER_GATEWAY)
@@ -14,6 +15,6 @@ export function useHandle(handle: string): {
     queryKey: queryKeys.user.handle(handle),
     queryFn: () => gateway.resolve(handle),
   })
-  const isPending = useDelayedPending(query.isPending)
-  return { data: query.data, isPending, isError: query.isError }
+  const showSkeleton = useDelayedPending(query.isPending)
+  return { data: query.data, isPending: query.isPending, showSkeleton, isError: query.isError }
 }

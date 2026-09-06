@@ -221,6 +221,24 @@ describe('HandleRoute', () => {
       vi.useRealTimers()
     })
 
+    it('shows neither the skeleton nor the not-found placeholder before the 150 ms delay', async () => {
+      // The not-found branch must wait for the query to actually settle: rendering it while the
+      // request is still in flight flashed «Страница не найдена» on every cold profile load.
+      mount('id5', () => new Promise<HandleDto>(() => {}), {
+        user: { getProfile: vi.fn().mockResolvedValue(makeProfile()) },
+      })
+
+      expect(screen.queryByText('Страница не найдена')).not.toBeInTheDocument()
+      expect(screen.queryAllByLabelText('Загрузка')).toHaveLength(0)
+
+      act(() => {
+        vi.advanceTimersByTime(150)
+      })
+
+      expect(screen.queryAllByLabelText('Загрузка').length).toBeGreaterThan(0)
+      expect(screen.queryByText('Страница не найдена')).not.toBeInTheDocument()
+    })
+
     it('shows a profile-header skeleton instead of a blank frame', async () => {
       let resolveHandle!: (dto: HandleDto) => void
       const pending = new Promise<HandleDto>((resolve) => {

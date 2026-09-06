@@ -64,9 +64,9 @@ function CommunityHeaderLoaded({ community }: { community: CommunityDto }) {
 }
 
 export function CommunityHeader({ handle }: { handle: string }) {
-  const { community, isPending, isError } = useCommunity(handle)
+  const { community, showSkeleton, isError } = useCommunity(handle)
 
-  if (isPending) return <CommunityHeaderSkeleton />
+  if (showSkeleton) return <CommunityHeaderSkeleton />
   if (isError || !community) return null
 
   return <CommunityHeaderLoaded community={community} />

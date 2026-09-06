@@ -4,14 +4,15 @@ import { useFriendsList } from '../model/useFriendsList'
 import { FriendsListSkeleton } from './FriendsListSkeleton'
 
 export function FriendsList({ userId }: { userId: number }) {
-  const { items, isPending, isError, hasNextPage, fetchNextPage } = useFriendsList(userId)
+  const { items, isPending, showSkeleton, isError, hasNextPage, fetchNextPage } =
+    useFriendsList(userId)
 
   return (
     <Group mode="card">
       <Header>Друзья</Header>
-      {isPending ? (
+      {showSkeleton ? (
         <FriendsListSkeleton />
-      ) : isError ? (
+      ) : isPending ? null : isError ? (
         <Placeholder title="Не удалось загрузить друзей" />
       ) : items.length === 0 ? (
         <Placeholder title="Пока нет друзей" />

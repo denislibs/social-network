@@ -6,6 +6,7 @@ import { queryKeys, useDelayedPending } from '@/shared/lib'
 export function useMyCommunities(): {
   items: CommunityCellDto[]
   isPending: boolean
+  showSkeleton: boolean
   isError: boolean
 } {
   const gateway = useService(COMMUNITY_GATEWAY)
@@ -13,6 +14,11 @@ export function useMyCommunities(): {
     queryKey: queryKeys.community.mine,
     queryFn: () => gateway.mine(),
   })
-  const isPending = useDelayedPending(query.isPending)
-  return { items: query.data ?? [], isPending, isError: query.isError }
+  const showSkeleton = useDelayedPending(query.isPending)
+  return {
+    items: query.data ?? [],
+    isPending: query.isPending,
+    showSkeleton,
+    isError: query.isError,
+  }
 }

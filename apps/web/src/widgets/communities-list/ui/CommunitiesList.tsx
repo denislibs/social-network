@@ -4,14 +4,14 @@ import { useMyCommunities } from '../model/useMyCommunities'
 import { CommunitiesListSkeleton } from './CommunitiesListSkeleton'
 
 export function CommunitiesList() {
-  const { items, isPending, isError } = useMyCommunities()
+  const { items, isPending, showSkeleton, isError } = useMyCommunities()
 
   return (
     <Group mode="card">
       <Header>Мои сообщества</Header>
-      {isPending ? (
+      {showSkeleton ? (
         <CommunitiesListSkeleton />
-      ) : isError ? (
+      ) : isPending ? null : isError ? (
         <Placeholder title="Не удалось загрузить сообщества" />
       ) : items.length === 0 ? (
         <Placeholder title="Пока нет сообществ" />

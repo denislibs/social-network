@@ -30,7 +30,7 @@ import styles from './profile-card.module.css'
  */
 function ProfileAsideLoaded({ profile, handle }: { profile: ProfileDto; handle: string }) {
   const isSelf = profile.relation === 'self'
-  const { items: friends, isPending: friendsPending } = useFriendsPreview(profile.id)
+  const { items: friends, isPending: friendsPending, showSkeleton } = useFriendsPreview(profile.id)
   const { items: communities } = useCommunitiesPreview(isSelf)
   const friendsHref = isSelf ? '/friends' : `/${handle}/friends`
 
@@ -49,9 +49,9 @@ function ProfileAsideLoaded({ profile, handle }: { profile: ProfileDto; handle: 
         >
           {`Друзья ${profile.counters.friends}`}
         </Header>
-        {friendsPending ? (
+        {showSkeleton ? (
           <FriendsGridSkeleton />
-        ) : friends.length === 0 ? (
+        ) : friendsPending ? null : friends.length === 0 ? (
           <Placeholder
             icon={<Icon56UserAddOutline />}
             title={isSelf ? 'У вас пока нет друзей' : 'Пока нет друзей'}
@@ -122,9 +122,9 @@ function ProfileAsideLoaded({ profile, handle }: { profile: ProfileDto; handle: 
 }
 
 export function ProfileAside({ handle }: { handle: string }) {
-  const { profile, isPending, isError } = useProfile(handle)
+  const { profile, showSkeleton, isError } = useProfile(handle)
 
-  if (isPending) return <ProfileAsideSkeleton />
+  if (showSkeleton) return <ProfileAsideSkeleton />
   if (isError || !profile) return null
 
   return <ProfileAsideLoaded profile={profile} handle={handle} />

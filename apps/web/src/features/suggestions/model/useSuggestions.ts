@@ -9,6 +9,11 @@ export function useSuggestions() {
     queryKey: queryKeys.user.suggestions,
     queryFn: () => gateway.list(),
   })
-  const isPending = useDelayedPending(query.isPending)
-  return { items: query.data ?? [], isPending, isError: query.isError }
+  const showSkeleton = useDelayedPending(query.isPending)
+  return {
+    items: query.data ?? [],
+    isPending: query.isPending,
+    showSkeleton,
+    isError: query.isError,
+  }
 }

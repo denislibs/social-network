@@ -22,11 +22,13 @@ function PymkSuggestionRow({ suggestion }: { suggestion: SuggestionDto }) {
 }
 
 export function PymkBlock({ compact = false }: { compact?: boolean }) {
-  const { items, isPending, isError } = useSuggestions()
+  const { items, isPending, showSkeleton, isError } = useSuggestions()
   const visible = compact ? items.slice(0, 3) : items
   const showAllLink = compact && !isPending && !isError && visible.length > 0
 
-  if (isPending) return <PymkBlockSkeleton rows={compact ? 3 : 8} />
+  if (showSkeleton) return <PymkBlockSkeleton rows={compact ? 3 : 8} />
+  // In flight but under the skeleton delay: nothing, never the empty placeholder.
+  if (isPending) return null
 
   return (
     <Group mode="card">
