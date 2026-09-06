@@ -7,6 +7,7 @@ export default defineConfig({
   outputDir: './test-results/playwright',
   timeout: 30_000,
   fullyParallel: false,
+  workers: 1,
   use: { baseURL: 'http://localhost:5173', trace: 'retain-on-failure' },
   webServer: [
     {
