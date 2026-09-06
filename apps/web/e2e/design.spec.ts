@@ -101,6 +101,32 @@ test('community cover matches the profile cover width, like the profile header',
   expectAbout(communityCover.width, profileCover.width, 'community cover width')
 })
 
+/**
+ * The dropdown menus (`Popover`) cannot be opened in the Vitest suite — VKUI's floating layer
+ * never settles under jsdom — so the real browser is where their contents are checked.
+ */
+test('the member control is a dropdown holding leaving and the notification toggle', async ({
+  page,
+}) => {
+  await page.goto('/clubplenochnyyklub')
+
+  const membership = page.getByRole('button', { name: /Вы участник/ })
+  await expect(membership).toBeVisible()
+  // A member sees one control, not a row of separate buttons.
+  await expect(page.getByRole('button', { name: 'Вступить' })).toHaveCount(0)
+
+  await membership.click()
+
+  await expect(page.getByRole('button', { name: 'Выйти из сообщества' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /уведомлений$/ })).toBeVisible()
+})
+
+test('the profile "Ещё" button opens a dropdown with a single inert item', async ({ page }) => {
+  await page.goto('/demo')
+  await page.getByRole('button', { name: /Ещё/ }).click()
+  await expect(page.getByText('Скоро')).toBeVisible()
+})
+
 test('content columns are 551 + 345 at 1728px', async ({ page }) => {
   await page.setViewportSize({ width: 1728, height: 963 })
   await page.goto('/feed')
