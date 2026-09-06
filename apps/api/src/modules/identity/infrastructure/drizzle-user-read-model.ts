@@ -65,7 +65,7 @@ export class DrizzleUserReadModel implements UserReadModel {
   }
 
   async getProfile(idOrScreen: string): Promise<ProfileSource | null> {
-    const idMatch = /^id(\d+)$/.exec(idOrScreen)
+    const idMatch = /^id(\d+)$/i.exec(idOrScreen)
     const cond = idMatch
       ? eq(users.id, Number(idMatch[1]))
       : eq(users.screenName, idOrScreen.toLowerCase())

@@ -120,6 +120,30 @@ describe('DrizzleNotificationRepository + DrizzleNotificationReadModel', () => {
     expect((await read.list(1, null)).items).toHaveLength(2)
   })
 
+  it('two friend_request notifications from different actors to the same user both land unread', async () => {
+    // The dedupe index is `(user_id, kind, actor_id) where read_at is null` — keyed on the actor
+    // too, so it must not collapse two distinct actors notifying the same recipient into one row.
+    const repo = new DrizzleNotificationRepository(db)
+    const read = new DrizzleNotificationReadModel(db)
+    await db.insert(users).values({
+      id: 3,
+      login: 'user3',
+      passwordHash: 'x',
+      firstName: 'Имя3',
+      lastName: 'Фамилия3',
+    })
+    await db.execute(sql`select setval(pg_get_serial_sequence('users','id'), 3)`)
+
+    await repo.insert([{ userId: 1, kind: 'friend_request', actorId: 2 }])
+    await repo.insert([{ userId: 1, kind: 'friend_request', actorId: 3 }])
+
+    expect(await read.unreadCount(1)).toBe(2)
+    const page = await read.list(1, null)
+    expect(page.items).toHaveLength(2)
+    expect(page.items.every((n) => n.readAt === null)).toBe(true)
+    expect(page.items.map((n) => n.actor?.id).toSorted()).toEqual([2, 3])
+  })
+
   it('a batch carrying a duplicate keeps the other rows of the batch', async () => {
     const repo = new DrizzleNotificationRepository(db)
     const read = new DrizzleNotificationReadModel(db)

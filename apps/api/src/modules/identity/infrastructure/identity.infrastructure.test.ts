@@ -138,6 +138,21 @@ describe('DrizzleUserReadModel', () => {
     expect((await rm.getProfile('denis'))?.id).toBe(u.id!)
     expect(await rm.getProfile('id999999')).toBeNull()
   })
+  it('getProfile is case-insensitive: `ID{n}` and an upper-cased screen name both resolve', async () => {
+    const repo = new DrizzleUserRepository(db)
+    const rm = new DrizzleUserReadModel(db)
+    const hasher = new BunPasswordHasher()
+    const u = await repo.save(
+      await User.register(
+        { login: 'denisci', password: 'password123', firstName: 'Денис', lastName: 'Кораблев' },
+        hasher,
+      ),
+    )
+    u.updateProfile({ screenName: 'denisci' })
+    await repo.save(u)
+    expect((await rm.getProfile(`ID${u.id}`))?.id).toBe(u.id!)
+    expect((await rm.getProfile('DENISCI'))?.id).toBe(u.id!)
+  })
   it('searchUsers finds by trigram name similarity and by screen-name prefix', async () => {
     const repo = new DrizzleUserRepository(db)
     const rm = new DrizzleUserReadModel(db)
@@ -165,7 +180,10 @@ describe('DrizzleUserReadModel', () => {
     // used at all. `enable_seqscan = off` takes that shortcut away: the query then has to be
     // answered from an index, and it only can be because `%` and `like … || '%'` are operators
     // `gin_trgm_ops` supports. The `similarity(x, $1) > 0.2` predicate this replaced has no index
-    // path whatsoever, which is what the negative control below pins down.
+    // path whatsoever, which is what the negative control below pins down. Note this proves index
+    // *usability*, not the planner's actual preference at normal cost settings — and the real
+    // read model (`searchUsers`) wraps this exact query in `SET LOCAL pg_trgm.similarity_threshold
+    // = 0.2` so `%` compares against the same threshold the old `similarity(...) > 0.2` did.
     const plan = await explainWithoutSeqScan(db, text, params)
     const nodes = planNodes(plan)
     const indexNames = nodes

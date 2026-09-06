@@ -225,13 +225,18 @@ export class DrizzleSocialReadModel implements SocialReadModel {
   }
 
   async community(idOrScreen: string, me: number | null): Promise<CommunityDto | null> {
-    const isNumeric = /^\d+$/.test(idOrScreen)
+    // Accepts a bare numeric id, the `club{n}` handle prefix (case-insensitively, same as
+    // `resolveHandle`), or a screen name.
+    const clubMatch = /^club(\d+)$/i.exec(idOrScreen)
+    let numericId: number | null = null
+    if (clubMatch) numericId = Number(clubMatch[1])
+    else if (/^\d+$/.test(idOrScreen)) numericId = Number(idOrScreen)
     const [row] = await this.db
       .select()
       .from(communities)
       .where(
-        isNumeric
-          ? eq(communities.id, Number(idOrScreen))
+        numericId !== null
+          ? eq(communities.id, numericId)
           : eq(communities.screenName, idOrScreen.toLowerCase()),
       )
       .limit(1)

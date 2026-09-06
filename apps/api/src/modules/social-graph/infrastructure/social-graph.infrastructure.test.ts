@@ -220,6 +220,16 @@ describe('DrizzleSocialReadModel', () => {
     })
 
     expect(await rm.community('KINO', 1)).toMatchObject({ screenName: 'kino', membership: 'admin' })
+    // `community()` must also accept the `club{n}` handle form (not only a bare numeric id or a
+    // screen name), case-insensitively — same as `resolveHandle` already does above.
+    expect(await rm.community(`club${kino!.id}`, 1)).toMatchObject({
+      screenName: 'kino',
+      membership: 'admin',
+    })
+    expect(await rm.community(`CLUB${kino!.id}`, 1)).toMatchObject({
+      screenName: 'kino',
+      membership: 'admin',
+    })
   })
 
   it('community() reports membership and follow state', async () => {

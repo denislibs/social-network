@@ -369,5 +369,23 @@ describe('social graph + profile e2e', () => {
 
     const clubHandle = await get(`/handles/Club${createdBody.community.id}`, a.cookie)
     expect(await clubHandle.json()).toEqual({ kind: 'community', id: createdBody.community.id })
+
+    // The profile and community routes accept the `id{n}`/`club{n}` prefix directly (not only via
+    // `/handles/:handle`), and must match it case-insensitively too.
+    const profileById = await get(`/users/ID${a.id}`, a.cookie)
+    expect(profileById.status).toBe(200)
+    expect(((await profileById.json()) as { user: { id: number } }).user.id).toBe(a.id)
+
+    const communityByClub = await get(`/communities/club${createdBody.community.id}`, a.cookie)
+    expect(communityByClub.status).toBe(200)
+    expect(
+      ((await communityByClub.json()) as { community: { id: number } }).community.id,
+    ).toBe(createdBody.community.id)
+
+    const communityByClubUpper = await get(`/communities/CLUB${createdBody.community.id}`, a.cookie)
+    expect(communityByClubUpper.status).toBe(200)
+    expect(
+      ((await communityByClubUpper.json()) as { community: { id: number } }).community.id,
+    ).toBe(createdBody.community.id)
   })
 })
