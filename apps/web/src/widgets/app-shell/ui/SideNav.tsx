@@ -1,4 +1,5 @@
-import { Counter, Group, SimpleCell } from '@vkontakte/vkui'
+import { Counter, Group, Separator, SimpleCell } from '@vkontakte/vkui'
+import { Fragment } from 'react'
 import { useSession } from '@/entities/session'
 import { userHandle } from '@/entities/user'
 import { NavAnchor, pluralRu } from '@/shared/lib'
@@ -15,25 +16,31 @@ export function SideNav() {
   return (
     <nav aria-label="Основная навигация" className={styles.nav}>
       <Group mode="plain">
-        {NAV_ITEMS.map(({ to, label, Icon }) => {
+        {NAV_ITEMS.map(({ to, label, Icon, dividerBefore }) => {
           const href = to === '/profile' && user ? `/${userHandle(user)}` : to
           const isFriends = to === '/friends'
           return (
-            <SimpleCell
-              key={to}
-              Component={NavAnchor}
-              href={href}
-              before={<Icon />}
-              indicator={
-                isFriends && count > 0 ? (
-                  <Counter aria-label={`${count} ${pluralRu(count, REQUEST_FORMS)}`} size="s">
-                    {count}
-                  </Counter>
-                ) : undefined
-              }
-            >
-              {label}
-            </SimpleCell>
+            <Fragment key={to}>
+              {dividerBefore && <Separator padding />}
+              <SimpleCell
+                Component={NavAnchor}
+                href={href}
+                before={<Icon />}
+                indicator={
+                  isFriends && count > 0 ? (
+                    <Counter
+                      aria-label={`${count} ${pluralRu(count, REQUEST_FORMS)}`}
+                      mode="primary"
+                      size="s"
+                    >
+                      {count}
+                    </Counter>
+                  ) : undefined
+                }
+              >
+                {label}
+              </SimpleCell>
+            </Fragment>
           )
         })}
       </Group>

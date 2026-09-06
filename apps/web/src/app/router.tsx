@@ -81,11 +81,15 @@ export const routes: RouteObject[] = [
       { path: '/search', element: authed(<SearchPage />) },
       { path: '/edit', element: authed(<EditProfilePage />) },
       ...comingSoonRoutes,
-      { path: '/:handle', element: authed(<HandleRoute />) },
       { path: '/:handle/friends', element: authed(<ProfileFriendsRoute />) },
       { path: '*', element: S(<NotFoundPage />) },
     ],
   },
+  // `/:handle` renders its own `AppShell` (see `HandleRoute`): the profile header spans both
+  // content columns, so it goes into the shell's `wide` slot, which only a component that has
+  // already resolved the handle can fill. Route ranking is unaffected — react-router scores the
+  // full path, so `/edit` and `/search` still outrank `/:handle`.
+  { path: '/:handle', element: authed(<HandleRoute />) },
   {
     element: <AppShell bare />,
     children: [

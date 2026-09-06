@@ -4,14 +4,30 @@
   gap: 12px;
   height: 48px;
   padding: 0 16px;
+  box-sizing: border-box;
   /* Шапка липкая и остаётся в потоке; поднимаем её над fixed-колонкой
      навигации и красим, чтобы контент не просвечивал при прокрутке. */
   z-index: 1;
   background: var(--vkui--color_background_content);
+  border-bottom: 1px solid var(--vkui--color_separator_primary);
+}
+
+.brand {
+  /* Логотип занимает колонку шириной с левое меню, чтобы поиск начинался
+     ровно там же, где колонка контента (200 + 16 от левого края). */
+  width: 188px;
+  display: flex;
+  align-items: center;
 }
 
 .search {
-  width: 340px;
+  width: 400px;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .grow {
@@ -36,8 +52,37 @@
   border-radius: var(--vkui--size_border_radius--regular);
 }
 
+.nav a {
+  min-height: 40px;
+  border-radius: var(--vkui--size_border_radius--regular);
+}
+
+.nav svg {
+  color: var(--vkui--color_icon_accent);
+}
+
+.content {
+  /* 551 + 16 + 345 = 912 — колонки vk.ru. `wide` растягивается на обе. */
+  display: grid;
+  grid-template-columns: 551px 345px;
+  gap: 16px;
+  align-items: start;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
 .main {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
 }
