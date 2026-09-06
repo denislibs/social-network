@@ -20,9 +20,9 @@ export function UserCell({ user, after, subtitle }: Props) {
       before={<UserAvatar user={user} size={48} />}
       subtitle={subtitle ?? user.city ?? undefined}
       after={after}
+      badgeAfterTitle={user.isVerified ? <Icon16Verified width={16} height={16} /> : undefined}
     >
       {user.firstName} {user.lastName}
-      {user.isVerified && <Icon16Verified width={16} height={16} />}
     </SimpleCell>
   )
 }

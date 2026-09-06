@@ -6,7 +6,6 @@ import {
   DisplayTitle,
   Flex,
   Footnote,
-  Gradient,
   Group,
   Link,
   Text,
@@ -38,11 +37,9 @@ function ProfileCardLoaded({ profile }: { profile: ProfileDto }) {
 
   return (
     <Group mode="card" className={styles.card}>
-      <Box blockSize={200} className={styles.cover}>
-        <Gradient mode="tint" to="top" className={styles.gradient} />
-      </Box>
+      <Box blockSize={200} className={styles.cover} data-testid="profile-cover" />
       <div className={styles.body}>
-        <div className={styles.avatar}>
+        <div className={styles.avatar} data-testid="profile-avatar">
           <UserAvatar user={profile} size={96} />
         </div>
         <Flex justify="space-between" align="start" gap="m">

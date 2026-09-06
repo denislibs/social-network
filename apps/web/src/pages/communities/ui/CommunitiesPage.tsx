@@ -1,5 +1,5 @@
 import { Icon24SearchOutline } from '@vkontakte/icons'
-import { Button, Panel, PanelHeader, Search, Tabs, TabsItem } from '@vkontakte/vkui'
+import { Box, Button, Flex, Group, Panel, Search, Tabs, TabsItem } from '@vkontakte/vkui'
 import { useState } from 'react'
 import { CreateCommunityModal } from '@/features/create-community'
 import { SearchResults } from '@/features/search'
@@ -14,23 +14,23 @@ export function CommunitiesPage() {
 
   return (
     <Panel>
-      <PanelHeader
-        after={
-          <Button mode="primary" size="s" onClick={() => setCreateOpen(true)}>
-            Создать сообщество
-          </Button>
-        }
-      >
-        Сообщества
-      </PanelHeader>
-      <Tabs mode="secondary">
-        <TabsItem id="mine" selected={tab === 'mine'} onClick={() => setTab('mine')}>
-          Мои
-        </TabsItem>
-        <TabsItem id="search" selected={tab === 'search'} onClick={() => setTab('search')}>
-          Поиск
-        </TabsItem>
-      </Tabs>
+      <Group mode="card">
+        <Flex align="center" justify="space-between" gap="m">
+          <Tabs mode="secondary">
+            <TabsItem id="mine" selected={tab === 'mine'} onClick={() => setTab('mine')}>
+              Мои
+            </TabsItem>
+            <TabsItem id="search" selected={tab === 'search'} onClick={() => setTab('search')}>
+              Поиск
+            </TabsItem>
+          </Tabs>
+          <Box paddingInlineEnd="m">
+            <Button mode="primary" size="s" onClick={() => setCreateOpen(true)}>
+              Создать сообщество
+            </Button>
+          </Box>
+        </Flex>
+      </Group>
       {tab === 'mine' && <CommunitiesList />}
       {tab === 'search' && (
         <>

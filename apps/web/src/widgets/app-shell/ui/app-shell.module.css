@@ -65,7 +65,9 @@
   /* 551 + 16 + 345 = 912 — колонки vk.ru. `wide` растягивается на обе. */
   display: grid;
   grid-template-columns: 551px 345px;
-  gap: 16px;
+  /* Вертикальные отступы между карточками задаёт сам VKUI (спейсер Group),
+     поэтому здесь только зазор между колонками. */
+  gap: 0 16px;
   align-items: start;
 }
 
@@ -76,13 +78,11 @@
 .main {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-width: 0;
 }
 
 .aside {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-width: 0;
 }

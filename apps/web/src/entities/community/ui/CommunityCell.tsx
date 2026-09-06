@@ -27,9 +27,9 @@ export function CommunityCell({ community, after }: Props) {
       }
       subtitle={`${topicLabel(community.topic)} · ${community.membersCount} ${pluralRu(community.membersCount, MEMBER_FORMS)}`}
       after={after}
+      badgeAfterTitle={community.isVerified ? <Icon16Verified width={16} height={16} /> : undefined}
     >
       {community.name}
-      {community.isVerified && <Icon16Verified width={16} height={16} />}
     </SimpleCell>
   )
 }

@@ -1,4 +1,4 @@
-import { Panel, PanelHeader, Tabs, TabsItem } from '@vkontakte/vkui'
+import { Group, Panel, Tabs, TabsItem } from '@vkontakte/vkui'
 import { useSession } from '@/entities/session'
 import { FriendRequests } from '@/widgets/friend-requests'
 import { FriendsList } from '@/widgets/friends-list'
@@ -11,14 +11,15 @@ export function FriendsPage() {
 
   return (
     <Panel>
-      <PanelHeader>Друзья</PanelHeader>
-      <Tabs mode="secondary">
-        {FRIENDS_TABS.map((t) => (
-          <TabsItem key={t.id} id={t.id} selected={tab === t.id} onClick={() => setTab(t.id)}>
-            {t.label}
-          </TabsItem>
-        ))}
-      </Tabs>
+      <Group mode="card">
+        <Tabs mode="secondary">
+          {FRIENDS_TABS.map((t) => (
+            <TabsItem key={t.id} id={t.id} selected={tab === t.id} onClick={() => setTab(t.id)}>
+              {t.label}
+            </TabsItem>
+          ))}
+        </Tabs>
+      </Group>
       {tab === 'all' && user && <FriendsList userId={user.id} />}
       {tab === 'requests' && <FriendRequests />}
       {tab === 'suggestions' && <PymkBlock />}

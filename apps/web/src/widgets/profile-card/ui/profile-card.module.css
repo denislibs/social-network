@@ -1,14 +1,12 @@
 .card {
-  /* Обложка должна обрезаться по скруглению карточки. */
+  /* Обложка должна обрезаться по скруглению карточки и лежать вплотную к её
+     верхнему краю, поэтому собственные вертикальные отступы Group снимаем. */
   overflow: hidden;
+  padding-block: 0;
 }
 
 .cover {
   background: var(--vkui--color_background_secondary);
-}
-
-.gradient {
-  height: 100%;
 }
 
 .body {

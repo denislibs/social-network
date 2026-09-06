@@ -2,6 +2,9 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
+  // Playwright wipes `outputDir` before every run; keeping it in a subfolder means the design
+  // screenshots in `test-results/design/` survive a later `auth.spec.ts` run.
+  outputDir: './test-results/playwright',
   timeout: 30_000,
   fullyParallel: false,
   use: { baseURL: 'http://localhost:5173', trace: 'retain-on-failure' },

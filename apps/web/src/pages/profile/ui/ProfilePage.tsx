@@ -10,7 +10,7 @@ export function ProfilePage() {
   return (
     <>
       <Group mode="card">
-        <Box padding="m">
+        <Box paddingInline="m">
           <Button mode="tertiary" before={<Icon24Add />} align="left" stretched disabled>
             Создать пост
           </Button>
