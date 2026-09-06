@@ -77,34 +77,32 @@ describe('ProfileCard', () => {
     expect(await screen.findByLabelText('Загрузка')).toHaveAttribute('aria-busy', 'true')
   })
 
-  it('renders name, status and counters once loaded', async () => {
+  it('renders name, status and the "member since" line once loaded', async () => {
     mount(makeProfile())
     expect(await screen.findByText('Ден Иванов')).toBeInTheDocument()
     expect(screen.getByText('Всё хорошо')).toBeInTheDocument()
-    expect(screen.getByText('Друзья 12')).toBeInTheDocument()
-    expect(screen.getByText('Подписчики 34')).toBeInTheDocument()
-    expect(screen.getByText('Сообщества 5')).toBeInTheDocument()
+    expect(screen.getByText('Москва · на сайте с 2020')).toBeInTheDocument()
   })
 
-  it('links the friends counter to /:handle/friends for another user', async () => {
-    mount(makeProfile({ relation: 'none' }), 'id5')
-    expect(await screen.findByRole('link', { name: 'Друзья 12' })).toHaveAttribute(
+  it('does not render the counters — they live in the right column now', async () => {
+    mount(makeProfile())
+    await screen.findByText('Ден Иванов')
+    expect(screen.queryByText('Друзья 12')).not.toBeInTheDocument()
+    expect(screen.queryByText('Подписчики 34')).not.toBeInTheDocument()
+    expect(screen.queryByText('Сообщества 5')).not.toBeInTheDocument()
+  })
+
+  it('invites the signed-in user to fill in an empty status', async () => {
+    mount(makeProfile({ relation: 'self', status: null }))
+    expect(await screen.findByRole('link', { name: /Укажите информацию о себе/ })).toHaveAttribute(
       'href',
-      '/id5/friends',
+      '/edit',
     )
   })
 
-  it('links the friends counter to /friends for the signed-in user', async () => {
-    mount(makeProfile({ relation: 'self' }), 'id5')
-    expect(await screen.findByRole('link', { name: 'Друзья 12' })).toHaveAttribute(
-      'href',
-      '/friends',
-    )
-  })
-
-  it('shows "Редактировать" instead of a friend button for the signed-in user', async () => {
+  it('shows "Редактировать профиль" instead of a friend button for the signed-in user', async () => {
     mount(makeProfile({ relation: 'self' }))
-    expect(await screen.findByRole('link', { name: 'Редактировать' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Редактировать профиль' })).toHaveAttribute(
       'href',
       '/edit',
     )
@@ -114,6 +112,6 @@ describe('ProfileCard', () => {
   it('shows a FriendButton for another user', async () => {
     mount(makeProfile({ relation: 'none' }))
     expect(await screen.findByRole('button', { name: 'Добавить в друзья' })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Редактировать' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Редактировать профиль' })).not.toBeInTheDocument()
   })
 })

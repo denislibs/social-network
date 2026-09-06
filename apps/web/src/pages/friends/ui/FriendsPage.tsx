@@ -12,7 +12,7 @@ export function FriendsPage() {
   return (
     <Panel>
       <PanelHeader>Друзья</PanelHeader>
-      <Tabs>
+      <Tabs mode="secondary">
         {FRIENDS_TABS.map((t) => (
           <TabsItem key={t.id} id={t.id} selected={tab === t.id} onClick={() => setTab(t.id)}>
             {t.label}

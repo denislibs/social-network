@@ -1,14 +1,15 @@
-import { Icon16Verified } from '@vkontakte/icons'
+import { Icon12Dropdown, Icon16Verified, Icon24ShareOutline } from '@vkontakte/icons'
 import {
   Box,
   Button,
+  ButtonGroup,
+  DisplayTitle,
   Flex,
   Footnote,
   Gradient,
   Group,
-  SimpleCell,
+  Link,
   Text,
-  Title,
 } from '@vkontakte/vkui'
 import { type ProfileDto, UserAvatar } from '@/entities/user'
 import { FriendButton } from '@/features/friendship'
@@ -16,56 +17,68 @@ import { RouterAnchor } from '@/shared/lib'
 import { useProfile } from '../model/useProfile'
 import { useRelation } from '../model/useRelation'
 import { ProfileCardSkeleton } from './ProfileCardSkeleton'
+import styles from './profile-card.module.css'
 
 function registeredYear(createdAt: string): number {
   return new Date(createdAt).getFullYear()
 }
 
-function ProfileCardLoaded({ profile, handle }: { profile: ProfileDto; handle: string }) {
+/**
+ * vk.ru's profile header: a full-width card (912px, spanning both content columns) with a 200px
+ * cover, a 96px avatar overlapping its bottom edge on the left, the name and status to the right
+ * of the avatar and the action buttons right-aligned on the same row. The counters that used to
+ * live here moved to the right column (`ProfileAside`), like on vk.ru.
+ */
+function ProfileCardLoaded({ profile }: { profile: ProfileDto }) {
   const relation = useRelation(profile)
   const isSelf = profile.relation === 'self'
-  const friendsHref = isSelf ? '/friends' : `/${handle}/friends`
+  const subtitle = [profile.city, `на сайте с ${registeredYear(profile.createdAt)}`]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
-    <Group mode="card">
-      <Box blockSize={120}>
-        <Gradient />
+    <Group mode="card" className={styles.card}>
+      <Box blockSize={200} className={styles.cover}>
+        <Gradient mode="tint" to="top" className={styles.gradient} />
       </Box>
-      <Box padding="system">
-        <Flex direction="column" gap="m" align="start">
+      <div className={styles.body}>
+        <div className={styles.avatar}>
           <UserAvatar user={profile} size={96} />
-          <Flex align="center" gap="xs">
-            <Title level="2">
-              {profile.firstName} {profile.lastName}
-            </Title>
-            {profile.isVerified && <Icon16Verified width={16} height={16} />}
+        </div>
+        <Flex justify="space-between" align="start" gap="m">
+          <Flex direction="column" gap="2xs" className={styles.identity}>
+            <Flex align="center" gap="xs">
+              <DisplayTitle level="2">
+                {profile.firstName} {profile.lastName}
+              </DisplayTitle>
+              {profile.isVerified && <Icon16Verified width={16} height={16} />}
+            </Flex>
+            {profile.status ? (
+              <Text>{profile.status}</Text>
+            ) : isSelf ? (
+              <Link Component={RouterAnchor} href="/edit">
+                Укажите информацию о себе ›
+              </Link>
+            ) : null}
+            <Footnote>{subtitle}</Footnote>
           </Flex>
-          {profile.status && <Text>{profile.status}</Text>}
-          <Footnote>
-            {[profile.city, `на сайте с ${registeredYear(profile.createdAt)}`]
-              .filter(Boolean)
-              .join(' · ')}
-          </Footnote>
-          {isSelf ? (
-            <Button mode="secondary" size="s" Component={RouterAnchor} href="/edit">
-              Редактировать
+          <ButtonGroup mode="horizontal" gap="s">
+            {isSelf ? (
+              <Button mode="secondary" size="m" Component={RouterAnchor} href="/edit">
+                Редактировать профиль
+              </Button>
+            ) : (
+              <FriendButton userId={profile.id} relation={relation} />
+            )}
+            <Button mode="secondary" size="m" aria-label="Поделиться">
+              <Icon24ShareOutline />
             </Button>
-          ) : (
-            <FriendButton userId={profile.id} relation={relation} />
-          )}
+            <Button mode="secondary" size="m" after={<Icon12Dropdown />}>
+              Ещё
+            </Button>
+          </ButtonGroup>
         </Flex>
-      </Box>
-      <SimpleCell Component={RouterAnchor} href={friendsHref}>
-        {`Друзья ${profile.counters.friends}`}
-      </SimpleCell>
-      <SimpleCell>{`Подписчики ${profile.counters.followers}`}</SimpleCell>
-      {isSelf ? (
-        <SimpleCell Component={RouterAnchor} href="/communities">
-          {`Сообщества ${profile.counters.communities}`}
-        </SimpleCell>
-      ) : (
-        <SimpleCell>{`Сообщества ${profile.counters.communities}`}</SimpleCell>
-      )}
+      </div>
     </Group>
   )
 }
@@ -76,5 +89,5 @@ export function ProfileCard({ handle }: { handle: string }) {
   if (isPending) return <ProfileCardSkeleton />
   if (isError || !profile) return null
 
-  return <ProfileCardLoaded profile={profile} handle={handle} />
+  return <ProfileCardLoaded profile={profile} />
 }

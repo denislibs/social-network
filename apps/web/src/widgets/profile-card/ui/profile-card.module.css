@@ -1,0 +1,49 @@
+.card {
+  /* Обложка должна обрезаться по скруглению карточки. */
+  overflow: hidden;
+}
+
+.cover {
+  background: var(--vkui--color_background_secondary);
+}
+
+.gradient {
+  height: 100%;
+}
+
+.body {
+  position: relative;
+  /* 32 отступ слева + 96 аватар + 32 зазор = 160 до текста. */
+  padding: 16px 24px 20px 160px;
+  min-height: 72px;
+}
+
+.avatar {
+  position: absolute;
+  left: 32px;
+  /* Половина аватара (96/2) заходит на обложку. */
+  top: -48px;
+}
+
+.avatar > * {
+  box-shadow: 0 0 0 4px var(--vkui--color_background_content);
+}
+
+.identity {
+  min-width: 0;
+}
+
+.friendsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.friend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}

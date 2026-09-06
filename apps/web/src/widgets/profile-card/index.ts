@@ -1,3 +1,7 @@
+export { COMMUNITIES_PREVIEW_SIZE, useCommunitiesPreview } from './model/useCommunitiesPreview'
+export { FRIENDS_PREVIEW_SIZE, useFriendsPreview } from './model/useFriendsPreview'
 export { useProfile } from './model/useProfile'
+export { ProfileAside } from './ui/ProfileAside'
+export { ProfileAsideSkeleton } from './ui/ProfileAsideSkeleton'
 export { ProfileCard } from './ui/ProfileCard'
 export { ProfileCardSkeleton } from './ui/ProfileCardSkeleton'

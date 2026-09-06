@@ -23,7 +23,7 @@ export function CommunitiesPage() {
       >
         Сообщества
       </PanelHeader>
-      <Tabs>
+      <Tabs mode="secondary">
         <TabsItem id="mine" selected={tab === 'mine'} onClick={() => setTab('mine')}>
           Мои
         </TabsItem>

@@ -1,27 +1,21 @@
-import { Box, Flex, Group, SimpleCell, Skeleton } from '@vkontakte/vkui'
+import { Box, Flex, Group, Skeleton } from '@vkontakte/vkui'
+import styles from './profile-card.module.css'
 
 export function ProfileCardSkeleton() {
   return (
-    <Group mode="card" aria-busy="true" aria-label="Загрузка">
-      <Box blockSize={120}>
+    <Group mode="card" aria-busy="true" aria-label="Загрузка" className={styles.card}>
+      <Box blockSize={200} className={styles.cover}>
         <Skeleton width="100%" height="100%" />
       </Box>
-      <Box padding="system">
-        <Flex direction="column" gap="m">
+      <div className={styles.body}>
+        <div className={styles.avatar}>
           <Skeleton width={96} height={96} borderRadius="50%" />
-          <Skeleton width={200} height={28} />
-          <Skeleton width={140} />
+        </div>
+        <Flex direction="column" gap="2xs">
+          <Skeleton width={240} height={28} />
+          <Skeleton width={160} />
         </Flex>
-      </Box>
-      <SimpleCell>
-        <Skeleton width={120} />
-      </SimpleCell>
-      <SimpleCell>
-        <Skeleton width={120} />
-      </SimpleCell>
-      <SimpleCell>
-        <Skeleton width={120} />
-      </SimpleCell>
+      </div>
     </Group>
   )
 }

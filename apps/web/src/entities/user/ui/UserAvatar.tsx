@@ -4,7 +4,7 @@ import type { UserDto } from '../model/types'
 
 type Props = {
   user: Pick<UserDto, 'id' | 'firstName' | 'lastName'>
-  size?: 24 | 28 | 32 | 36 | 40 | 48 | 56 | 72 | 96
+  size?: 24 | 28 | 32 | 36 | 40 | 48 | 56 | 64 | 72 | 96
 }
 
 export function UserAvatar({ user, size = 32 }: Props) {

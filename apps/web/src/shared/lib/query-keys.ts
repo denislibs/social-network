@@ -8,6 +8,7 @@ export const queryKeys = {
     profile: (handle: string) => ['user', handle] as const,
     handle: (handle: string) => ['handle', handle] as const,
     friends: (id: number) => ['friends', id] as const,
+    friendsPreview: (id: number) => ['friends', 'preview', id] as const,
     followers: (id: number) => ['followers', id] as const,
     counters: (id: number) => ['counters', id] as const,
     relation: (id: number) => ['relation', id] as const,

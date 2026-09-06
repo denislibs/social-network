@@ -1,13 +1,35 @@
-import { Group, Panel, Placeholder } from '@vkontakte/vkui'
-import { ProfileCard } from '@/widgets/profile-card'
+import { Icon24Add } from '@vkontakte/icons'
+import { Box, Button, Group, Placeholder, Tabs, TabsItem } from '@vkontakte/vkui'
 
-export function ProfilePage({ handle }: { handle: string }) {
+/**
+ * Left (551px) column of the profile: the "create a post" card and the wall, exactly the two
+ * blocks vk.ru puts under the profile header. The header itself and the right column are slots
+ * of `AppShell`, filled by `app/routes/HandleRoute` — on vk.ru the header spans both columns.
+ */
+export function ProfilePage() {
   return (
-    <Panel>
-      <ProfileCard handle={handle} />
+    <>
       <Group mode="card">
-        <Placeholder title="Стена скоро">Появится в подсистеме 3.</Placeholder>
+        <Box padding="m">
+          <Button mode="tertiary" before={<Icon24Add />} align="left" stretched disabled>
+            Создать пост
+          </Button>
+        </Box>
       </Group>
-    </Panel>
+      <Group mode="card">
+        <Tabs mode="secondary">
+          <TabsItem id="wall-main" selected>
+            Главная
+          </TabsItem>
+          <TabsItem id="wall-all" disabled>
+            Все записи
+          </TabsItem>
+          <TabsItem id="wall-mine" disabled>
+            Мои записи
+          </TabsItem>
+        </Tabs>
+        <Placeholder title="Записей пока нет">Стена появится в подсистеме 3.</Placeholder>
+      </Group>
+    </>
   )
 }
