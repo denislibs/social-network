@@ -47,12 +47,18 @@ export function createBrowserTabCoordinator(): TabCoordinator & { dispose(): voi
   if (navigator.locks) {
     // This request never resolves on purpose: holding the lock for the tab's whole
     // lifetime is what makes it "the leader" until the tab closes and the browser
-    // reclaims the lock for the next tab's pending request.
-    void navigator.locks.request('vkc-leader', () => {
-      leader = true
-      for (const l of leaderListeners) l(true)
-      return new Promise<void>(() => {})
-    })
+    // reclaims the lock for the next tab's pending request. The `.catch` below is not
+    // error *handling* in any meaningful sense — a rejection (e.g. `AbortError` if the
+    // browser tears the request down before granting it) just means this tab never
+    // becomes leader, which is already the default state. It exists solely so the
+    // rejection doesn't surface as an unhandled promise rejection.
+    void navigator.locks
+      .request('vkc-leader', () => {
+        leader = true
+        for (const l of leaderListeners) l(true)
+        return new Promise<void>(() => {})
+      })
+      .catch(() => {})
   } else {
     leader = true
   }

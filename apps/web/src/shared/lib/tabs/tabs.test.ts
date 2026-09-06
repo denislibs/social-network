@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createBrowserTabCoordinator } from './browser'
 import { fakeTabCluster, pickAnnouncer } from './testing'
 
@@ -50,6 +50,35 @@ describe('fakeTabCluster', () => {
     c.blurAll()
     expect(c.tabs[1]!.isActive()).toBe(false)
     expect(cb).toHaveBeenCalledWith(false)
+  })
+
+  it('subscribe: the returned unsubscribe stops further messages to that listener', () => {
+    const c = fakeTabCluster(2)
+    const cb = vi.fn()
+    const unsubscribe = c.tabs[1]!.subscribe(cb)
+    unsubscribe()
+    c.tabs[0]!.broadcast({ type: 'notifications:changed', unread: 1 })
+    expect(cb).not.toHaveBeenCalled()
+  })
+
+  it('onLeaderChange: the returned unsubscribe stops further leader notifications', () => {
+    const c = fakeTabCluster(2)
+    const cb = vi.fn()
+    const unsubscribe = c.tabs[1]!.onLeaderChange(cb)
+    unsubscribe()
+    c.close(0)
+    expect(c.tabs[1]!.isLeader()).toBe(true)
+    expect(cb).not.toHaveBeenCalled()
+  })
+
+  it('onActiveChange: the returned unsubscribe stops further active notifications', () => {
+    const c = fakeTabCluster(2)
+    const cb = vi.fn()
+    const unsubscribe = c.tabs[1]!.onActiveChange(cb)
+    unsubscribe()
+    c.focus(1)
+    expect(c.tabs[1]!.isActive()).toBe(true)
+    expect(cb).not.toHaveBeenCalled()
   })
 })
 
@@ -111,5 +140,172 @@ describe('createBrowserTabCoordinator', () => {
     expect(gotB).not.toHaveBeenCalled()
 
     a.dispose()
+  })
+
+  it('subscribe: the returned unsubscribe stops further messages without disposing the coordinator', async () => {
+    const a = createBrowserTabCoordinator()
+    const b = createBrowserTabCoordinator()
+    const gotB = vi.fn()
+    const unsubscribe = b.subscribe(gotB)
+    unsubscribe()
+
+    a.broadcast({ type: 'notifications:changed', unread: 7 })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(gotB).not.toHaveBeenCalled()
+
+    a.dispose()
+    b.dispose()
+  })
+
+  it('onActiveChange: the returned unsubscribe stops further active notifications', () => {
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true)
+    const coordinator = createBrowserTabCoordinator()
+    const cb = vi.fn()
+    const unsubscribe = coordinator.onActiveChange(cb)
+    unsubscribe()
+
+    hasFocusSpy.mockReturnValue(false)
+    window.dispatchEvent(new Event('blur'))
+
+    expect(coordinator.isActive()).toBe(false)
+    expect(cb).not.toHaveBeenCalled()
+
+    coordinator.dispose()
+    hasFocusSpy.mockRestore()
+  })
+
+  it('dispose removes the visibilitychange/focus/blur listeners and closes the channel', () => {
+    const docRemoveSpy = vi.spyOn(document, 'removeEventListener')
+    const winRemoveSpy = vi.spyOn(window, 'removeEventListener')
+    const closeSpy = vi.spyOn(BroadcastChannel.prototype, 'close')
+
+    const coordinator = createBrowserTabCoordinator()
+    coordinator.dispose()
+
+    expect(docRemoveSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function))
+    expect(winRemoveSpy).toHaveBeenCalledWith('focus', expect.any(Function))
+    expect(winRemoveSpy).toHaveBeenCalledWith('blur', expect.any(Function))
+    expect(closeSpy).toHaveBeenCalledTimes(1)
+
+    docRemoveSpy.mockRestore()
+    winRemoveSpy.mockRestore()
+    closeSpy.mockRestore()
+  })
+})
+
+describe('createBrowserTabCoordinator leadership via the real Web Locks API', () => {
+  // jsdom does not implement `navigator.locks`, so every test above exercises only the
+  // "Web Locks unavailable" fallback branch. These tests stub `navigator.locks` to drive
+  // the actual `navigator.locks.request('vkc-leader', …)` branch in `browser.ts`.
+  const originalLocks = Object.getOwnPropertyDescriptor(navigator, 'locks')
+
+  afterEach(() => {
+    if (originalLocks) {
+      Object.defineProperty(navigator, 'locks', originalLocks)
+    } else {
+      // @ts-expect-error -- jsdom has no `locks`; removing the stub restores that.
+      delete navigator.locks
+    }
+  })
+
+  it('lock granted: becomes leader and notifies a listener registered right after creation, exactly once', async () => {
+    const request = vi.fn((_name: string, cb: () => Promise<void>) => Promise.resolve().then(cb))
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    const onChange = vi.fn()
+    coordinator.onLeaderChange(onChange)
+
+    expect(coordinator.isLeader()).toBe(false)
+
+    await vi.waitFor(() => {
+      expect(coordinator.isLeader()).toBe(true)
+    })
+
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(true)
+    expect(request).toHaveBeenCalledWith('vkc-leader', expect.any(Function))
+
+    coordinator.dispose()
+  })
+
+  it('lock not granted: stays a non-leader and never notifies', async () => {
+    const request = vi.fn((_name: string, _cb: () => Promise<void>) => new Promise<void>(() => {}))
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    const onChange = vi.fn()
+    coordinator.onLeaderChange(onChange)
+
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(coordinator.isLeader()).toBe(false)
+    expect(onChange).not.toHaveBeenCalled()
+
+    coordinator.dispose()
+  })
+
+  it('lock granted later: leader flips to true and the listener fires once the callback runs', () => {
+    let grantedCb: (() => Promise<void>) | undefined
+    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
+      grantedCb = cb
+      return new Promise<void>(() => {})
+    })
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    const onChange = vi.fn()
+    coordinator.onLeaderChange(onChange)
+
+    expect(coordinator.isLeader()).toBe(false)
+    expect(onChange).not.toHaveBeenCalled()
+
+    grantedCb?.()
+
+    expect(coordinator.isLeader()).toBe(true)
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(true)
+
+    coordinator.dispose()
+  })
+
+  it('onLeaderChange: the returned unsubscribe stops further leader notifications', () => {
+    let grantedCb: (() => Promise<void>) | undefined
+    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
+      grantedCb = cb
+      return new Promise<void>(() => {})
+    })
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    const onChange = vi.fn()
+    const unsubscribe = coordinator.onLeaderChange(onChange)
+    unsubscribe()
+
+    grantedCb?.()
+
+    expect(coordinator.isLeader()).toBe(true)
+    expect(onChange).not.toHaveBeenCalled()
+
+    coordinator.dispose()
+  })
+
+  it('does not produce an unhandled rejection when the lock request rejects', async () => {
+    const request = vi.fn((_name: string, _cb: () => Promise<void>) =>
+      Promise.reject(new DOMException('aborted', 'AbortError')),
+    )
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const onUnhandledRejection = vi.fn()
+    process.on('unhandledRejection', onUnhandledRejection)
+
+    const coordinator = createBrowserTabCoordinator()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(coordinator.isLeader()).toBe(false)
+    expect(onUnhandledRejection).not.toHaveBeenCalled()
+
+    process.off('unhandledRejection', onUnhandledRejection)
+    coordinator.dispose()
   })
 })
