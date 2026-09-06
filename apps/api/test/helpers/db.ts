@@ -16,6 +16,6 @@ export async function testDb(): Promise<Db> {
 
 export async function truncateAll(db: Db): Promise<void> {
   await db.execute(
-    sql`TRUNCATE events, dialog_state, messages, dialogs, likes, comments, posts, media, community_members, follows, friendships, communities, users, author_stats_daily, user_profiles_ml, friend_suggestions, model_versions RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE events, dialog_state, messages, dialogs, likes, comments, posts, media, community_members, follows, friendships, communities, notifications, friend_suggestion_hidden, users, author_stats_daily, user_profiles_ml, friend_suggestions, model_versions RESTART IDENTITY CASCADE`,
   )
 }

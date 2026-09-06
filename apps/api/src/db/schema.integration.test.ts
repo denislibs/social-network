@@ -104,3 +104,37 @@ describe('schema', () => {
     expect(idx?.indexname).toBe('posts_embedding_hnsw')
   })
 })
+
+describe('migration 0003', () => {
+  it('creates pg_trgm, notifications, hidden suggestions and trigram indexes', async () => {
+    const ext = await db.execute(sql`select 1 from pg_extension where extname = 'pg_trgm'`)
+    expect(ext.length).toBe(1)
+    const idx = await db.execute<{ indexname: string }>(
+      sql`select indexname from pg_indexes where indexname in ('users_name_trgm','users_screen_name_trgm','communities_name_trgm','friendships_requester_idx','notifications_unread_idx')`,
+    )
+    expect(idx.map((r) => r.indexname).toSorted()).toEqual([
+      'communities_name_trgm',
+      'friendships_requester_idx',
+      'notifications_unread_idx',
+      'users_name_trgm',
+      'users_screen_name_trgm',
+    ])
+    const kinds = await db.execute<{ enumlabel: string }>(
+      sql`select enumlabel from pg_enum e join pg_type t on t.oid = e.enumtypid where t.typname = 'notification_kind' order by enumsortorder`,
+    )
+    expect(kinds.map((k) => k.enumlabel)).toEqual([
+      'friend_request',
+      'friend_accepted',
+      'new_follower',
+      'community_invite',
+      'post_like',
+      'comment_like',
+      'post_comment',
+      'comment_reply',
+      'mention',
+      'repost',
+      'community_post',
+      'birthday',
+    ])
+  })
+})

@@ -14,6 +14,8 @@ const TABLES = [
   'follows',
   'friendships',
   'communities',
+  'notifications',
+  'friend_suggestion_hidden',
   'users',
   'author_stats_daily',
   'user_profiles_ml',

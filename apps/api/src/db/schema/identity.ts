@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   bigint,
   boolean,
@@ -35,5 +36,10 @@ export const users = pgTable(
     uniqueIndex('users_login_uq').on(t.login),
     uniqueIndex('users_screen_name_uq').on(t.screenName),
     index('users_city_idx').on(t.city),
+    index('users_name_trgm').using(
+      'gin',
+      sql`lower(${t.firstName} || ' ' || ${t.lastName}) gin_trgm_ops`,
+    ),
+    index('users_screen_name_trgm').using('gin', sql`lower(${t.screenName}) gin_trgm_ops`),
   ],
 )

@@ -20,3 +20,19 @@ export const eventKindEnum = pgEnum('event_kind', [
   'hide',
 ])
 export const modelKindEnum = pgEnum('model_kind', ['feed_ranker', 'pymk_ranker'])
+export const NOTIFICATION_KINDS = [
+  'friend_request',
+  'friend_accepted',
+  'new_follower',
+  'community_invite',
+  'post_like',
+  'comment_like',
+  'post_comment',
+  'comment_reply',
+  'mention',
+  'repost',
+  'community_post',
+  'birthday',
+] as const
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number]
+export const notificationKindEnum = pgEnum('notification_kind', NOTIFICATION_KINDS)

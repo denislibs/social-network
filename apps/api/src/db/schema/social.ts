@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   bigint,
   boolean,
@@ -29,6 +30,7 @@ export const communities = pgTable(
   (t) => [
     uniqueIndex('communities_screen_name_uq').on(t.screenName),
     index('communities_topic_idx').on(t.topic),
+    index('communities_name_trgm').using('gin', sql`lower(${t.name}) gin_trgm_ops`),
   ],
 )
 
@@ -50,6 +52,7 @@ export const friendships = pgTable(
     primaryKey({ columns: [t.userLo, t.userHi] }),
     index('friendships_hi_idx').on(t.userHi, t.status),
     index('friendships_lo_idx').on(t.userLo, t.status),
+    index('friendships_requester_idx').on(t.requesterId, t.status),
   ],
 )
 
@@ -85,4 +88,18 @@ export const communityMembers = pgTable(
     primaryKey({ columns: [t.communityId, t.userId] }),
     index('community_members_user_idx').on(t.userId),
   ],
+)
+
+export const friendSuggestionHidden = pgTable(
+  'friend_suggestion_hidden',
+  {
+    userId: bigint('user_id', { mode: 'number' })
+      .notNull()
+      .references(() => users.id),
+    hiddenId: bigint('hidden_id', { mode: 'number' })
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.hiddenId] })],
 )

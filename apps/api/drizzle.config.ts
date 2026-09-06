@@ -9,6 +9,7 @@ export default defineConfig({
     './src/db/schema/content.ts',
     './src/db/schema/ml.ts',
     './src/db/schema/messaging.ts',
+    './src/db/schema/notifications.ts',
   ],
   out: './drizzle',
   dbCredentials: { url: process.env.DATABASE_URL ?? 'postgres://vk:vk@localhost:5432/vk' },
