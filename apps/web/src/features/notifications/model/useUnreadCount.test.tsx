@@ -1,10 +1,16 @@
-import { renderHook, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { focusManager } from '@tanstack/react-query'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { withProviders } from '@/shared/lib'
 import { fakeNotificationGateway, fakeTabCoordinator, notificationsTestContainer } from './testing'
 import { useUnreadCount } from './useUnreadCount'
 
 describe('useUnreadCount', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    focusManager.setFocused(undefined)
+  })
+
   it('leader tab: fetches and returns the count', async () => {
     const gateway = fakeNotificationGateway({ unreadCount: async () => 3 })
     const container = notificationsTestContainer(
@@ -17,17 +23,43 @@ describe('useUnreadCount', () => {
     await waitFor(() => expect(result.current.count).toBe(3))
   })
 
-  it('non-leader tab: does not call the gateway and starts at 0', async () => {
-    const gateway = fakeNotificationGateway()
+  it('non-leader tab: fetches once on mount but never polls', async () => {
+    vi.useFakeTimers()
+    const unreadCount = vi.fn().mockResolvedValue(1)
     const container = notificationsTestContainer(
-      gateway,
+      fakeNotificationGateway({ unreadCount }),
       fakeTabCoordinator({ isLeader: () => false }),
     )
 
-    const { result } = renderHook(() => useUnreadCount(), { wrapper: withProviders(container) })
+    renderHook(() => useUnreadCount(), { wrapper: withProviders(container) })
 
-    expect(result.current.count).toBe(0)
-    expect(gateway.unreadCount).not.toHaveBeenCalled()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    expect(unreadCount).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120_000)
+    })
+    expect(unreadCount).toHaveBeenCalledTimes(1)
+  })
+
+  it('non-leader tab: refetches once when the window regains focus', async () => {
+    const unreadCount = vi.fn().mockResolvedValue(1)
+    const container = notificationsTestContainer(
+      fakeNotificationGateway({ unreadCount }),
+      fakeTabCoordinator({ isLeader: () => false }),
+    )
+
+    renderHook(() => useUnreadCount(), { wrapper: withProviders(container) })
+    await waitFor(() => expect(unreadCount).toHaveBeenCalledTimes(1))
+
+    act(() => {
+      focusManager.setFocused(false)
+      focusManager.setFocused(true)
+    })
+
+    await waitFor(() => expect(unreadCount).toHaveBeenCalledTimes(2))
   })
 
   it('isPending reflects the query still loading', () => {

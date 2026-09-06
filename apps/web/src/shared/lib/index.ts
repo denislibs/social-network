@@ -28,4 +28,5 @@ export {
   type TabMessage,
 } from './tabs'
 export { withProviders } from './testing/with-providers'
+export { useDebouncedValue } from './use-debounced-value'
 export { useDelayedPending } from './use-delayed-pending'

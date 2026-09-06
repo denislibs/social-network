@@ -1,21 +1,24 @@
 import { useQuery } from '@tanstack/react-query'
-import { useDeferredValue } from 'react'
 import { COMMUNITY_GATEWAY, type CommunityCellDto } from '@/entities/community'
 import { USER_GATEWAY, type UserCellDto } from '@/entities/user'
 import { useService } from '@/shared/di'
-import { queryKeys, useDelayedPending } from '@/shared/lib'
+import { queryKeys, useDebouncedValue, useDelayedPending } from '@/shared/lib'
 
 export type SearchKind = 'all' | 'users' | 'communities'
 
 type SearchData = { users: UserCellDto[]; communities: CommunityCellDto[] }
 
+/** Typing pause, in ms, before a query is actually sent. */
+const DEBOUNCE_MS = 300
+
 /**
- * `useDeferredValue` (not a real debounce timer) lags one render behind `q`: several rapid
- * updates to `q` collapse into a single deferred value once React catches up, so only the
- * final query fires. Disabled below two characters via `enabled`, matching the backend's
- * `GET /search` minimum. Runs `USER_GATEWAY.searchUsers`/`COMMUNITY_GATEWAY.search` in
- * parallel rather than adding a combined gateway method, since both already exist and a
- * third "search everything" port would just duplicate their union.
+ * Debounces `q` by {@link DEBOUNCE_MS} so a burst of keystrokes costs one request, not one per
+ * letter (`useDeferredValue`, which this replaced, only lags a render — on a fast machine React
+ * caught up between keystrokes and every letter hit the network). Stays disabled below two
+ * characters via `enabled`, which the backend enforces too (`GET /search`, `minLength: 2`). Runs
+ * `USER_GATEWAY.searchUsers`/`COMMUNITY_GATEWAY.search` in parallel rather than adding a combined
+ * gateway method, since both already exist and a third "search everything" port would just
+ * duplicate their union.
  */
 export function useSearch(
   q: string,
@@ -29,20 +32,20 @@ export function useSearch(
 } {
   const userGateway = useService(USER_GATEWAY)
   const communityGateway = useService(COMMUNITY_GATEWAY)
-  const deferred = useDeferredValue(q)
-  const enabled = deferred.trim().length >= 2
+  const debounced = useDebouncedValue(q, DEBOUNCE_MS)
+  const enabled = debounced.trim().length >= 2
 
   const query = useQuery<SearchData>({
-    queryKey: queryKeys.search(deferred, kind),
+    queryKey: queryKeys.search(debounced, kind),
     enabled,
     queryFn: async () => {
       const [users, communities] = await Promise.all([
         kind === 'communities'
           ? Promise.resolve<UserCellDto[]>([])
-          : userGateway.searchUsers(deferred),
+          : userGateway.searchUsers(debounced),
         kind === 'users'
           ? Promise.resolve<CommunityCellDto[]>([])
-          : communityGateway.search(deferred),
+          : communityGateway.search(debounced),
       ])
       return { users, communities }
     },

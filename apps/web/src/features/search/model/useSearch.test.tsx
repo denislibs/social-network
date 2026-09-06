@@ -1,10 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { withProviders } from '@/shared/lib'
 import { fakeCommunityGateway, fakeUserGateway, searchTestContainer } from './testing'
 import { useSearch } from './useSearch'
 
 describe('useSearch', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('does not query while the trimmed value is under 2 characters', () => {
     const userGateway = fakeUserGateway()
     const communityGateway = fakeCommunityGateway()
@@ -46,6 +50,29 @@ describe('useSearch', () => {
     await waitFor(() => expect(userGateway.searchUsers).toHaveBeenCalledWith('ден'))
     expect(userGateway.searchUsers).not.toHaveBeenCalledWith('д')
     expect(userGateway.searchUsers).not.toHaveBeenCalledWith('де')
+  })
+
+  it('waits out the 300 ms typing pause before it queries at all', async () => {
+    vi.useFakeTimers()
+    const userGateway = fakeUserGateway()
+    const communityGateway = fakeCommunityGateway()
+    const container = searchTestContainer(userGateway, communityGateway)
+    const { rerender } = renderHook(({ q }: { q: string }) => useSearch(q, 'all'), {
+      wrapper: withProviders(container),
+      initialProps: { q: '' },
+    })
+
+    act(() => rerender({ q: 'ден' }))
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(299)
+    })
+    expect(userGateway.searchUsers).not.toHaveBeenCalled()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+    })
+    expect(userGateway.searchUsers).toHaveBeenCalledWith('ден')
   })
 
   it('kind "users" only calls searchUsers', async () => {

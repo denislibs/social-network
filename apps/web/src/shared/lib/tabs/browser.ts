@@ -5,11 +5,16 @@ function computeActive(): boolean {
 }
 
 /**
- * Browser `TabCoordinator`: leadership is arbitrated via the Web Locks API (the tab
- * holding an indefinitely-pending `navigator.locks.request` lock is the leader; when
- * that tab closes, the browser releases the lock and another tab's pending request
- * wins), cross-tab messages travel over a shared `BroadcastChannel`, and "active" tracks
- * whether this tab is the visible, focused one.
+ * Browser `TabCoordinator`: leadership is arbitrated via the Web Locks API (the tab holding an
+ * indefinitely-pending `navigator.locks.request` lock is the leader; when that tab closes or
+ * releases, the browser hands the lock to another tab's pending request), cross-tab messages
+ * travel over a shared `BroadcastChannel`, and "active" tracks whether this tab is the visible,
+ * focused one.
+ *
+ * Leadership is also *opt-in*: the lock is only requested once `setEligible(true)` is called, and
+ * `setEligible(false)` releases it again. That is what keeps a signed-out tab from squatting on
+ * the lock (see `TabCoordinator.setEligible`) and what makes logout hand leadership straight over
+ * to another tab instead of waiting for this one to close.
  */
 export function createBrowserTabCoordinator(): TabCoordinator & { dispose(): void } {
   const tabId = crypto.randomUUID()
@@ -44,27 +49,57 @@ export function createBrowserTabCoordinator(): TabCoordinator & { dispose(): voi
   window.addEventListener('focus', onActivityEvent)
   window.addEventListener('blur', onActivityEvent)
 
-  if (navigator.locks) {
-    // This request never resolves on purpose: holding the lock for the tab's whole
-    // lifetime is what makes it "the leader" until the tab closes and the browser
-    // reclaims the lock for the next tab's pending request. The `.catch` below is not
-    // error *handling* in any meaningful sense — a rejection (e.g. `AbortError` if the
-    // browser tears the request down before granting it) just means this tab never
-    // becomes leader, which is already the default state. It exists solely so the
-    // rejection doesn't surface as an unhandled promise rejection.
+  function setLeader(next: boolean): void {
+    if (leader === next) return
+    leader = next
+    for (const l of leaderListeners) l(next)
+  }
+
+  let eligible = false
+  /** Resolving this hands the Web Lock back to the browser; `null` while no request is in flight. */
+  let releaseHeldLock: (() => void) | null = null
+
+  function acquire(): void {
+    if (!navigator.locks) {
+      // No Web Locks (jsdom, very old browsers): there is nothing to arbitrate with, so an
+      // eligible tab simply considers itself the leader.
+      setLeader(true)
+      return
+    }
+    if (releaseHeldLock) return
+    let handBack!: () => void
+    const held = new Promise<void>((resolve) => {
+      handBack = resolve
+    })
+    releaseHeldLock = handBack
+    // The callback's promise stays pending for as long as this tab should lead: that is what
+    // holds the lock. The `.catch` is not error *handling* — a rejection (e.g. `AbortError`)
+    // just means this tab never became leader, which is already the default state; it only
+    // keeps the rejection from surfacing as an unhandled one.
     void navigator.locks
       .request('vkc-leader', () => {
-        leader = true
-        for (const l of leaderListeners) l(true)
-        return new Promise<void>(() => {})
+        // Eligibility can be withdrawn while the request is still queued behind another tab.
+        if (!eligible) return Promise.resolve()
+        setLeader(true)
+        return held
       })
       .catch(() => {})
-  } else {
-    leader = true
+  }
+
+  function release(): void {
+    setLeader(false)
+    releaseHeldLock?.()
+    releaseHeldLock = null
   }
 
   return {
     tabId,
+    setEligible: (next: boolean) => {
+      if (eligible === next) return
+      eligible = next
+      if (next) acquire()
+      else release()
+    },
     isLeader: () => leader,
     onLeaderChange: (cb) => {
       leaderListeners.add(cb)
@@ -81,6 +116,8 @@ export function createBrowserTabCoordinator(): TabCoordinator & { dispose(): voi
       return () => messageListeners.delete(cb)
     },
     dispose: () => {
+      eligible = false
+      release()
       channel.removeEventListener('message', onMessage)
       channel.close()
       document.removeEventListener('visibilitychange', onActivityEvent)

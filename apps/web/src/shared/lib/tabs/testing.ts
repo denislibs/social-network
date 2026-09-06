@@ -8,6 +8,7 @@ export { pickAnnouncer } from './announcer'
 export function fakeTabCoordinator(overrides: Partial<TabCoordinator> = {}): TabCoordinator {
   return {
     tabId: 'tab-0',
+    setEligible: () => {},
     isLeader: () => true,
     onLeaderChange: () => () => {},
     isActive: () => true,
@@ -29,6 +30,7 @@ interface FakeTab extends TabCoordinator {
   closed: boolean
   leader: boolean
   active: boolean
+  eligible: boolean
   readonly leaderListeners: Set<(leader: boolean) => void>
   readonly activeListeners: Set<(active: boolean) => void>
   readonly messageListeners: Set<(msg: TabMessage) => void>
@@ -38,6 +40,10 @@ interface FakeTab extends TabCoordinator {
  * In-memory multi-tab cluster for tests: a shared bus standing in for
  * `BroadcastChannel`/Web Locks so cross-tab behaviour (leader election, activity,
  * message fan-out) can be exercised synchronously without jsdom/browser APIs.
+ *
+ * Tabs start eligible — the common case is a cluster of already-authed tabs. Call
+ * `setEligible(false)` on a tab to model a signed-out one: like the real coordinator, it then
+ * drops out of the election and the lock goes to the first eligible tab left.
  */
 export function fakeTabCluster(n: number): {
   tabs: TabCoordinator[]
@@ -46,6 +52,17 @@ export function fakeTabCluster(n: number): {
   blurAll(): void
 } {
   const tabs: FakeTab[] = []
+
+  function elect(): void {
+    const leaderIndex = tabs.findIndex((t) => !t.closed && t.eligible)
+    for (const [i, t] of tabs.entries()) {
+      const shouldBeLeader = i === leaderIndex
+      if (t.leader !== shouldBeLeader) {
+        t.leader = shouldBeLeader
+        for (const l of t.leaderListeners) l(shouldBeLeader)
+      }
+    }
+  }
 
   function makeTab(i: number): FakeTab {
     const leaderListeners = new Set<(leader: boolean) => void>()
@@ -56,9 +73,15 @@ export function fakeTabCluster(n: number): {
       closed: false,
       leader: false,
       active: false,
+      eligible: true,
       leaderListeners,
       activeListeners,
       messageListeners,
+      setEligible: (eligible) => {
+        if (tab.eligible === eligible) return
+        tab.eligible = eligible
+        elect()
+      },
       isLeader: () => tab.leader,
       onLeaderChange: (cb) => {
         leaderListeners.add(cb)
@@ -85,17 +108,6 @@ export function fakeTabCluster(n: number): {
   }
 
   for (let i = 0; i < n; i++) tabs.push(makeTab(i))
-
-  function elect(): void {
-    const leaderIndex = tabs.findIndex((t) => !t.closed)
-    for (const [i, t] of tabs.entries()) {
-      const shouldBeLeader = i === leaderIndex
-      if (t.leader !== shouldBeLeader) {
-        t.leader = shouldBeLeader
-        for (const l of t.leaderListeners) l(shouldBeLeader)
-      }
-    }
-  }
 
   elect()
 

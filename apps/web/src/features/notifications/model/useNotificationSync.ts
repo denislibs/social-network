@@ -8,6 +8,9 @@ import { useUnreadCount } from './useUnreadCount'
 
 /**
  * Mounted once per tab (see `app/composition/NotificationSync.tsx`), only while authed:
+ * - Mounting is what makes this tab eligible to lead (and unmounting — logout, or the tab going
+ *   away — what makes it ineligible again), so a signed-out tab never holds the leader lock and
+ *   logging out in the leader hands leadership straight to another tab.
  * - Every tab subscribes to the `TabCoordinator` broadcast channel: `notifications:changed`
  *   writes the leader's polled count straight into this tab's own `unread` cache (so non-leader
  *   tabs never poll the server themselves) and invalidates the list; `notifications:read` (sent
@@ -23,6 +26,11 @@ export function useNotificationSync(): void {
   const queryClient = useQueryClient()
   const isLeader = useTabLeader()
   const { count } = useUnreadCount()
+
+  useEffect(() => {
+    coordinator.setEligible(true)
+    return () => coordinator.setEligible(false)
+  }, [coordinator])
 
   useEffect(
     () =>

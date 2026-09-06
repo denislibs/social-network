@@ -13,6 +13,32 @@ describe('fakeTabCluster', () => {
     expect(onChange).toHaveBeenCalledWith(true)
   })
 
+  it('an ineligible (signed-out) tab never leads while an eligible one exists', () => {
+    const c = fakeTabCluster(2)
+    c.tabs[0]!.setEligible(false)
+    expect(c.tabs[0]!.isLeader()).toBe(false)
+    expect(c.tabs[1]!.isLeader()).toBe(true)
+  })
+
+  it('the leader going ineligible (logout) hands leadership to the next tab', () => {
+    const c = fakeTabCluster(2)
+    expect(c.tabs[0]!.isLeader()).toBe(true)
+    const onChange = vi.fn()
+    c.tabs[1]!.onLeaderChange(onChange)
+
+    c.tabs[0]!.setEligible(false)
+
+    expect(c.tabs[0]!.isLeader()).toBe(false)
+    expect(c.tabs[1]!.isLeader()).toBe(true)
+    expect(onChange).toHaveBeenCalledWith(true)
+  })
+
+  it('no tab leads while every tab is ineligible', () => {
+    const c = fakeTabCluster(2)
+    for (const t of c.tabs) t.setEligible(false)
+    expect(c.tabs.filter((t) => t.isLeader())).toHaveLength(0)
+  })
+
   it('broadcast reaches every other tab, not the sender', () => {
     const c = fakeTabCluster(2)
     const got = vi.fn()
@@ -95,9 +121,16 @@ describe('pickAnnouncer', () => {
 })
 
 describe('createBrowserTabCoordinator', () => {
-  it('is immediately leader when the Web Locks API is unavailable', () => {
+  it('is not a leader until it is made eligible, even without the Web Locks API', () => {
     const coordinator = createBrowserTabCoordinator()
+    expect(coordinator.isLeader()).toBe(false)
+
+    coordinator.setEligible(true)
     expect(coordinator.isLeader()).toBe(true)
+
+    coordinator.setEligible(false)
+    expect(coordinator.isLeader()).toBe(false)
+
     coordinator.dispose()
   })
 
@@ -215,6 +248,7 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
     const coordinator = createBrowserTabCoordinator()
     const onChange = vi.fn()
     coordinator.onLeaderChange(onChange)
+    coordinator.setEligible(true)
 
     expect(coordinator.isLeader()).toBe(false)
 
@@ -236,6 +270,7 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
     const coordinator = createBrowserTabCoordinator()
     const onChange = vi.fn()
     coordinator.onLeaderChange(onChange)
+    coordinator.setEligible(true)
 
     await new Promise((resolve) => setTimeout(resolve, 20))
 
@@ -256,6 +291,7 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
     const coordinator = createBrowserTabCoordinator()
     const onChange = vi.fn()
     coordinator.onLeaderChange(onChange)
+    coordinator.setEligible(true)
 
     expect(coordinator.isLeader()).toBe(false)
     expect(onChange).not.toHaveBeenCalled()
@@ -281,12 +317,69 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
     const onChange = vi.fn()
     const unsubscribe = coordinator.onLeaderChange(onChange)
     unsubscribe()
+    coordinator.setEligible(true)
 
     grantedCb?.()
 
     expect(coordinator.isLeader()).toBe(true)
     expect(onChange).not.toHaveBeenCalled()
 
+    coordinator.dispose()
+  })
+
+  it('never requests the lock while the tab is ineligible', async () => {
+    const request = vi.fn((_name: string, _cb: () => Promise<void>) => new Promise<void>(() => {}))
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    expect(request).not.toHaveBeenCalled()
+    expect(coordinator.isLeader()).toBe(false)
+
+    coordinator.dispose()
+  })
+
+  it('setEligible(false) releases the held lock so another tab can take it', () => {
+    let held: Promise<void> | undefined
+    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
+      held = cb()
+      return held
+    })
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    coordinator.setEligible(true)
+    expect(coordinator.isLeader()).toBe(true)
+
+    const settled = vi.fn()
+    void held?.then(settled)
+
+    coordinator.setEligible(false)
+
+    expect(coordinator.isLeader()).toBe(false)
+    // Resolving the callback's promise is what hands the Web Lock back to the browser.
+    return Promise.resolve().then(() => {
+      expect(settled).toHaveBeenCalled()
+      coordinator.dispose()
+    })
+  })
+
+  it('a lock granted after eligibility was withdrawn does not make the tab a leader', () => {
+    let grantedCb: (() => Promise<void>) | undefined
+    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
+      grantedCb = cb
+      return new Promise<void>(() => {})
+    })
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    coordinator.setEligible(true)
+    coordinator.setEligible(false)
+
+    grantedCb?.()
+
+    expect(coordinator.isLeader()).toBe(false)
     coordinator.dispose()
   })
 
@@ -300,6 +393,7 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
     process.on('unhandledRejection', onUnhandledRejection)
 
     const coordinator = createBrowserTabCoordinator()
+    coordinator.setEligible(true)
     await new Promise((resolve) => setTimeout(resolve, 20))
 
     expect(coordinator.isLeader()).toBe(false)
