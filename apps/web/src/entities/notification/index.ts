@@ -1,0 +1,5 @@
+export { EdenNotificationGateway } from './api/notificationApi'
+export { describeNotification, type NotificationDescriptor } from './model/kinds'
+export { NOTIFICATION_GATEWAY, type NotificationGateway } from './model/ports'
+export type { NotificationDto, NotificationKind } from './model/types'
+export { NotificationItem } from './ui/NotificationItem'

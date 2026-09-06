@@ -1,4 +1,7 @@
+import { COMMUNITY_GATEWAY, EdenCommunityGateway } from '@/entities/community'
+import { EdenNotificationGateway, NOTIFICATION_GATEWAY } from '@/entities/notification'
 import { EdenSessionGateway, SESSION_GATEWAY } from '@/entities/session'
+import { EdenUserGateway, USER_GATEWAY } from '@/entities/user'
 import { AUTH_GATEWAY, EdenAuthGateway } from '@/features/auth'
 import { API_CLIENT, createApi, UNAUTHORIZED_BUS, UnauthorizedBus } from '@/shared/api'
 import { APP_ORIGIN, STORAGE_KEYS } from '@/shared/config'
@@ -8,8 +11,10 @@ import {
   ColorSchemeStore,
   createBrowserPrefStorage,
   createBrowserSystemScheme,
+  createBrowserTabCoordinator,
   PREF_STORAGE,
   SYSTEM_SCHEME,
+  TAB_COORDINATOR,
 } from '@/shared/lib'
 
 /** Composition root: the only place that binds real (side-effectful) implementations. */
@@ -25,6 +30,23 @@ export function createAppContainer(): Container {
   container
     .bind(SESSION_GATEWAY)
     .toResolvedValue((api) => new EdenSessionGateway(api), [API_CLIENT])
+  container
+    .bind(USER_GATEWAY)
+    .toResolvedValue((api, bus) => new EdenUserGateway(api, bus), [API_CLIENT, UNAUTHORIZED_BUS])
+  container
+    .bind(COMMUNITY_GATEWAY)
+    .toResolvedValue(
+      (api, bus) => new EdenCommunityGateway(api, bus),
+      [API_CLIENT, UNAUTHORIZED_BUS],
+    )
+  container
+    .bind(NOTIFICATION_GATEWAY)
+    .toResolvedValue(
+      (api, bus) => new EdenNotificationGateway(api, bus),
+      [API_CLIENT, UNAUTHORIZED_BUS],
+    )
+
+  container.bind(TAB_COORDINATOR).toConstantValue(createBrowserTabCoordinator())
 
   container.bind(PREF_STORAGE).toConstantValue(createBrowserPrefStorage(STORAGE_KEYS.colorScheme))
   container.bind(SYSTEM_SCHEME).toConstantValue(createBrowserSystemScheme())

@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
+import { COMMUNITY_GATEWAY } from '@/entities/community'
+import { NOTIFICATION_GATEWAY } from '@/entities/notification'
 import { SESSION_GATEWAY } from '@/entities/session'
+import { USER_GATEWAY } from '@/entities/user'
 import { AUTH_GATEWAY } from '@/features/auth'
 import { API_CLIENT, type ApiClient, UNAUTHORIZED_BUS } from '@/shared/api'
 import type { ServiceIdentifier } from '@/shared/di'
-import { COLOR_SCHEME_STORE } from '@/shared/lib'
+import { COLOR_SCHEME_STORE, TAB_COORDINATOR } from '@/shared/lib'
 import { createAppContainer } from './container'
 
 describe('createAppContainer', () => {
@@ -20,6 +23,10 @@ describe('createAppContainer', () => {
     check(UNAUTHORIZED_BUS)
     check(AUTH_GATEWAY)
     check(SESSION_GATEWAY)
+    check(USER_GATEWAY)
+    check(COMMUNITY_GATEWAY)
+    check(NOTIFICATION_GATEWAY)
+    check(TAB_COORDINATOR)
     check(COLOR_SCHEME_STORE)
   })
 

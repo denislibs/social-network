@@ -1,1 +1,17 @@
-export type { UserDto } from '@/shared/api'
+export type {
+  Counters,
+  HandleDto,
+  Page,
+  ProfileDto,
+  Relation,
+  UserCellDto,
+  UserDto,
+} from '@vkc/contracts'
+
+export type ProfilePatch = {
+  status?: string | null
+  bio?: string | null
+  city?: string | null
+  birthday?: string | null
+  screenName?: string | null
+}

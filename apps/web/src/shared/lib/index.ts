@@ -13,6 +13,7 @@ export {
   type SystemScheme,
   useColorScheme,
 } from './color-scheme'
+export { pluralRu, relativeTime, topicLabel } from './format'
 export { initials } from './initials'
 export type { Page } from './page'
 export { queryKeys } from './query-keys'
