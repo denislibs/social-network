@@ -12,7 +12,9 @@ describe('unwrap', () => {
     expect(unwrap({ data: { ok: 1 }, error: null })).toEqual({ ok: 1 })
   })
   it('throws ApiError with code from body, validation for 422, unknown otherwise', () => {
-    expect(() => unwrap(err(409, 'login_taken'))).toThrow(ApiError)
+    expect(() => unwrap(err(409, 'login_taken'))).toThrow(
+      expect.objectContaining({ status: 409, code: 'login_taken', message: 'm' }),
+    )
     expect(() => unwrap(err(422))).toThrow(expect.objectContaining({ code: 'validation' }))
     expect(() => unwrap(err(500))).toThrow(expect.objectContaining({ code: 'unknown' }))
   })
