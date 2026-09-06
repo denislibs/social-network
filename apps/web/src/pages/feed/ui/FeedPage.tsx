@@ -1,4 +1,4 @@
-import { Div, Group, Panel, PanelHeader, Placeholder, Title } from '@vkontakte/vkui'
+import { Box, Group, Panel, PanelHeader, Placeholder, Title } from '@vkontakte/vkui'
 import { useSession } from '@/entities/session'
 
 export function FeedPage() {
@@ -8,9 +8,9 @@ export function FeedPage() {
     <Panel>
       <PanelHeader>Лента</PanelHeader>
       <Group mode="card">
-        <Div>
+        <Box padding="system">
           <Title level="2">Здравствуйте, {user?.firstName}</Title>
-        </Div>
+        </Box>
         <Placeholder title="Лента скоро">Появится в подсистеме 3.</Placeholder>
       </Group>
     </Panel>

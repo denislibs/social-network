@@ -1,4 +1,4 @@
-import { Div, Footnote, Group, Link, Panel, PanelHeader } from '@vkontakte/vkui'
+import { Box, Footnote, Group, Link, Panel, PanelHeader } from '@vkontakte/vkui'
 import { useNavigate } from 'react-router'
 import { useSession } from '@/entities/session'
 import { RegisterForm } from '@/features/auth'
@@ -18,14 +18,14 @@ export function RegisterPage() {
             navigate('/feed', { replace: true })
           }}
         />
-        <Div>
+        <Box padding="system">
           <Footnote>
             Уже есть аккаунт?{' '}
             <Link Component={RouterAnchor} href="/login">
               Войти
             </Link>
           </Footnote>
-        </Div>
+        </Box>
       </Group>
     </Panel>
   )
