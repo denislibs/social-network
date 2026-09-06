@@ -59,6 +59,29 @@ describe('Friendship', () => {
     expect(f.isRemoved).toBe(true)
     expect(f.pullEvents()).toEqual([])
   })
+  it('remove and rerequest reject a third party', () => {
+    const f = Friendship.request(7, 3, t0)
+    f.accept(3, t0)
+    f.pullEvents()
+    expect(() => f.remove(99)).toThrow(expect.objectContaining({ code: 'not_addressee' }))
+    const g = Friendship.request(7, 3, t0)
+    g.decline(3)
+    expect(() => g.rerequest(99, new Date(t0.getTime() + 48 * 3600_000))).toThrow(
+      expect.objectContaining({ code: 'not_addressee' }),
+    )
+    expect(g.props.requesterId).toBe(7)
+  })
+  it('original requester may re-request after the 24h cooldown', () => {
+    const f = Friendship.request(7, 3, t0)
+    f.decline(3)
+    f.pullEvents()
+    f.rerequest(7, new Date(t0.getTime() + 25 * 3600_000))
+    expect(f.props).toMatchObject({ status: 'pending', requesterId: 7 })
+    expect(f.pullEvents()[0]).toMatchObject({
+      type: 'FriendRequested',
+      payload: { requesterId: 7, addresseeId: 3 },
+    })
+  })
   it('rerequest after decline: other side within 24h → cooldown; after 24h → pending with new requester', () => {
     const f = Friendship.request(7, 3, t0)
     f.decline(3)

@@ -81,7 +81,11 @@ export class Friendship {
       payload: { requesterId: this.p.requesterId, addresseeId: by },
     })
   }
+  private assertParticipant(by: number): void {
+    if (by !== this.p.lo && by !== this.p.hi) throw new NotRequestAddressee()
+  }
   remove(by: number, now = new Date()): void {
+    this.assertParticipant(by)
     if (this.p.status !== 'accepted') throw new FriendshipNotFound()
     this.removed = true
     this.events.push({
@@ -94,7 +98,9 @@ export class Friendship {
     if (this.p.status !== 'pending' || by !== this.p.requesterId) throw new NotRequestAddressee()
     this.removed = true
   }
+  /** Either side may restart contact after a decline, but not sooner than 24h after the request. */
   rerequest(by: number, now: Date): void {
+    this.assertParticipant(by)
     if (this.p.status !== 'declined') throw new NotRequestAddressee()
     if (now.getTime() - this.p.createdAt.getTime() < COOLDOWN_MS) throw new RequestCooldown()
     this.p.status = 'pending'
