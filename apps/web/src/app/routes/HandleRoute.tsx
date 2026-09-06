@@ -3,6 +3,7 @@ import { CommunityPage } from '@/pages/community'
 import { HandleNotFound, useHandle } from '@/pages/handle'
 import { ProfilePage } from '@/pages/profile'
 import { AppShell } from '@/widgets/app-shell'
+import { CommunityAside, CommunityHeader } from '@/widgets/community-header'
 import {
   ProfileAside,
   ProfileAsideSkeleton,
@@ -55,8 +56,16 @@ export function HandleRoute() {
     )
   }
   return (
-    <AppShell rightColumn={<PymkBlock compact />}>
-      <CommunityPage handle={handle} />
+    <AppShell
+      wide={<CommunityHeader handle={handle} />}
+      rightColumn={
+        <>
+          <CommunityAside handle={handle} />
+          <PymkBlock compact />
+        </>
+      }
+    >
+      <CommunityPage />
     </AppShell>
   )
 }

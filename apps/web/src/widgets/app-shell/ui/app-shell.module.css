@@ -1,15 +1,26 @@
 .header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   height: 48px;
-  padding: 0 16px;
   box-sizing: border-box;
   /* Шапка липкая и остаётся в потоке; поднимаем её над fixed-колонкой
      навигации и красим, чтобы контент не просвечивал при прокрутке. */
   z-index: 1;
   background: var(--vkui--color_background_content);
   border-bottom: 1px solid var(--vkui--color_separator_primary);
+}
+
+.headerInner {
+  /* Строка шапки центрируется по той же ширине, что и колонки контента
+     (200 фиксированной колонки + 912 колонки контента), поэтому на широких
+     экранах поиск оказывается ровно над колонкой контента, а не прижатым
+     к левому краю окна. */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  max-width: 1128px;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
 .brand {

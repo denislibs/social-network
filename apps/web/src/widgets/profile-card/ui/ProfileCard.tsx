@@ -12,11 +12,13 @@ import {
 } from '@vkontakte/vkui'
 import { type ProfileDto, UserAvatar } from '@/entities/user'
 import { FriendButton } from '@/features/friendship'
-import { RouterAnchor } from '@/shared/lib'
+import { pluralRu, RouterAnchor } from '@/shared/lib'
 import { useProfile } from '../model/useProfile'
 import { useRelation } from '../model/useRelation'
 import { ProfileCardSkeleton } from './ProfileCardSkeleton'
 import styles from './profile-card.module.css'
+
+const FOLLOWER_FORMS: [string, string, string] = ['подписчик', 'подписчика', 'подписчиков']
 
 function registeredYear(createdAt: string): number {
   return new Date(createdAt).getFullYear()
@@ -25,13 +27,18 @@ function registeredYear(createdAt: string): number {
 /**
  * vk.ru's profile header: a full-width card (912px, spanning both content columns) with a 200px
  * cover, a 96px avatar overlapping its bottom edge on the left, the name and status to the right
- * of the avatar and the action buttons right-aligned on the same row. The counters that used to
- * live here moved to the right column (`ProfileAside`), like on vk.ru.
+ * of the avatar and the action buttons right-aligned on the same row. The friends/communities
+ * counters live in the right column (`ProfileAside`); followers has no card of its own on vk.ru
+ * (an empty box otherwise), so its count rides along in this footnote line instead.
  */
 function ProfileCardLoaded({ profile }: { profile: ProfileDto }) {
   const relation = useRelation(profile)
   const isSelf = profile.relation === 'self'
-  const subtitle = [profile.city, `на сайте с ${registeredYear(profile.createdAt)}`]
+  const subtitle = [
+    profile.city,
+    `${profile.counters.followers} ${pluralRu(profile.counters.followers, FOLLOWER_FORMS)}`,
+    `на сайте с ${registeredYear(profile.createdAt)}`,
+  ]
     .filter(Boolean)
     .join(' · ')
 

@@ -18,6 +18,7 @@ export const queryKeys = {
   community: {
     get: (handle: string) => ['community', handle] as const,
     members: (id: number) => ['community', 'members', id] as const,
+    membersPreview: (id: number) => ['community', 'members', 'preview', id] as const,
     mine: ['communities', 'mine'] as const,
   },
   notifications: {

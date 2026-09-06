@@ -27,4 +27,8 @@ describe('router precedence', () => {
   it('/communities still matches its own static route', () => {
     expect(leafPath('/communities')).toBe('/communities')
   })
+
+  it('/:handle/members matches the community members route, not /:handle', () => {
+    expect(leafPath('/clubplenochnyyklub/members')).toBe('/:handle/members')
+  })
 })

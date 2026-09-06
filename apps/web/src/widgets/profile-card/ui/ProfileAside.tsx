@@ -22,9 +22,11 @@ import { FriendsGridSkeleton, ProfileAsideSkeleton } from './ProfileAsideSkeleto
 import styles from './profile-card.module.css'
 
 /**
- * Right column of the profile page, mirroring vk.ru: a «Друзья N» card with a 3×2 avatar grid,
- * a «Подписчики N» card and a «Сообщества N» card listing the first few communities. The counters
- * come from the profile itself; only the previews are fetched separately.
+ * Right column of the profile page, mirroring vk.ru: a «Друзья N» card with a 3×2 avatar grid and
+ * a «Сообщества N» card listing the first few communities. The followers count has no card of
+ * its own here — vk.ru doesn't have one either, and it would be an empty box — it rides along in
+ * `ProfileCard`'s footnote line instead. The counters come from the profile itself; only the
+ * previews are fetched separately.
  */
 function ProfileAsideLoaded({ profile, handle }: { profile: ProfileDto; handle: string }) {
   const isSelf = profile.relation === 'self'
@@ -79,10 +81,6 @@ function ProfileAsideLoaded({ profile, handle }: { profile: ProfileDto; handle: 
             </div>
           </Box>
         )}
-      </Group>
-
-      <Group mode="card">
-        <Header size="m">{`Подписчики ${profile.counters.followers}`}</Header>
       </Group>
 
       <Group mode="card">

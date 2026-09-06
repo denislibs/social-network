@@ -169,6 +169,20 @@ describe('HandleRoute', () => {
       },
     })
     expect(await screen.findByText('Игровой клуб')).toBeInTheDocument()
+    expect(await screen.findByText('Записей пока нет')).toBeInTheDocument()
+    expect(await screen.findByText('Участники 3')).toBeInTheDocument()
+  })
+
+  it('puts the community header in the shell wide slot, above both columns', async () => {
+    mount('games', () => Promise.resolve({ kind: 'community', id: 9 }), {
+      community: {
+        get: vi.fn().mockResolvedValue(makeCommunity()),
+        members: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
+      },
+    })
+    const name = await screen.findByText('Игровой клуб')
+    expect(screen.getByRole('main').contains(name)).toBe(false)
+    expect(screen.getByLabelText('Дополнительно').contains(name)).toBe(false)
   })
 
   it('shows a 404 placeholder when the handle does not resolve', async () => {

@@ -26,6 +26,9 @@ const CommunitiesPage = lazy(() =>
 const ProfileFriendsPage = lazy(() =>
   import('@/pages/profile').then((m) => ({ default: m.ProfileFriendsPage })),
 )
+const CommunityMembersPage = lazy(() =>
+  import('@/pages/community').then((m) => ({ default: m.CommunityMembersPage })),
+)
 const SearchPage = lazy(() => import('@/pages/search').then((m) => ({ default: m.SearchPage })))
 const EditProfilePage = lazy(() =>
   import('@/pages/edit-profile').then((m) => ({ default: m.EditProfilePage })),
@@ -40,6 +43,13 @@ const authed = (el: ReactNode) => S(<RequireAuth>{el}</RequireAuth>)
 function ProfileFriendsRoute() {
   const { handle = '' } = useParams()
   return <ProfileFriendsPage handle={handle} />
+}
+
+/** `/:handle/members` mirrors `ProfileFriendsRoute` for communities: the full member list
+ * reached from `CommunityAside`'s «Все участники» link. */
+function CommunityMembersRoute() {
+  const { handle = '' } = useParams()
+  return <CommunityMembersPage handle={handle} />
 }
 
 /**
@@ -82,6 +92,7 @@ export const routes: RouteObject[] = [
       { path: '/edit', element: authed(<EditProfilePage />) },
       ...comingSoonRoutes,
       { path: '/:handle/friends', element: authed(<ProfileFriendsRoute />) },
+      { path: '/:handle/members', element: authed(<CommunityMembersRoute />) },
       { path: '*', element: S(<NotFoundPage />) },
     ],
   },

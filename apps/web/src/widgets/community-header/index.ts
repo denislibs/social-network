@@ -1,3 +1,6 @@
 export { useCommunity } from './model/useCommunity'
+export { MEMBERS_PREVIEW_SIZE, useMembersPreview } from './model/useMembersPreview'
+export { CommunityAside } from './ui/CommunityAside'
+export { CommunityAsideSkeleton } from './ui/CommunityAsideSkeleton'
 export { CommunityHeader } from './ui/CommunityHeader'
 export { CommunityHeaderSkeleton } from './ui/CommunityHeaderSkeleton'

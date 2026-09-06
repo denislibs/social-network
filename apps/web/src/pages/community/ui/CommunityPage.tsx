@@ -1,14 +1,14 @@
-import { Panel } from '@vkontakte/vkui'
-import { CommunityHeader, useCommunity } from '@/widgets/community-header'
-import { CommunityMembers } from '@/widgets/community-members'
+import { Group, Placeholder } from '@vkontakte/vkui'
 
-export function CommunityPage({ handle }: { handle: string }) {
-  const { community } = useCommunity(handle)
-
+/**
+ * Left (551px) column of a community page: just the wall placeholder, mirroring
+ * `pages/profile/ui/ProfilePage`. The header itself and the right column are `AppShell` slots,
+ * filled by `app/routes/HandleRoute` — vk.ru's community header spans both content columns too.
+ */
+export function CommunityPage() {
   return (
-    <Panel>
-      <CommunityHeader handle={handle} />
-      {community && <CommunityMembers id={community.id} />}
-    </Panel>
+    <Group mode="card">
+      <Placeholder title="Записей пока нет">Стена появится в подсистеме 3.</Placeholder>
+    </Group>
   )
 }

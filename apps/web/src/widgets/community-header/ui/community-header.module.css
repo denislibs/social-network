@@ -1,0 +1,51 @@
+/* Copied from `widgets/profile-card/ui/profile-card.module.css` — Steiger forbids one widget
+   slice importing another, so the tokens are duplicated here rather than shared via import.
+   Keep the two files in sync by hand if the profile header's geometry changes. */
+
+.card {
+  /* Обложка должна обрезаться по скруглению карточки и лежать вплотную к её
+     верхнему краю, поэтому собственные вертикальные отступы Group снимаем. */
+  overflow: hidden;
+  padding-block: 0;
+}
+
+.cover {
+  background: var(--vkui--color_background_secondary);
+}
+
+.body {
+  position: relative;
+  /* 32 отступ слева + 96 аватар + 32 зазор = 160 до текста. */
+  padding: 16px 24px 20px 160px;
+  min-height: 72px;
+}
+
+.avatar {
+  position: absolute;
+  left: 32px;
+  /* Половина аватара (96/2) заходит на обложку. */
+  top: -48px;
+}
+
+.avatar > * {
+  box-shadow: 0 0 0 4px var(--vkui--color_background_content);
+}
+
+.identity {
+  min-width: 0;
+}
+
+.membersGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.member {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}

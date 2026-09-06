@@ -77,14 +77,21 @@ describe('ProfileCard', () => {
     expect(await screen.findByLabelText('Загрузка')).toHaveAttribute('aria-busy', 'true')
   })
 
-  it('renders name, status and the "member since" line once loaded', async () => {
+  it('renders name, status and the "member since" line (with the followers count) once loaded', async () => {
     mount(makeProfile())
     expect(await screen.findByText('Ден Иванов')).toBeInTheDocument()
     expect(screen.getByText('Всё хорошо')).toBeInTheDocument()
-    expect(screen.getByText('Москва · на сайте с 2020')).toBeInTheDocument()
+    expect(screen.getByText('Москва · 34 подписчика · на сайте с 2020')).toBeInTheDocument()
   })
 
-  it('does not render the counters — they live in the right column now', async () => {
+  it('pluralises the followers count correctly', async () => {
+    mount(
+      makeProfile({ counters: { friends: 0, followers: 1, communities: 0, incomingRequests: 0 } }),
+    )
+    expect(await screen.findByText('Москва · 1 подписчик · на сайте с 2020')).toBeInTheDocument()
+  })
+
+  it('does not render the friends/communities counter cards — they live in the right column now', async () => {
     mount(makeProfile())
     await screen.findByText('Ден Иванов')
     expect(screen.queryByText('Друзья 12')).not.toBeInTheDocument()

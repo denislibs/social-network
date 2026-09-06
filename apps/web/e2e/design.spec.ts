@@ -78,6 +78,19 @@ test('profile: full-width cover with the avatar overlapping it on the left', asy
   await expect(page.getByLabel('Дополнительно').getByText(/^Друзья \d+$/)).toBeVisible()
 })
 
+test('community cover matches the profile cover width, like the profile header', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1728, height: 963 })
+
+  await page.goto('/demo')
+  const profileCover = await boxOf(page, page.getByTestId('profile-cover'))
+
+  await page.goto('/clubplenochnyyklub')
+  const communityCover = await boxOf(page, page.getByTestId('community-cover'))
+  expect(communityCover.width).toBe(profileCover.width)
+})
+
 test('content columns are 551 + 345 at 1728px', async ({ page }) => {
   await page.setViewportSize({ width: 1728, height: 963 })
   await page.goto('/feed')

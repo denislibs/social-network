@@ -62,6 +62,17 @@ describe('CommunityHeader', () => {
     expect(screen.getByText('Игры · 120 участников')).toBeInTheDocument()
   })
 
+  it('renders a full-width cover with the avatar overlapping it, like the profile header', async () => {
+    mount(makeCommunity())
+    expect(await screen.findByTestId('community-cover')).toBeInTheDocument()
+    expect(screen.getByTestId('community-avatar')).toBeInTheDocument()
+  })
+
+  it('shows an inert "Ещё" button next to the membership actions', async () => {
+    mount(makeCommunity())
+    expect(await screen.findByRole('button', { name: /Ещё/ })).toBeInTheDocument()
+  })
+
   it('shows "Вступить" when not a member', async () => {
     mount(makeCommunity({ membership: 'none' }))
     expect(await screen.findByRole('button', { name: 'Вступить' })).toBeInTheDocument()

@@ -97,11 +97,16 @@ function mount(
 }
 
 describe('ProfileAside', () => {
-  it('shows the three counter cards from the profile', async () => {
+  it('shows the friends and communities counter cards from the profile', async () => {
     mount(makeProfile())
     expect(await screen.findByText('Друзья 12')).toBeInTheDocument()
-    expect(screen.getByText('Подписчики 34')).toBeInTheDocument()
     expect(screen.getByText('Сообщества 5')).toBeInTheDocument()
+  })
+
+  it('does not render a followers card — the count lives in the profile header footnote', async () => {
+    mount(makeProfile())
+    await screen.findByText('Друзья 12')
+    expect(screen.queryByText(/Подписчики/)).not.toBeInTheDocument()
   })
 
   it('renders a preview grid of at most six friends with an "Все" link', async () => {
