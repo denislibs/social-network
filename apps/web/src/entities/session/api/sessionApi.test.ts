@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { type ApiClient, ApiError, UnauthorizedBus } from '@/shared/api'
+import { type ApiClient, ApiError } from '@/shared/api'
 import { EdenSessionGateway } from './sessionApi'
 
 function fakeApi(
@@ -18,23 +18,19 @@ function fakeApi(
 }
 
 describe('EdenSessionGateway', () => {
-  it('returns null on 401 without emitting on the bus', async () => {
+  it('returns null on 401', async () => {
     const { api } = fakeApi({
       me: vi.fn().mockResolvedValue({ data: null, error: { status: 401, value: {} } }),
     })
-    const bus = new UnauthorizedBus()
-    const emitSpy = vi.spyOn(bus, 'emit')
-    const gateway = new EdenSessionGateway(api, bus)
+    const gateway = new EdenSessionGateway(api)
     await expect(gateway.me()).resolves.toBeNull()
-    expect(emitSpy).not.toHaveBeenCalled()
   })
 
   it('rethrows a 500 as ApiError', async () => {
     const { api } = fakeApi({
       me: vi.fn().mockResolvedValue({ data: null, error: { status: 500, value: {} } }),
     })
-    const bus = new UnauthorizedBus()
-    const gateway = new EdenSessionGateway(api, bus)
+    const gateway = new EdenSessionGateway(api)
     await expect(gateway.me()).rejects.toBeInstanceOf(ApiError)
   })
 })

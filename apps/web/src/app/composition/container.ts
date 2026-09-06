@@ -30,7 +30,7 @@ export function createAppContainer(): Container {
     .toResolvedValue((api, bus) => new EdenAuthGateway(api, bus), [API_CLIENT, UNAUTHORIZED_BUS])
   container
     .bind(SESSION_GATEWAY)
-    .toResolvedValue((api, bus) => new EdenSessionGateway(api, bus), [API_CLIENT, UNAUTHORIZED_BUS])
+    .toResolvedValue((api) => new EdenSessionGateway(api), [API_CLIENT])
 
   container.bind(PREF_STORAGE).toConstantValue(createBrowserPrefStorage(STORAGE_KEYS.colorScheme))
   container.bind(SYSTEM_SCHEME).toConstantValue(createBrowserSystemScheme())
