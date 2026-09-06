@@ -99,6 +99,18 @@ describe('useFriendAction', () => {
     expect(queryClient.getQueryData(queryKeys.user.relation(1))).toBe('none')
   })
 
+  it('invalidates queryKeys.user.suggestions on success, so PymkBlock can drop the row', async () => {
+    const { result, queryClient } = setup('none', {
+      request: vi.fn().mockResolvedValue('outgoing'),
+    })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    act(() => result.current.primary?.onClick())
+    await waitFor(() => expect(result.current.busy).toBe(false))
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.user.suggestions })
+  })
+
   it('dismissError clears the error', async () => {
     const { result } = setup('none', {
       request: vi.fn().mockRejectedValue({ code: 'request_cooldown' }),

@@ -1,8 +1,25 @@
 import { Group, Header, Link, Placeholder } from '@vkontakte/vkui'
+import type { SuggestionDto } from '@/entities/user'
 import { FriendButton } from '@/features/friendship'
 import { SuggestionCard, useSuggestions } from '@/features/suggestions'
 import { RouterAnchor } from '@/shared/lib'
+import { useSuggestionRelation } from '../model/useSuggestionRelation'
 import { PymkBlockSkeleton } from './PymkBlockSkeleton'
+
+/**
+ * One row per suggestion, in its own component: `useSuggestionRelation` is a hook, and the
+ * relation differs per suggestion, so it cannot be called from inside the `.map()` below —
+ * each row needs its own hook call, which means its own component.
+ */
+function PymkSuggestionRow({ suggestion }: { suggestion: SuggestionDto }) {
+  const relation = useSuggestionRelation(suggestion.id)
+  return (
+    <SuggestionCard
+      suggestion={suggestion}
+      friendAction={<FriendButton userId={suggestion.id} relation={relation} />}
+    />
+  )
+}
 
 export function PymkBlock({ compact = false }: { compact?: boolean }) {
   const { items, isPending, isError } = useSuggestions()
@@ -28,11 +45,7 @@ export function PymkBlock({ compact = false }: { compact?: boolean }) {
         <Placeholder title="Пока некого предложить" />
       ) : (
         visible.map((suggestion) => (
-          <SuggestionCard
-            key={suggestion.id}
-            suggestion={suggestion}
-            friendAction={<FriendButton userId={suggestion.id} relation="none" />}
-          />
+          <PymkSuggestionRow key={suggestion.id} suggestion={suggestion} />
         ))
       )}
     </Group>

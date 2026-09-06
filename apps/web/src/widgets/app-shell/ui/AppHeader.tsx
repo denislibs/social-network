@@ -1,9 +1,9 @@
-import { Icon24SearchOutline } from '@vkontakte/icons'
-import { Box, Button, Link, Search, Text } from '@vkontakte/vkui'
+import { Box, Button, Link, Text } from '@vkontakte/vkui'
 import { useNavigate } from 'react-router'
 import { useSession } from '@/entities/session'
 import { UserAvatar } from '@/entities/user'
 import { LogoutButton } from '@/features/auth'
+import { SearchBox } from '@/features/search'
 import { ThemeToggle } from '@/features/theme'
 import { RouterAnchor } from '@/shared/lib'
 import styles from './app-shell.module.css'
@@ -18,12 +18,7 @@ export function AppHeader({ bare }: { bare: boolean }) {
       </Link>
       {!bare && (
         <div className={styles.search}>
-          <Search
-            placeholder="Поиск"
-            icon={<Icon24SearchOutline />}
-            iconLabel="Найти"
-            clearLabel="Очистить запрос"
-          />
+          <SearchBox />
         </div>
       )}
       <div className={styles.grow} />

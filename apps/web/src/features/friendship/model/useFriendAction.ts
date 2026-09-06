@@ -26,7 +26,10 @@ type ButtonSpec = {
 /** Bumps every cache the friend-graph mutation can affect, without needing to know "me"'s id:
  * matches `queryKeys.user.counters(*)`, `queryKeys.user.friends(*)`, `queryKeys.user.requests(*)`
  * and `queryKeys.user.profile(*)` (whose key tuples start with 'counters'/'friends'/'requests'/
- * 'user' respectively) by predicate instead of by exact key. */
+ * 'user' respectively) by predicate instead of by exact key. Also invalidates
+ * `queryKeys.user.suggestions` (key `['suggestions']`, not matched by any of those prefixes) so
+ * `PymkBlock` drops a suggestion once its relation moves away from `'none'` on refetch — see the
+ * `pymk-block` fix that stopped hardcoding `relation="none"` on `FriendButton`. */
 function invalidateAffected(queryClient: ReturnType<typeof useQueryClient>): void {
   const byFirstKey = (tag: string) =>
     queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === tag })
@@ -35,6 +38,7 @@ function invalidateAffected(queryClient: ReturnType<typeof useQueryClient>): voi
   byFirstKey('requests')
   byFirstKey('user')
   queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unread })
+  queryClient.invalidateQueries({ queryKey: queryKeys.user.suggestions })
 }
 
 export function useFriendAction(

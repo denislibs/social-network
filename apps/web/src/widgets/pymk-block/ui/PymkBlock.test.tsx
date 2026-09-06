@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import type { SuggestionDto } from '@/entities/user'
@@ -30,18 +31,24 @@ function fakeFriendshipGateway(overrides: Partial<FriendshipGateway> = {}): Frie
   return { request: vi.fn(), accept: vi.fn(), decline: vi.fn(), remove: vi.fn(), ...overrides }
 }
 
-function mount(items: SuggestionDto[], compact = false) {
+function mount(
+  items: SuggestionDto[],
+  compact = false,
+  friendshipOverrides: Partial<FriendshipGateway> = {},
+) {
   const container = createTestContainer()
   container
     .bind(SUGGESTIONS_GATEWAY)
     .toConstantValue(fakeSuggestionsGateway({ list: vi.fn().mockResolvedValue(items) }))
-  container.bind(FRIENDSHIP_GATEWAY).toConstantValue(fakeFriendshipGateway())
+  const friendshipGateway = fakeFriendshipGateway(friendshipOverrides)
+  container.bind(FRIENDSHIP_GATEWAY).toConstantValue(friendshipGateway)
   render(
     <MemoryRouter>
       <PymkBlock compact={compact} />
     </MemoryRouter>,
     { wrapper: withProviders(container) },
   )
+  return { friendshipGateway }
 }
 
 describe('PymkBlock', () => {
@@ -67,5 +74,15 @@ describe('PymkBlock', () => {
   it('shows an empty placeholder when there are no suggestions', async () => {
     mount([], true)
     expect(await screen.findByText('Пока некого предложить')).toBeInTheDocument()
+  })
+
+  it('the friend button reflects the relation after a request is sent, instead of staying stuck on "Добавить в друзья"', async () => {
+    mount([suggestion(1)], true, { request: vi.fn().mockResolvedValue('outgoing') })
+
+    const addButton = await screen.findByRole('button', { name: 'Добавить в друзья' })
+    await userEvent.click(addButton)
+
+    expect(await screen.findByRole('button', { name: 'Заявка отправлена' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Добавить в друзья' })).not.toBeInTheDocument()
   })
 })

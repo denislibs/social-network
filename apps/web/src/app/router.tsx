@@ -1,6 +1,6 @@
 import { PanelSpinner } from '@vkontakte/vkui'
 import { lazy, type ReactNode, Suspense } from 'react'
-import { createBrowserRouter, Navigate, useParams } from 'react-router'
+import { createBrowserRouter, Navigate, type RouteObject, useParams } from 'react-router'
 import { RequireAuth, useSession } from '@/entities/session'
 import { AppShell, NAV_ITEMS } from '@/widgets/app-shell'
 import { PymkBlock } from '@/widgets/pymk-block'
@@ -25,6 +25,10 @@ const CommunitiesPage = lazy(() =>
 )
 const ProfileFriendsPage = lazy(() =>
   import('@/pages/profile').then((m) => ({ default: m.ProfileFriendsPage })),
+)
+const SearchPage = lazy(() => import('@/pages/search').then((m) => ({ default: m.SearchPage })))
+const EditProfilePage = lazy(() =>
+  import('@/pages/edit-profile').then((m) => ({ default: m.EditProfilePage })),
 )
 
 const S = (el: ReactNode) => <Suspense fallback={<PanelSpinner />}>{el}</Suspense>
@@ -60,7 +64,13 @@ const comingSoonRoutes = NAV_ITEMS.filter((item) => !STATIC_DESTINATIONS.has(ite
   }),
 )
 
-export const router = createBrowserRouter([
+/**
+ * Exported separately from `router` (below) so tests can feed the same route tree into
+ * `createMemoryRouter`/`matchRoutes` without going through `createBrowserRouter`'s real
+ * browser history — see `router.test.tsx`, which checks that `/edit` and `/search` (static)
+ * outrank `/:handle` (dynamic) instead of accidentally falling through to `HandleRoute`.
+ */
+export const routes: RouteObject[] = [
   {
     element: <MainShell />,
     children: [
@@ -68,6 +78,8 @@ export const router = createBrowserRouter([
       { path: '/feed', element: authed(<FeedPage />) },
       { path: '/friends', element: authed(<FriendsPage />) },
       { path: '/communities', element: authed(<CommunitiesPage />) },
+      { path: '/search', element: authed(<SearchPage />) },
+      { path: '/edit', element: authed(<EditProfilePage />) },
       ...comingSoonRoutes,
       { path: '/:handle', element: authed(<HandleRoute />) },
       { path: '/:handle/friends', element: authed(<ProfileFriendsRoute />) },
@@ -81,4 +93,6 @@ export const router = createBrowserRouter([
       { path: '/register', element: S(<RegisterPage />) },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(routes)
