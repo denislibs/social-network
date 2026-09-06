@@ -6,6 +6,7 @@ import { SessionProvider } from '@/entities/session'
 import { DiProvider } from '@/shared/di'
 import { useColorScheme } from '@/shared/lib'
 import { createAppContainer } from './composition/container'
+import { NotificationSync } from './composition/NotificationSync'
 import { QueryProvider } from './composition/QueryProvider'
 import { router } from './router'
 import './styles/global.css'
@@ -18,6 +19,7 @@ function App() {
         <AppRoot mode="full">
           <QueryProvider>
             <SessionProvider>
+              <NotificationSync />
               <RouterProvider router={router} />
             </SessionProvider>
           </QueryProvider>

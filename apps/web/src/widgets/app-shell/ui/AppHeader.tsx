@@ -1,9 +1,10 @@
-import { Icon12Dropdown, Icon28Notification } from '@vkontakte/icons'
-import { Box, Button, IconButton, Link, Text } from '@vkontakte/vkui'
+import { Icon12Dropdown } from '@vkontakte/icons'
+import { Box, Button, Link, Text } from '@vkontakte/vkui'
 import { useNavigate } from 'react-router'
 import { useSession } from '@/entities/session'
 import { UserAvatar, userHandle } from '@/entities/user'
 import { LogoutButton } from '@/features/auth'
+import { NotificationBell } from '@/features/notifications'
 import { SearchBox } from '@/features/search'
 import { ThemeToggle } from '@/features/theme'
 import { RouterAnchor } from '@/shared/lib'
@@ -34,11 +35,7 @@ export function AppHeader({ bare }: { bare: boolean }) {
           </div>
         )}
         <div className={styles.grow} />
-        {status === 'authed' && !bare && (
-          <IconButton label="Уведомления: скоро" disabled>
-            <Icon28Notification />
-          </IconButton>
-        )}
+        {status === 'authed' && !bare && <NotificationBell />}
         <ThemeToggle />
         {status === 'authed' && user && (
           <>

@@ -1,0 +1,13 @@
+.wrap {
+  /* `IconButton` has no badge slot, so the unread `Counter` is overlaid on top of it here —
+     layout only (position/inset), no colors or sizes of our own. */
+  position: relative;
+  display: inline-flex;
+}
+
+.counter {
+  position: absolute;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}

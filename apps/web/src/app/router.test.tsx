@@ -28,6 +28,10 @@ describe('router precedence', () => {
     expect(leafPath('/communities')).toBe('/communities')
   })
 
+  it('/notifications matches the static notifications route, not /:handle', () => {
+    expect(leafPath('/notifications')).toBe('/notifications')
+  })
+
   it('/:handle/members matches the community members route, not /:handle', () => {
     expect(leafPath('/clubplenochnyyklub/members')).toBe('/:handle/members')
   })

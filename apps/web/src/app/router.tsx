@@ -33,6 +33,9 @@ const SearchPage = lazy(() => import('@/pages/search').then((m) => ({ default: m
 const EditProfilePage = lazy(() =>
   import('@/pages/edit-profile').then((m) => ({ default: m.EditProfilePage })),
 )
+const NotificationsPage = lazy(() =>
+  import('@/pages/notifications').then((m) => ({ default: m.NotificationsPage })),
+)
 
 const S = (el: ReactNode) => <Suspense fallback={<PanelSpinner />}>{el}</Suspense>
 const authed = (el: ReactNode) => S(<RequireAuth>{el}</RequireAuth>)
@@ -90,6 +93,7 @@ export const routes: RouteObject[] = [
       { path: '/communities', element: authed(<CommunitiesPage />) },
       { path: '/search', element: authed(<SearchPage />) },
       { path: '/edit', element: authed(<EditProfilePage />) },
+      { path: '/notifications', element: authed(<NotificationsPage />) },
       ...comingSoonRoutes,
       { path: '/:handle/friends', element: authed(<ProfileFriendsRoute />) },
       { path: '/:handle/members', element: authed(<CommunityMembersRoute />) },
