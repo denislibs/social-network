@@ -75,6 +75,17 @@ describe('useCreateCommunityForm', () => {
     )
   })
 
+  it('accepts a mixed-case screen name and sends it lower-cased to the gateway', async () => {
+    const create = vi.fn().mockResolvedValue(created)
+    const { result } = setup({ create })
+    act(() => result.current.setField('name', 'Клуб'))
+    act(() => result.current.setField('screenName', 'NewClub'))
+    await act(() => result.current.submit())
+
+    expect(result.current.errors.screenName).toBeUndefined()
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ screenName: 'newclub' }))
+  })
+
   it('on success, calls the gateway with the trimmed input, invalidates communities.mine, calls onCreated and navigates', async () => {
     const create = vi.fn().mockResolvedValue(created)
     const { result, onCreated, queryClient } = setup({ create })

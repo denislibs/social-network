@@ -74,7 +74,7 @@ export function useCreateCommunityForm(onCreated: (c: CommunityDto) => void): {
         const description = values.description.trim()
         const input: CreateCommunityInput = {
           name: values.name.trim(),
-          screenName: values.screenName.trim(),
+          screenName: values.screenName.trim().toLowerCase(),
           topic: values.topic as Topic,
           description: description.length === 0 ? null : description,
         }

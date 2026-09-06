@@ -57,6 +57,12 @@ export function useJoinCommunity(community: CommunityDto): {
       // === 'counters') isn't known here — this hook only has the community, not "me"'s id —
       // so it's invalidated by predicate, same trick `useFriendAction` uses.
       queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'counters' })
+      // Same trick for the member lists (`community.members(id)` / `community.membersPreview(id)`):
+      // match any `['community', ..., 'members', ...]` key rather than the exact tuple, so a
+      // join/leave refreshes whoever is viewing this community's member list right now.
+      queryClient.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === 'community' && q.queryKey.includes('members'),
+      })
     },
   })
 

@@ -39,7 +39,7 @@ function diff(initial: Values, values: Values): ProfilePatch {
   const patch: ProfilePatch = {}
   for (const field of Object.keys(values) as ProfileFormField[]) {
     if (values[field] === initial[field]) continue
-    const trimmed = field === 'screenName' ? values[field].trim() : values[field]
+    const trimmed = field === 'screenName' ? values[field].trim().toLowerCase() : values[field]
     patch[field] = trimmed.length === 0 ? null : trimmed
   }
   return patch

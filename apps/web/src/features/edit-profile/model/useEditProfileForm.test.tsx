@@ -130,6 +130,17 @@ describe('useEditProfileForm', () => {
     expect(result.current.errors.status).toBe('Не длиннее 140 символов')
   })
 
+  it('accepts a mixed-case screen name and sends it lower-cased to the gateway', async () => {
+    const { result, gateway } = setup({
+      updateProfile: vi.fn().mockResolvedValue({ ...profile, screenName: 'newclub' }),
+    })
+    act(() => result.current.setField('screenName', 'NewClub'))
+    await act(() => result.current.submit())
+
+    expect(result.current.errors.screenName).toBeUndefined()
+    expect(gateway.updateProfile).toHaveBeenCalledWith({ screenName: 'newclub' })
+  })
+
   it('routes a screen_name_taken server error to the screenName field', async () => {
     const { result } = setup({
       updateProfile: vi.fn().mockRejectedValue(new ApiError(409, 'screen_name_taken', 'x')),

@@ -1,6 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { createMemoryRouter, RouterProvider } from 'react-router'
+import { createMemoryRouter, RouterProvider, useLocation } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityDto, CommunityGateway } from '@/entities/community'
 import { COMMUNITY_GATEWAY } from '@/entities/community'
@@ -131,18 +131,26 @@ function fakeTabCoordinator(overrides: Partial<TabCoordinator> = {}): TabCoordin
   }
 }
 
+function RedirectProbe() {
+  const location = useLocation()
+  const redirect = (location.state as { redirect?: string } | null)?.redirect
+  return <div>login:{redirect ?? 'none'}</div>
+}
+
 function mount(
   handle: string,
   resolve: (h: string) => Promise<HandleDto>,
   gatewayOverrides: { user?: Partial<UserGateway>; community?: Partial<CommunityGateway> } = {},
+  sessionStatus: 'loading' | 'guest' | 'authed' = 'authed',
 ) {
   const container = createTestContainer()
   container
     .bind(COLOR_SCHEME_STORE)
     .toConstantValue(new ColorSchemeStore(memPrefStorage(null), fakeSystemScheme(false).system))
+  const resolveSpy = vi.fn(resolve)
   container
     .bind(USER_GATEWAY)
-    .toConstantValue(fakeUserGateway({ resolve: vi.fn(resolve), ...gatewayOverrides.user }))
+    .toConstantValue(fakeUserGateway({ resolve: resolveSpy, ...gatewayOverrides.user }))
   container
     .bind(COMMUNITY_GATEWAY)
     .toConstantValue(fakeCommunityGateway(gatewayOverrides.community))
@@ -150,25 +158,34 @@ function mount(
   container.bind(SUGGESTIONS_GATEWAY).toConstantValue(fakeSuggestionsGateway())
   container.bind(NOTIFICATION_GATEWAY).toConstantValue(fakeNotificationGateway())
   container.bind(TAB_COORDINATOR).toConstantValue(fakeTabCoordinator())
-  const Session = createSessionTestProvider({
-    user: {
-      id: 5,
-      login: 'den',
-      firstName: 'Ден',
-      lastName: 'Иванов',
-      screenName: null,
-      createdAt: '',
-    },
-    status: 'authed',
-    setUser: vi.fn(),
-    logout: vi.fn(),
-  })
-  const router = createMemoryRouter([{ path: '/:handle', element: <HandleRoute /> }], {
-    initialEntries: [`/${handle}`],
-  })
-  return render(<RouterProvider router={router} />, {
+  const Session = createSessionTestProvider(
+    sessionStatus === 'authed'
+      ? {
+          user: {
+            id: 5,
+            login: 'den',
+            firstName: 'Ден',
+            lastName: 'Иванов',
+            screenName: null,
+            createdAt: '',
+          },
+          status: 'authed',
+          setUser: vi.fn(),
+          logout: vi.fn(),
+        }
+      : { status: sessionStatus, setUser: vi.fn(), logout: vi.fn() },
+  )
+  const router = createMemoryRouter(
+    [
+      { path: '/:handle', element: <HandleRoute /> },
+      { path: '/login', element: <RedirectProbe /> },
+    ],
+    { initialEntries: [`/${handle}`] },
+  )
+  const result = render(<RouterProvider router={router} />, {
     wrapper: compose(withProviders(container), Session),
   })
+  return { ...result, resolveSpy }
 }
 
 describe('HandleRoute', () => {
@@ -245,6 +262,33 @@ describe('HandleRoute', () => {
       resolveHandle({ kind: 'user', id: 5 })
       vi.useRealTimers()
       expect(await screen.findByText('Ден Иванов')).toBeInTheDocument()
+    })
+  })
+
+  describe('auth guard', () => {
+    it('renders the shell frame with a skeleton (not a bare spinner) while the session is loading, without resolving the handle', () => {
+      const { resolveSpy } = mount(
+        'id5',
+        () => Promise.resolve({ kind: 'user', id: 5 }),
+        {},
+        'loading',
+      )
+
+      expect(screen.getByRole('banner')).toBeInTheDocument()
+      expect(screen.getByLabelText('Загрузка')).toBeInTheDocument()
+      expect(resolveSpy).not.toHaveBeenCalled()
+    })
+
+    it('redirects a guest to /login with the attempted path as state, without resolving the handle', async () => {
+      const { resolveSpy } = mount(
+        'id5',
+        () => Promise.resolve({ kind: 'user', id: 5 }),
+        {},
+        'guest',
+      )
+
+      expect(await screen.findByText('login:/id5')).toBeInTheDocument()
+      expect(resolveSpy).not.toHaveBeenCalled()
     })
   })
 })

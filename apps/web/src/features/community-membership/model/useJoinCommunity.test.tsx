@@ -72,6 +72,27 @@ describe('useJoinCommunity', () => {
     )
   })
 
+  it('joining invalidates the community members lists (full and preview)', async () => {
+    const { result, queryClient } = setup(community, {
+      join: vi.fn().mockResolvedValue({ membership: 'member', isFollowing: true }),
+    })
+    queryClient.setQueryData(queryKeys.community.members(community.id), {
+      items: [],
+      nextCursor: null,
+    })
+    queryClient.setQueryData(queryKeys.community.membersPreview(community.id), [])
+
+    act(() => result.current.onClick())
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryState(queryKeys.community.members(community.id))?.isInvalidated,
+      ).toBe(true),
+    )
+    expect(
+      queryClient.getQueryState(queryKeys.community.membersPreview(community.id))?.isInvalidated,
+    ).toBe(true)
+  })
+
   it('member: label is "Вы участник" and leaving resolves to none', async () => {
     const member = { ...community, membership: 'member' as const, isFollowing: true }
     const { result, queryClient } = setup(member, {
@@ -86,6 +107,28 @@ describe('useJoinCommunity', () => {
         queryClient.getQueryData<CommunityDto>(queryKeys.community.get('itclub')),
       ).toMatchObject({ membership: 'none', isFollowing: false }),
     )
+  })
+
+  it('leaving invalidates the community members lists (full and preview)', async () => {
+    const member = { ...community, membership: 'member' as const, isFollowing: true }
+    const { result, queryClient } = setup(member, {
+      leave: vi.fn().mockResolvedValue({ membership: 'none', isFollowing: false }),
+    })
+    queryClient.setQueryData(queryKeys.community.members(member.id), {
+      items: [],
+      nextCursor: null,
+    })
+    queryClient.setQueryData(queryKeys.community.membersPreview(member.id), [])
+
+    act(() => result.current.secondary?.onClick())
+    await waitFor(() =>
+      expect(queryClient.getQueryState(queryKeys.community.members(member.id))?.isInvalidated).toBe(
+        true,
+      ),
+    )
+    expect(
+      queryClient.getQueryState(queryKeys.community.membersPreview(member.id))?.isInvalidated,
+    ).toBe(true)
   })
 
   it('surfaces the last_admin error text and rolls back the optimistic update', async () => {

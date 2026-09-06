@@ -104,7 +104,13 @@ export const routes: RouteObject[] = [
   // content columns, so it goes into the shell's `wide` slot, which only a component that has
   // already resolved the handle can fill. Route ranking is unaffected — react-router scores the
   // full path, so `/edit` and `/search` still outrank `/:handle`.
-  { path: '/:handle', element: authed(<HandleRoute />) },
+  //
+  // Not wrapped in `authed()`: unlike every other protected route here, `/:handle` isn't nested
+  // under `MainShell` (it builds its own `AppShell` so the profile header can span the `wide`
+  // slot), so `RequireAuth`'s bare `PanelSpinner` would flash before any shell mounts on a cold
+  // load. `HandleRoute` reads `useSession()` itself and renders the shell frame with a skeleton
+  // while loading — see its docstring — so only `S()` is needed here, for the lazy chunk.
+  { path: '/:handle', element: S(<HandleRoute />) },
   {
     element: <AppShell bare />,
     children: [
