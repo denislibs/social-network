@@ -16,6 +16,7 @@
     "@vkc/contracts": "workspace:*",
     "@vkontakte/icons": "^3.69.0",
     "@vkontakte/vkui": "^8.4.0",
+    "inversify": "^8.2.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router": "^8.3.1"
