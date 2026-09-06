@@ -1,16 +1,10 @@
 import type { SQL } from 'bun'
 import { CORPUS } from './corpus'
 import { generateCommunities } from './generate/communities'
+import { buildDemoGraph } from './generate/demo'
 import { simulateEvents } from './generate/events'
-import {
-  type Follow,
-  type Friendship,
-  generateFollows,
-  generateFriendships,
-  type Membership,
-} from './generate/graph'
+import { generateFollows, generateFriendships } from './generate/graph'
 import { generatePosts } from './generate/posts'
-import type { SeedCommunity, SeedUser } from './generate/types'
 import { SEED_NOW } from './generate/types'
 import { generateUsers } from './generate/users'
 import { Rng } from './rng'
@@ -67,7 +61,12 @@ export async function runSeed(o: SeedOptions): Promise<SeedSummary> {
   // One argon2 hash for every generated account (password `password`): argon2id at 19 MiB costs
   // ~50 ms, so hashing 50k users individually would dominate the whole seed run.
   const sharedHash = await Bun.password.hash('password', ARGON)
-  const demo = addDemoUsers(users, communities, friendships, follows, memberships, rng.fork('demo'))
+  const demoGraph = buildDemoGraph(users, communities, rng.fork('demo'))
+  users.push(demoGraph.demo, demoGraph.denis)
+  friendships.push(...demoGraph.friendships)
+  follows.push(...demoGraph.follows)
+  memberships.push(...demoGraph.memberships)
+  const demo = { demoId: demoGraph.demo.id, denisId: demoGraph.denis.id }
 
   const sql = openSql(o.databaseUrl)
   try {
@@ -217,91 +216,6 @@ export async function runSeed(o: SeedOptions): Promise<SeedSummary> {
     demoUserId: demo.demoId,
     denisUserId: demo.denisId,
   }
-}
-
-/**
- * Appends the two hand-holdable accounts after the generated population, so their ids are
- * `users.length + 1` / `+ 2` and every generated id stays stable across runs. Timestamps use
- * SEED_NOW, like the generators, so a re-run with the same seed produces identical rows.
- */
-function addDemoUsers(
-  users: SeedUser[],
-  communities: SeedCommunity[],
-  friendships: Friendship[],
-  follows: Follow[],
-  memberships: Membership[],
-  rng: Rng,
-): { demoId: number; denisId: number } {
-  const mk = (
-    login: string,
-    firstName: string,
-    lastName: string,
-    status: string | null,
-    city: string,
-    friendsN: number,
-    clubsN: number,
-  ): number => {
-    const id = users.length + 1
-    const interests = new Float32Array(12)
-    interests[0] = 0.4
-    interests[1] = 0.4
-    interests[4] = 0.2
-    users.push({
-      id,
-      login,
-      firstName,
-      lastName,
-      screenName: login,
-      city,
-      birthday: '1996-05-14',
-      sex: 'male',
-      interests,
-      tier: 'regular',
-      popularity: 0.001,
-      createdAt: new Date(SEED_NOW - 400 * 86400_000),
-      status,
-    })
-    // Friends are drawn from regular accounts in the same city; at small scales that pool is
-    // smaller than `friendsN`, so the demo account simply gets everybody available.
-    const pool = rng
-      .shuffle(
-        users
-          .filter((u) => u.id !== id && u.tier === 'regular' && u.city === city)
-          .map((u) => u.id),
-      )
-      .slice(0, friendsN)
-    for (const other of pool)
-      friendships.push({
-        lo: Math.min(id, other),
-        hi: Math.max(id, other),
-        status: 'accepted',
-        requesterId: other,
-        createdAt: new Date(SEED_NOW - rng.int(1, 300) * 86400_000),
-        acceptedAt: new Date(SEED_NOW),
-      })
-    const clubs = communities
-      .filter((c) => ['cinema', 'music', 'it'].includes(c.topic))
-      .toSorted((a, b) => b.popularity - a.popularity)
-      .slice(0, clubsN)
-    for (const c of clubs) {
-      follows.push({
-        followerId: id,
-        targetType: 'community',
-        targetId: c.id,
-        createdAt: new Date(SEED_NOW),
-      })
-      memberships.push({
-        communityId: c.id,
-        userId: id,
-        role: 'member',
-        createdAt: new Date(SEED_NOW),
-      })
-    }
-    return id
-  }
-  const demoId = mk('demo', 'Демо', 'Пользователь', null, 'Москва', 150, 20)
-  const denisId = mk('deniscoreablev', 'Денис', 'Кораблев', 'Глажу кота', 'Санкт-Петербург', 80, 15)
-  return { demoId, denisId }
 }
 
 /** `YYYY-MM-01` for the month containing `t`. */
