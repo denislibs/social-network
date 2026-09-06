@@ -1,12 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
-import { COMMUNITY_GATEWAY, type CommunityDto, communityHandle } from '@/entities/community'
+import { COMMUNITY_GATEWAY, type CommunityDto } from '@/entities/community'
 import { useService } from '@/shared/di'
 import { queryKeys } from '@/shared/lib'
+import { communityDetailFilter, patchCommunity, restoreCommunity, snapshotCommunity } from './cache'
 import { codeOf, messageFor } from './errors'
 
 type Action = 'join' | 'leave'
 type Result = { membership: CommunityDto['membership']; isFollowing: boolean }
+type Snapshot = ReturnType<typeof snapshotCommunity>
 
 export function useJoinCommunity(community: CommunityDto): {
   label: string
@@ -19,39 +21,33 @@ export function useJoinCommunity(community: CommunityDto): {
   const gateway = useService(COMMUNITY_GATEWAY)
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
-  const key = queryKeys.community.get(communityHandle(community))
+  const filter = communityDetailFilter(community.id)
 
-  const mutation = useMutation<Result, unknown, Action, { previous: CommunityDto | undefined }>({
+  const mutation = useMutation<Result, unknown, Action, { previous: Snapshot }>({
     mutationFn: (action) =>
       action === 'join' ? gateway.join(community.id) : gateway.leave(community.id),
     onMutate: async (action) => {
       setError(null)
-      await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<CommunityDto>(key)
-      queryClient.setQueryData<CommunityDto>(key, (old) => {
-        const base = old ?? community
-        return action === 'join'
-          ? {
-              ...base,
-              membership: 'member',
-              isFollowing: true,
-              membersCount: base.membersCount + 1,
-            }
+      await queryClient.cancelQueries(filter)
+      const previous = snapshotCommunity(queryClient, community.id)
+      patchCommunity(queryClient, community.id, (old) =>
+        action === 'join'
+          ? { ...old, membership: 'member', isFollowing: true, membersCount: old.membersCount + 1 }
           : {
-              ...base,
+              ...old,
               membership: 'none',
               isFollowing: false,
-              membersCount: Math.max(0, base.membersCount - 1),
-            }
-      })
+              membersCount: Math.max(0, old.membersCount - 1),
+            },
+      )
       return { previous }
     },
     onError: (err, _action, context) => {
-      queryClient.setQueryData(key, context?.previous ?? community)
+      if (context) restoreCommunity(queryClient, context.previous)
       setError(messageFor(codeOf(err)))
     },
     onSuccess: (result) => {
-      queryClient.setQueryData<CommunityDto>(key, (old) => (old ? { ...old, ...result } : old))
+      patchCommunity(queryClient, community.id, (old) => ({ ...old, ...result }))
       queryClient.invalidateQueries({ queryKey: queryKeys.community.mine })
       // The viewer's own communities counter (`queryKeys.user.counters(viewerId)`, key[0]
       // === 'counters') isn't known here — this hook only has the community, not "me"'s id —
@@ -63,6 +59,9 @@ export function useJoinCommunity(community: CommunityDto): {
       queryClient.invalidateQueries({
         predicate: (q) => q.queryKey[0] === 'community' && q.queryKey.includes('members'),
       })
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries(filter)
     },
   })
 

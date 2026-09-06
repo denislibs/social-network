@@ -38,6 +38,9 @@ function setup(c: CommunityDto, overrides: Partial<CommunityGateway> = {}) {
   const container = createTestContainer()
   container.bind(COMMUNITY_GATEWAY).toConstantValue(gateway)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  // The mutation patches whatever cache entries already hold this community's DTO rather than
+  // creating one under a key it guesses — seed it the way `useCommunity('itclub')` would.
+  queryClient.setQueryData(queryKeys.community.get('itclub'), c)
   const hook = renderHook(() => useJoinCommunity(c), {
     wrapper: withProviders(container, queryClient),
   })
@@ -58,6 +61,26 @@ describe('useJoinCommunity', () => {
       ).toMatchObject({ membership: 'member', isFollowing: true, membersCount: 6 }),
     )
     expect(gateway.join).toHaveBeenCalledWith(10)
+  })
+
+  it('joining updates every cached alias of the community, not just the screen-name key', async () => {
+    const { result, queryClient } = setup(community, {
+      join: vi.fn().mockResolvedValue({ membership: 'member', isFollowing: true }),
+    })
+    // `/club10` and `/itclub` are the same community under two query keys (see `useCommunity`).
+    queryClient.setQueryData(queryKeys.community.get('club10'), community)
+    queryClient.setQueryData(queryKeys.community.byId(10), community)
+
+    act(() => result.current.onClick())
+
+    await waitFor(() =>
+      expect(
+        queryClient.getQueryData<CommunityDto>(queryKeys.community.get('club10')),
+      ).toMatchObject({ membership: 'member' }),
+    )
+    expect(queryClient.getQueryData<CommunityDto>(queryKeys.community.byId(10))).toMatchObject({
+      membership: 'member',
+    })
   })
 
   it('joining invalidates the viewer\'s own counters cache (matched by key[0] === "counters", since the hook only knows the community, not "me"\'s id)', async () => {

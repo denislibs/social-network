@@ -29,6 +29,14 @@ describe('queryKeys', () => {
     void typeCheck
   })
 
+  it('community.byId keeps the community prefix so membership predicates still match it', () => {
+    const key = queryKeys.community.byId(7)
+    expect(key).toEqual(['community', 'id', 7])
+    expect(key[0]).toBe(queryKeys.community.get('kino')[0])
+    const typeCheck: readonly ['community', 'id', number] = key
+    void typeCheck
+  })
+
   it('community.mine is a fixed `as const` tuple', () => {
     expect(queryKeys.community.mine).toEqual(['communities', 'mine'])
     const typeCheck: readonly ['communities', 'mine'] = queryKeys.community.mine

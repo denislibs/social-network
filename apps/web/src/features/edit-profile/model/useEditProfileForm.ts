@@ -23,7 +23,8 @@ function toValues(profile: ProfileDto): Values {
   }
 }
 
-/** Mirrors the backend's own checks (`User.updateProfile`) so obvious mistakes never round-trip. */
+/** Mirrors the backend's own checks (`User.updateProfile` in `apps/api`'s identity module) so
+ * obvious mistakes never round-trip. */
 function clientError(values: Values): { field: ProfileFormField; text: string } | null {
   if (values.status.length > STATUS_MAX)
     return { field: 'status', text: messageFor('status_too_long') }
@@ -54,7 +55,7 @@ export function useEditProfileForm(profile: ProfileDto): {
   submit: (e?: { preventDefault(): void }) => Promise<void>
 } {
   const gateway = useService(USER_GATEWAY)
-  const { setUser } = useSession()
+  const { user, setUser } = useSession()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const initial = toValues(profile)
@@ -89,9 +90,12 @@ export function useEditProfileForm(profile: ProfileDto): {
       setBusy(true)
       try {
         const updated = await gateway.updateProfile(patch)
+        // `ProfileDto.login` only comes back for `relation === 'self'`, so it is typed optional
+        // even though this form is self-only: fall back to the login already in the session
+        // rather than widening `UserDto`.
         setUser({
           id: updated.id,
-          login: updated.login,
+          login: updated.login ?? user?.login ?? '',
           firstName: updated.firstName,
           lastName: updated.lastName,
           screenName: updated.screenName,
@@ -109,7 +113,7 @@ export function useEditProfileForm(profile: ProfileDto): {
         setBusy(false)
       }
     },
-    [gateway, values, initial, setUser, queryClient, navigate],
+    [gateway, values, initial, user, setUser, queryClient, navigate],
   )
 
   const errors: Partial<Record<ProfileFormField, string>> = fieldError

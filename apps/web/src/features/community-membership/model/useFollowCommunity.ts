@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useState } from 'react'
-import { COMMUNITY_GATEWAY, type CommunityDto, communityHandle } from '@/entities/community'
+import { COMMUNITY_GATEWAY, type CommunityDto } from '@/entities/community'
 import { useService } from '@/shared/di'
-import { queryKeys } from '@/shared/lib'
+import { communityDetailFilter, patchCommunity, restoreCommunity, snapshotCommunity } from './cache'
 import { codeOf, messageFor } from './errors'
 
 const FALLBACK_MESSAGE = 'Не удалось изменить подписку'
+
+type Snapshot = ReturnType<typeof snapshotCommunity>
 
 export function useFollowCommunity(community: CommunityDto): {
   label: string
@@ -17,34 +19,28 @@ export function useFollowCommunity(community: CommunityDto): {
   const gateway = useService(COMMUNITY_GATEWAY)
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
-  const key = queryKeys.community.get(communityHandle(community))
+  const filter = communityDetailFilter(community.id)
   const wasFollowing = community.isFollowing
 
-  const mutation = useMutation<
-    { isFollowing: boolean },
-    unknown,
-    void,
-    { previous: CommunityDto | undefined }
-  >({
+  const mutation = useMutation<{ isFollowing: boolean }, unknown, void, { previous: Snapshot }>({
     mutationFn: () =>
       wasFollowing ? gateway.unfollow(community.id) : gateway.follow(community.id),
     onMutate: async () => {
       setError(null)
-      await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<CommunityDto>(key)
-      queryClient.setQueryData<CommunityDto>(key, (old) =>
-        old ? { ...old, isFollowing: !wasFollowing } : old,
-      )
+      await queryClient.cancelQueries(filter)
+      const previous = snapshotCommunity(queryClient, community.id)
+      patchCommunity(queryClient, community.id, (old) => ({ ...old, isFollowing: !wasFollowing }))
       return { previous }
     },
     onError: (err, _vars, context) => {
-      queryClient.setQueryData(key, context?.previous ?? community)
+      if (context) restoreCommunity(queryClient, context.previous)
       setError(messageFor(codeOf(err), FALLBACK_MESSAGE))
     },
     onSuccess: (result) => {
-      queryClient.setQueryData<CommunityDto>(key, (old) =>
-        old ? { ...old, isFollowing: result.isFollowing } : old,
-      )
+      patchCommunity(queryClient, community.id, (old) => ({
+        ...old,
+        isFollowing: result.isFollowing,
+      }))
     },
   })
 

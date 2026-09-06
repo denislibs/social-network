@@ -17,6 +17,10 @@ export const queryKeys = {
   },
   community: {
     get: (handle: string) => ['community', handle] as const,
+    /** Alias of `get` under the community's numeric id, seeded by `useCommunity` so a page opened
+     * at `/club7` and one opened at `/kino` share a cached DTO. Both live under the `'community'`
+     * prefix, which is what the membership mutations match on. */
+    byId: (id: number) => ['community', 'id', id] as const,
     members: (id: number) => ['community', 'members', id] as const,
     membersPreview: (id: number) => ['community', 'members', 'preview', id] as const,
     mine: ['communities', 'mine'] as const,
