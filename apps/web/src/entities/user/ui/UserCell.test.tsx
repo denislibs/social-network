@@ -1,6 +1,6 @@
-import { Button } from '@vkontakte/vkui'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { Button } from '@vkontakte/vkui'
 import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import type { UserCellDto } from '../model/types'

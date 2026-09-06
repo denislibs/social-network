@@ -38,8 +38,18 @@ function expectAbout(actual: number, expected: number, what: string) {
 
 async function boxOf(page: Page, locator: ReturnType<Page['locator']>) {
   await expect(locator).toBeVisible()
-  const box = await locator.boundingBox()
-  expect(box, 'element has a bounding box').not.toBeNull()
+  // The shell re-mounts once the session and the notification sync settle, which can detach the
+  // element between `toBeVisible` and `boundingBox()`; poll until a box is available.
+  let box: Awaited<ReturnType<typeof locator.boundingBox>> = null
+  await expect
+    .poll(
+      async () => {
+        box = await locator.boundingBox()
+        return box
+      },
+      { message: 'element has a bounding box', timeout: 10_000 },
+    )
+    .not.toBeNull()
   return box as NonNullable<typeof box>
 }
 
@@ -57,8 +67,11 @@ test('shell geometry: 48px header and a 200px left menu', async ({ page }) => {
   const nav = await boxOf(page, page.getByRole('navigation', { name: 'Основная навигация' }))
   expectAbout(nav.width, 200, 'nav width')
 
-  // vk.ru's menu rows are 40px tall with 24px icons.
-  const firstRow = await boxOf(page, page.getByRole('link', { name: /Профиль/ }))
+  // vk.ru's menu rows are 40px tall with 24px icons. The «Профиль» link re-renders once the
+  // session resolves (its href becomes the user's handle), so wait for that before measuring.
+  const profileLink = page.getByRole('link', { name: /Профиль/ })
+  await expect(profileLink).toHaveAttribute('href', /^\/(?!profile$)[a-z0-9_.]+$/)
+  const firstRow = await boxOf(page, profileLink)
   expect(firstRow.height).toBeGreaterThanOrEqual(40)
   expect(firstRow.height).toBeLessThanOrEqual(48)
 })

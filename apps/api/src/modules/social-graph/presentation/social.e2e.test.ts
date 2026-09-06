@@ -378,9 +378,9 @@ describe('social graph + profile e2e', () => {
 
     const communityByClub = await get(`/communities/club${createdBody.community.id}`, a.cookie)
     expect(communityByClub.status).toBe(200)
-    expect(
-      ((await communityByClub.json()) as { community: { id: number } }).community.id,
-    ).toBe(createdBody.community.id)
+    expect(((await communityByClub.json()) as { community: { id: number } }).community.id).toBe(
+      createdBody.community.id,
+    )
 
     const communityByClubUpper = await get(`/communities/CLUB${createdBody.community.id}`, a.cookie)
     expect(communityByClubUpper.status).toBe(200)
