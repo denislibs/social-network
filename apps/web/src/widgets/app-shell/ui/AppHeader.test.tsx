@@ -1,43 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
-import { NOTIFICATION_GATEWAY, type NotificationGateway } from '@/entities/notification'
+import { describe, expect, it } from 'vitest'
+import { fakeNotificationGateway, NOTIFICATION_GATEWAY } from '@/entities/notification'
 import { createSessionTestProvider } from '@/entities/session'
 import { createTestContainer } from '@/shared/di'
 import {
   COLOR_SCHEME_STORE,
   ColorSchemeStore,
   fakeSystemScheme,
+  fakeTabCoordinator,
   memPrefStorage,
   TAB_COORDINATOR,
-  type TabCoordinator,
   withProviders,
 } from '@/shared/lib'
 import { AppHeader } from './AppHeader'
-
-function fakeNotificationGateway(
-  overrides: Partial<NotificationGateway> = {},
-): NotificationGateway {
-  return {
-    unreadCount: vi.fn().mockResolvedValue(0),
-    list: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
-    markRead: vi.fn().mockResolvedValue(0),
-    ...overrides,
-  }
-}
-
-function fakeTabCoordinator(overrides: Partial<TabCoordinator> = {}): TabCoordinator {
-  return {
-    tabId: 'tab-0',
-    isLeader: () => true,
-    onLeaderChange: () => () => {},
-    isActive: () => true,
-    onActiveChange: () => () => {},
-    broadcast: () => {},
-    subscribe: () => () => {},
-    ...overrides,
-  }
-}
 
 function mount(bare: boolean, status: 'authed' | 'guest') {
   const container = createTestContainer()

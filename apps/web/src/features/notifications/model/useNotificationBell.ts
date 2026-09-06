@@ -24,7 +24,7 @@ export function useNotificationBell(): {
     count,
     previewItems: items.slice(0, PREVIEW_SIZE),
     onShownChange: (shown) => {
-      if (!shown || items.length === 0) return
+      if (!shown || count === 0 || items.length === 0) return
       markRead(Math.max(...items.map((n) => n.id)))
     },
   }

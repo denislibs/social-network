@@ -1,21 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
-import { NOTIFICATION_GATEWAY, type NotificationGateway } from '@/entities/notification'
+import {
+  fakeNotificationGateway,
+  NOTIFICATION_GATEWAY,
+  type NotificationGateway,
+} from '@/entities/notification'
 import { createTestContainer } from '@/shared/di'
 import { withProviders } from '@/shared/lib'
 import { NotificationsPage } from './NotificationsPage'
-
-function fakeNotificationGateway(
-  overrides: Partial<NotificationGateway> = {},
-): NotificationGateway {
-  return {
-    unreadCount: vi.fn().mockResolvedValue(0),
-    list: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
-    markRead: vi.fn().mockResolvedValue(0),
-    ...overrides,
-  }
-}
 
 function mount(overrides: Partial<NotificationGateway> = {}) {
   const gateway = fakeNotificationGateway(overrides)

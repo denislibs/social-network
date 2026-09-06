@@ -2,6 +2,22 @@ import type { TabCoordinator, TabMessage } from './ports'
 
 export { pickAnnouncer } from './announcer'
 
+/** A single-tab stand-in `TabCoordinator`: always leader and active, no-op broadcast/subscribe.
+ * Multi-tab behaviour (leader election, message fan-out) is exercised with `fakeTabCluster`
+ * instead. */
+export function fakeTabCoordinator(overrides: Partial<TabCoordinator> = {}): TabCoordinator {
+  return {
+    tabId: 'tab-0',
+    isLeader: () => true,
+    onLeaderChange: () => () => {},
+    isActive: () => true,
+    onActiveChange: () => () => {},
+    broadcast: () => {},
+    subscribe: () => () => {},
+    ...overrides,
+  }
+}
+
 function setActive(t: FakeTab, active: boolean): void {
   if (t.active === active) return
   t.active = active

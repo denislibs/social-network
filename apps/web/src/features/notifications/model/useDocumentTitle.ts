@@ -4,5 +4,8 @@ import { useEffect } from 'react'
 export function useDocumentTitle(unread: number): void {
   useEffect(() => {
     document.title = unread > 0 ? `(${unread}) ВКлон` : 'ВКлон'
+    return () => {
+      document.title = 'ВКлон'
+    }
   }, [unread])
 }

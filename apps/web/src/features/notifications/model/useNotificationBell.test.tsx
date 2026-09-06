@@ -49,6 +49,7 @@ describe('useNotificationBell', () => {
   it('onShownChange(true) marks read up to the highest-id item; onShownChange(false) is a no-op', async () => {
     const markRead = vi.fn().mockResolvedValue(0)
     const gateway = fakeNotificationGateway({
+      unreadCount: vi.fn().mockResolvedValue(2),
       list: vi
         .fn()
         .mockResolvedValue({ items: [notification(5), notification(3)], nextCursor: null }),
@@ -73,6 +74,23 @@ describe('useNotificationBell', () => {
     const { result } = renderHook(() => useNotificationBell(), {
       wrapper: withProviders(container),
     })
+    result.current.onShownChange(true)
+    expect(markRead).not.toHaveBeenCalled()
+  })
+
+  it('onShownChange(true) with an all-read history (unread count 0) does not call markRead, even though items exist', async () => {
+    const markRead = vi.fn()
+    const gateway = fakeNotificationGateway({
+      unreadCount: vi.fn().mockResolvedValue(0),
+      list: vi.fn().mockResolvedValue({ items: [notification(5)], nextCursor: null }),
+      markRead,
+    })
+    const container = notificationsTestContainer(gateway)
+    const { result } = renderHook(() => useNotificationBell(), {
+      wrapper: withProviders(container),
+    })
+    await waitFor(() => expect(result.current.previewItems).toHaveLength(1))
+
     result.current.onShownChange(true)
     expect(markRead).not.toHaveBeenCalled()
   })

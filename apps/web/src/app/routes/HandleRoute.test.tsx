@@ -4,7 +4,7 @@ import { createMemoryRouter, RouterProvider, useLocation } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityDto, CommunityGateway } from '@/entities/community'
 import { COMMUNITY_GATEWAY } from '@/entities/community'
-import { NOTIFICATION_GATEWAY, type NotificationGateway } from '@/entities/notification'
+import { fakeNotificationGateway, NOTIFICATION_GATEWAY } from '@/entities/notification'
 import { createSessionTestProvider } from '@/entities/session'
 import type { HandleDto, ProfileDto, UserGateway } from '@/entities/user'
 import { USER_GATEWAY } from '@/entities/user'
@@ -15,9 +15,9 @@ import {
   COLOR_SCHEME_STORE,
   ColorSchemeStore,
   fakeSystemScheme,
+  fakeTabCoordinator,
   memPrefStorage,
   TAB_COORDINATOR,
-  type TabCoordinator,
   withProviders,
 } from '@/shared/lib'
 import { HandleRoute } from './HandleRoute'
@@ -105,30 +105,6 @@ function fakeFriendshipGateway(overrides: Partial<FriendshipGateway> = {}): Frie
 
 function fakeSuggestionsGateway(overrides: Partial<SuggestionsGateway> = {}): SuggestionsGateway {
   return { list: vi.fn().mockResolvedValue([]), hide: vi.fn(), ...overrides }
-}
-
-function fakeNotificationGateway(
-  overrides: Partial<NotificationGateway> = {},
-): NotificationGateway {
-  return {
-    unreadCount: vi.fn().mockResolvedValue(0),
-    list: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
-    markRead: vi.fn().mockResolvedValue(0),
-    ...overrides,
-  }
-}
-
-function fakeTabCoordinator(overrides: Partial<TabCoordinator> = {}): TabCoordinator {
-  return {
-    tabId: 'tab-0',
-    isLeader: () => true,
-    onLeaderChange: () => () => {},
-    isActive: () => true,
-    onActiveChange: () => () => {},
-    broadcast: () => {},
-    subscribe: () => () => {},
-    ...overrides,
-  }
 }
 
 function RedirectProbe() {

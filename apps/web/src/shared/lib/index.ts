@@ -21,6 +21,7 @@ export { NavAnchor, RouterAnchor } from './router-anchor'
 export {
   createBrowserTabCoordinator,
   fakeTabCluster,
+  fakeTabCoordinator,
   pickAnnouncer,
   TAB_COORDINATOR,
   type TabCoordinator,

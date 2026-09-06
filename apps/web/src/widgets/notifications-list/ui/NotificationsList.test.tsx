@@ -2,8 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
-import type { NotificationDto } from '@/entities/notification'
-import { NOTIFICATION_GATEWAY, type NotificationGateway } from '@/entities/notification'
+import type { NotificationDto, NotificationGateway } from '@/entities/notification'
+import { fakeNotificationGateway, NOTIFICATION_GATEWAY } from '@/entities/notification'
 import { createTestContainer } from '@/shared/di'
 import { withProviders } from '@/shared/lib'
 import { NotificationsList } from './NotificationsList'
@@ -24,17 +24,6 @@ function notification(id: number): NotificationDto {
       lastSeenAt: null,
     },
     payload: {},
-  }
-}
-
-function fakeNotificationGateway(
-  overrides: Partial<NotificationGateway> = {},
-): NotificationGateway {
-  return {
-    unreadCount: vi.fn().mockResolvedValue(0),
-    list: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
-    markRead: vi.fn().mockResolvedValue(0),
-    ...overrides,
   }
 }
 

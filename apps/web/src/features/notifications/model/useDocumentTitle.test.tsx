@@ -21,4 +21,11 @@ describe('useDocumentTitle', () => {
     rerender({ unread: 0 })
     expect(document.title).toBe('ВКлон')
   })
+
+  it('resets to the plain title on unmount, so a stale badge does not linger after logout', () => {
+    const { unmount } = renderHook(() => useDocumentTitle(5))
+    expect(document.title).toBe('(5) ВКлон')
+    unmount()
+    expect(document.title).toBe('ВКлон')
+  })
 })
