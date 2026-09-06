@@ -30,11 +30,7 @@ export function FriendButton({ userId, relation }: Props) {
           </Button>
         )}
       </ButtonGroup>
-      {error !== null && (
-        <Snackbar onClose={dismissError} onClosed={dismissError}>
-          {error}
-        </Snackbar>
-      )}
+      {error !== null && <Snackbar onClosed={dismissError}>{error}</Snackbar>}
     </>
   )
 }

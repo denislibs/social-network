@@ -3,8 +3,8 @@ const MESSAGES: Record<string, string> = {
   community_not_found: 'Сообщество не найдено',
 }
 
-export function messageFor(code: string): string {
-  return MESSAGES[code] ?? 'Что-то пошло не так'
+export function messageFor(code: string, fallback = 'Что-то пошло не так'): string {
+  return MESSAGES[code] ?? fallback
 }
 
 export function codeOf(e: unknown): string {

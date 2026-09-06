@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { COMMUNITY_GATEWAY, type CommunityDto, type CommunityGateway } from '@/entities/community'
+import { ApiError } from '@/shared/api'
 import { createTestContainer } from '@/shared/di'
 import { withProviders } from '@/shared/lib'
 import { FollowButton } from './FollowButton'
@@ -53,5 +54,13 @@ describe('FollowButton', () => {
   it('shows "Вы подписаны" when already following', () => {
     mount({ ...community, isFollowing: true })
     expect(screen.getByRole('button', { name: 'Вы подписаны' })).toBeInTheDocument()
+  })
+
+  it('shows a Snackbar with the fallback error text when following fails', async () => {
+    mount(community, {
+      follow: vi.fn().mockRejectedValue(new ApiError(500, 'unknown', 'boom')),
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Подписаться' }))
+    expect(await screen.findByText('Не удалось изменить подписку')).toBeInTheDocument()
   })
 })

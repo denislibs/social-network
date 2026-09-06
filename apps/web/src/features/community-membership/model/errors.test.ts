@@ -8,6 +8,15 @@ describe('community-membership errors', () => {
     expect(messageFor('anything_else')).toBe('Что-то пошло не так')
   })
 
+  it('uses a caller-supplied fallback for unknown codes', () => {
+    expect(messageFor('anything_else', 'Не удалось изменить подписку')).toBe(
+      'Не удалось изменить подписку',
+    )
+    expect(messageFor('last_admin', 'Не удалось изменить подписку')).toBe(
+      'Назначьте другого администратора перед выходом',
+    )
+  })
+
   it('extracts the code from an ApiError-shaped object', () => {
     expect(codeOf({ code: 'last_admin' })).toBe('last_admin')
     expect(codeOf(null)).toBe('unknown')

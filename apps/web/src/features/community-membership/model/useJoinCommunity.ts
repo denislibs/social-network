@@ -53,6 +53,10 @@ export function useJoinCommunity(community: CommunityDto): {
     onSuccess: (result) => {
       queryClient.setQueryData<CommunityDto>(key, (old) => (old ? { ...old, ...result } : old))
       queryClient.invalidateQueries({ queryKey: queryKeys.community.mine })
+      // The viewer's own communities counter (`queryKeys.user.counters(viewerId)`, key[0]
+      // === 'counters') isn't known here — this hook only has the community, not "me"'s id —
+      // so it's invalidated by predicate, same trick `useFriendAction` uses.
+      queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'counters' })
     },
   })
 

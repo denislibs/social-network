@@ -60,6 +60,18 @@ describe('useJoinCommunity', () => {
     expect(gateway.join).toHaveBeenCalledWith(10)
   })
 
+  it('joining invalidates the viewer\'s own counters cache (matched by key[0] === "counters", since the hook only knows the community, not "me"\'s id)', async () => {
+    const { result, queryClient } = setup(community, {
+      join: vi.fn().mockResolvedValue({ membership: 'member', isFollowing: true }),
+    })
+    queryClient.setQueryData(['counters', 42], { friends: 0, communities: 0 })
+
+    act(() => result.current.onClick())
+    await waitFor(() =>
+      expect(queryClient.getQueryState(['counters', 42])?.isInvalidated).toBe(true),
+    )
+  })
+
   it('member: label is "Вы участник" and leaving resolves to none', async () => {
     const member = { ...community, membership: 'member' as const, isFollowing: true }
     const { result, queryClient } = setup(member, {

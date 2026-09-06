@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { COMMUNITY_GATEWAY, type CommunityDto, type CommunityGateway } from '@/entities/community'
+import { ApiError } from '@/shared/api'
 import { createTestContainer } from '@/shared/di'
 import { queryKeys, withProviders } from '@/shared/lib'
 import { useFollowCommunity } from './useFollowCommunity'
@@ -75,5 +76,29 @@ describe('useFollowCommunity', () => {
       ).toBe(false),
     )
     expect(gateway.unfollow).toHaveBeenCalledWith(10)
+  })
+
+  it('rejects: surfaces a generic error and rolls back the optimistic isFollowing', async () => {
+    const { result, queryClient } = setup(community, {
+      follow: vi.fn().mockRejectedValue(new ApiError(500, 'unknown', 'boom')),
+    })
+
+    act(() => result.current.onClick())
+    await waitFor(() => expect(result.current.error).toBe('Не удалось изменить подписку'))
+    expect(
+      queryClient.getQueryData<CommunityDto>(queryKeys.community.get('itclub'))?.isFollowing,
+    ).toBe(false)
+  })
+
+  it('dismissError clears the error', async () => {
+    const { result } = setup(community, {
+      follow: vi.fn().mockRejectedValue(new ApiError(500, 'unknown', 'boom')),
+    })
+
+    act(() => result.current.onClick())
+    await waitFor(() => expect(result.current.error).not.toBeNull())
+
+    act(() => result.current.dismissError())
+    expect(result.current.error).toBeNull()
   })
 })
