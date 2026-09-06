@@ -79,4 +79,25 @@ describe('module boundaries', () => {
     }
     expect(violations).toEqual([])
   })
+  it('presentation layer does not import infrastructure', () => {
+    const violations: string[] = []
+    for (const f of files) {
+      if (layerOf(f) !== 'presentation') continue
+      for (const spec of specsOf(readFileSync(f, 'utf8'))) {
+        if (hitsPath(spec, ['/infrastructure/'])) violations.push(`${relative(root, f)} -> ${spec}`)
+      }
+    }
+    expect(violations).toEqual([])
+  })
+  it('domain, application and presentation import DI only through kernel/di, never inversify directly', () => {
+    const violations: string[] = []
+    for (const f of files) {
+      const layer = layerOf(f)
+      if (!layer || !['domain', 'application', 'presentation'].includes(layer)) continue
+      for (const spec of specsOf(readFileSync(f, 'utf8'))) {
+        if (isPkg(spec, ['inversify'])) violations.push(`${relative(root, f)} -> ${spec}`)
+      }
+    }
+    expect(violations).toEqual([])
+  })
 })

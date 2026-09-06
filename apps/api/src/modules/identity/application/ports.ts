@@ -1,3 +1,4 @@
+import { token } from '../../../kernel/di'
 import type { PasswordHasher, User } from '../domain/user'
 import type { UserDto } from './dto'
 
@@ -21,4 +22,11 @@ export interface SessionStore {
   touch(token: string): Promise<void>
   delete(token: string): Promise<void>
   deleteAllForUser(userId: number): Promise<void>
+}
+
+export const IDENTITY = {
+  UserRepository: token<UserRepository>('UserRepository'),
+  UserReadModel: token<UserReadModel>('UserReadModel'),
+  SessionStore: token<SessionStore>('SessionStore'),
+  PasswordHasher: token<PasswordHasher>('PasswordHasher'),
 }

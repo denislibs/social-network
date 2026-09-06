@@ -1,23 +1,14 @@
 import { Elysia } from 'elysia'
-import type Redis from 'ioredis'
-import type { Db } from './db/client'
-import type { CommandBus } from './kernel/command-bus'
+import { createKernelContainer } from './kernel/container'
+import type { AppDeps } from './kernel/deps'
 import { AppError } from './kernel/errors'
-import type { EventBus } from './kernel/event-bus'
-import type { QueryBus } from './kernel/query-bus'
 import { identityModule } from './modules/identity'
 
-export type AppDeps = {
-  db: Db
-  redis: Redis
-  commands: CommandBus
-  queries: QueryBus
-  events: EventBus
-  cookieSecure: boolean
-}
+export type { AppDeps }
 
 export async function buildApp(deps: AppDeps) {
-  const identity = await identityModule(deps)
+  const container = createKernelContainer(deps)
+  const identity = await identityModule(container)
   return new Elysia({ prefix: '/api/v1' })
     .onError(({ error, set, code }) => {
       if (error instanceof AppError) {

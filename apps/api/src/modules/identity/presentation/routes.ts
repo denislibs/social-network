@@ -1,11 +1,11 @@
 import { Elysia, t } from 'elysia'
-import type { CommandBus } from '../../../kernel/command-bus'
-import type { QueryBus } from '../../../kernel/query-bus'
+import type { Container } from '../../../kernel/di'
+import { KERNEL } from '../../../kernel/tokens'
 import { Login } from '../application/commands/login'
 import { Logout } from '../application/commands/logout'
 import { LogoutAll } from '../application/commands/logout-all'
 import { RegisterUser } from '../application/commands/register-user'
-import type { SessionStore } from '../application/ports'
+import { IDENTITY } from '../application/ports'
 import { GetMe } from '../application/queries/get-me'
 import { authPlugin } from './auth-macro'
 
@@ -20,12 +20,13 @@ const userSchema = t.Object({
   createdAt: t.String(),
 })
 
-export function identityRoutes(d: {
-  commands: CommandBus
-  queries: QueryBus
-  sessions: SessionStore
-  cookieSecure: boolean
-}) {
+export function identityRoutes(c: Container) {
+  const d = {
+    commands: c.get(KERNEL.CommandBus),
+    queries: c.get(KERNEL.QueryBus),
+    sessions: c.get(IDENTITY.SessionStore),
+    cookieSecure: c.get(KERNEL.Config).cookieSecure,
+  }
   const setSession = (cookie: { sid: { set(o: object): unknown } }, token: string) => {
     cookie.sid.set({
       value: token,

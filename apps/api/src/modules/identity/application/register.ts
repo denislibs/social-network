@@ -1,23 +1,22 @@
-import type { CommandBus } from '../../../kernel/command-bus'
-import type { EventBus } from '../../../kernel/event-bus'
-import type { QueryBus } from '../../../kernel/query-bus'
+import type { Container } from '../../../kernel/di'
+import { KERNEL } from '../../../kernel/tokens'
 import { Login, loginHandler } from './commands/login'
 import { Logout, logoutHandler } from './commands/logout'
 import { LogoutAll, logoutAllHandler } from './commands/logout-all'
 import { RegisterUser, registerUserHandler } from './commands/register-user'
-import type { PasswordHasher, SessionStore, UserReadModel, UserRepository } from './ports'
+import { IDENTITY } from './ports'
 import { GetMe, getMeHandler } from './queries/get-me'
 
-export type IdentityDeps = {
-  users: UserRepository
-  usersRead: UserReadModel
-  sessions: SessionStore
-  hasher: PasswordHasher
-  commands: CommandBus
-  queries: QueryBus
-  events: EventBus
-}
-export async function registerIdentityHandlers(d: IdentityDeps): Promise<void> {
+export async function registerIdentityHandlers(c: Container): Promise<void> {
+  const d = {
+    users: c.get(IDENTITY.UserRepository),
+    usersRead: c.get(IDENTITY.UserReadModel),
+    sessions: c.get(IDENTITY.SessionStore),
+    hasher: c.get(IDENTITY.PasswordHasher),
+    commands: c.get(KERNEL.CommandBus),
+    queries: c.get(KERNEL.QueryBus),
+    events: c.get(KERNEL.EventBus),
+  }
   // Precompute a dummy hash once so loginHandler can run a constant-time verify() against it
   // when the login is unknown, instead of leaking account existence via response time.
   const dummyHash = await d.hasher.hash(crypto.randomUUID())

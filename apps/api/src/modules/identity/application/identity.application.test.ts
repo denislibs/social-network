@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
-import { CommandBus } from '../../../kernel/command-bus'
+import type { CommandBus } from '../../../kernel/command-bus'
 import { EventBus } from '../../../kernel/event-bus'
-import { QueryBus } from '../../../kernel/query-bus'
+import type { QueryBus } from '../../../kernel/query-bus'
+import { KERNEL } from '../../../kernel/tokens'
 import { Login } from './commands/login'
 import { Logout } from './commands/logout'
 import { LogoutAll } from './commands/logout-all'
 import { RegisterUser } from './commands/register-user'
+import { IDENTITY } from './ports'
 import { GetMe } from './queries/get-me'
 import { registerIdentityHandlers } from './register'
-import { FakeHasher, InMemorySessions, InMemoryUserReadModel, InMemoryUsers } from './testing/fakes'
+import { createIdentityTestContainer } from './testing/container'
+import { FakeHasher, type InMemorySessions } from './testing/fakes'
 
 /** FakeHasher that counts calls, so tests can assert argon2-equivalent work was (not) done. */
 class CountingHasher extends FakeHasher {
@@ -26,24 +29,17 @@ class CountingHasher extends FakeHasher {
 
 let commands: CommandBus, queries: QueryBus, sessions: InMemorySessions, published: string[]
 beforeEach(async () => {
-  commands = new CommandBus()
-  queries = new QueryBus()
-  sessions = new InMemorySessions()
   published = []
   const events = new EventBus()
   events.subscribe('UserRegistered', (e) => {
     published.push(`reg:${(e.payload as { userId: number }).userId}`)
   })
-  const users = new InMemoryUsers()
-  await registerIdentityHandlers({
-    users,
-    usersRead: new InMemoryUserReadModel(users),
-    sessions,
-    hasher: new FakeHasher(),
-    commands,
-    queries,
-    events,
-  })
+  const hasher = new FakeHasher()
+  const c = createIdentityTestContainer({ hasher, events })
+  await registerIdentityHandlers(c)
+  commands = c.get(KERNEL.CommandBus)
+  queries = c.get(KERNEL.QueryBus)
+  sessions = c.get(IDENTITY.SessionStore) as InMemorySessions
 })
 const input = { login: 'denis', password: 'password123', firstName: 'Денис', lastName: 'Кораблев' }
 
@@ -61,18 +57,10 @@ describe('identity application', () => {
     ).rejects.toMatchObject({ code: 'login_taken', status: 409 })
   })
   it('rejects duplicate login before hashing the password (no argon2 DoS amplification)', async () => {
-    const users = new InMemoryUsers()
     const hasher = new CountingHasher()
-    const localCommands = new CommandBus()
-    await registerIdentityHandlers({
-      users,
-      usersRead: new InMemoryUserReadModel(users),
-      sessions: new InMemorySessions(),
-      hasher,
-      commands: localCommands,
-      queries: new QueryBus(),
-      events: new EventBus(),
-    })
+    const c = createIdentityTestContainer({ hasher })
+    await registerIdentityHandlers(c)
+    const localCommands = c.get(KERNEL.CommandBus)
     await localCommands.execute(new RegisterUser(input))
     const hashCallsAfterFirstRegister = hasher.hashCalls
     await expect(
@@ -93,17 +81,9 @@ describe('identity application', () => {
   })
   it('login with an unknown user still runs one hash verification (constant-time)', async () => {
     const hasher = new CountingHasher()
-    const localCommands = new CommandBus()
-    const localUsers = new InMemoryUsers()
-    await registerIdentityHandlers({
-      users: localUsers,
-      usersRead: new InMemoryUserReadModel(localUsers),
-      sessions: new InMemorySessions(),
-      hasher,
-      commands: localCommands,
-      queries: new QueryBus(),
-      events: new EventBus(),
-    })
+    const c = createIdentityTestContainer({ hasher })
+    await registerIdentityHandlers(c)
+    const localCommands = c.get(KERNEL.CommandBus)
     await expect(
       localCommands.execute(new Login({ login: 'ghost', password: 'password123' })),
     ).rejects.toMatchObject({ code: 'invalid_credentials', status: 401 })
