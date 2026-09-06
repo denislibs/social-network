@@ -86,7 +86,7 @@ export function simulateEvents(
     }
   }
   const popularAuthors = [...followers.entries()]
-    .sort((a, b) => b[1] - a[1])
+    .toSorted((a, b) => b[1] - a[1])
     .slice(0, Math.max(5, Math.floor(followers.size * 0.05)))
     .map(([k]) => k)
 

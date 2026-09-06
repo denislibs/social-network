@@ -43,11 +43,11 @@ describe('simulateEvents', () => {
   it('rates are plausible: view 35..80% of impressions, like 3..20% of views', () => {
     const active = Math.round(users.length * 0.3)
     const impressions = active * 10 * 20
-    const views = events.filter((e) => e.kind === 'view').length
-    expect(views / impressions).toBeGreaterThan(0.35)
-    expect(views / impressions).toBeLessThan(0.8)
-    expect(likes.length / views).toBeGreaterThan(0.03)
-    expect(likes.length / views).toBeLessThan(0.2)
+    const viewCount = events.filter((e) => e.kind === 'view').length
+    expect(viewCount / impressions).toBeGreaterThan(0.35)
+    expect(viewCount / impressions).toBeLessThan(0.8)
+    expect(likes.length / viewCount).toBeGreaterThan(0.03)
+    expect(likes.length / viewCount).toBeLessThan(0.2)
     expect(comments.length).toBeGreaterThan(0)
   })
   it('likes are unique per (user,post) and interest-aligned', () => {

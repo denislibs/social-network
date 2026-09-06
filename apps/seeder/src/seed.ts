@@ -281,7 +281,7 @@ function addDemoUsers(
       })
     const clubs = communities
       .filter((c) => ['cinema', 'music', 'it'].includes(c.topic))
-      .sort((a, b) => b.popularity - a.popularity)
+      .toSorted((a, b) => b.popularity - a.popularity)
       .slice(0, clubsN)
     for (const c of clubs) {
       follows.push({

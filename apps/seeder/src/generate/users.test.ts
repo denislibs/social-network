@@ -30,7 +30,7 @@ describe('generateUsers', () => {
     const regular = users
       .filter((u) => u.tier === 'regular')
       .map((u) => u.popularity)
-      .sort((a, b) => a - b)
+      .toSorted((a, b) => a - b)
     expect(star / regular[Math.floor(regular.length / 2)]!).toBeGreaterThan(100)
   })
   it('is deterministic', () => {

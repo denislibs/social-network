@@ -10,7 +10,7 @@ function assertUniqueNonEmpty(arr: string[], label: string) {
 
 describe('corpus', () => {
   it('covers every topic', () => {
-    expect(Object.keys(CORPUS).sort()).toEqual([...TOPICS].sort())
+    expect(Object.keys(CORPUS).toSorted()).toEqual([...TOPICS].toSorted())
   })
   for (const topic of TOPICS) {
     const c = CORPUS[topic]
@@ -67,7 +67,7 @@ describe('corpus', () => {
           const k = p.split(/\s+/).slice(0, 3).join(' ').toLowerCase()
           groups.set(k, (groups.get(k) ?? 0) + 1)
         }
-        const worst = [...groups.entries()].sort((a, b) => b[1] - a[1])[0]
+        const worst = [...groups.entries()].toSorted((a, b) => b[1] - a[1])[0]
         expect(worst?.[1] ?? 0, `skeleton "${worst?.[0]}"`).toBeLessThanOrEqual(8)
         expect(c.posts.filter((p) => p.length < 90).length, 'short posts').toBeGreaterThanOrEqual(
           15,

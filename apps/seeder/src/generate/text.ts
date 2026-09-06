@@ -26,7 +26,7 @@ export function generatePost(base: string, c: TopicCorpus, rng: Rng, vars: TextV
     .replaceAll('{year}', String(vars.year))
     .replace(
       /\{n:([^|}]+)\|([^|}]+)\|([^}]+)\}/g,
-      (_, a: string, b: string, c: string) => `${vars.n} ${plural(vars.n, a, b, c)}`,
+      (_, one: string, few: string, many: string) => `${vars.n} ${plural(vars.n, one, few, many)}`,
     )
     .replaceAll('{n}', String(vars.n))
   if (rng.chance(0.35)) text = `${rng.pick(c.openers)} ${text}`

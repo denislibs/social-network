@@ -21,6 +21,10 @@
     "react-hooks/exhaustive-deps": "warn",
     "jsx-a11y/alt-text": "error",
     "jsx-a11y/label-has-associated-control": "off",
+    "import/no-unassigned-import": [
+      "warn",
+      { "allow": ["**/*.css", "@testing-library/jest-dom/vitest"] }
+    ],
     "no-restricted-imports": [
       "error",
       {

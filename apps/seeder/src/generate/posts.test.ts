@@ -36,7 +36,7 @@ describe('generatePosts', () => {
     expect(starPosts).toBeLessThan(cfg.days * 1.2)
   })
   it('community post topic equals community topic; text is non-empty and varied', () => {
-    for (const p of posts.filter((p) => p.authorType === 'community').slice(0, 300))
+    for (const p of posts.filter((post) => post.authorType === 'community').slice(0, 300))
       expect(p.topic).toBe(communities[p.authorId - 1]!.topic)
     expect(new Set(posts.map((p) => p.text)).size / posts.length).toBeGreaterThan(0.7)
   })

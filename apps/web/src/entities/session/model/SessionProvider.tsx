@@ -11,46 +11,43 @@ export type Session = {
 }
 export const SessionContext = createContext<Session | null>(null)
 
+type SessionState = { user: UserDto | null; status: SessionStatus }
+
+// Pure, module-level: the state setter is the only thing the callbacks below
+// close over, so none of them needs another hook value in its dependency list.
+const sessionFor = (user: UserDto | null): SessionState => ({
+  user,
+  status: user ? 'authed' : 'guest',
+})
+
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUserState] = useState<UserDto | null>(null)
-  const [status, setStatus] = useState<SessionStatus>('loading')
-  const setUser = useCallback((u: UserDto | null) => {
-    setUserState(u)
-    setStatus(u ? 'authed' : 'guest')
-  }, [])
-  // Not exposed on the Session context: nothing outside this provider needs to
-  // trigger a re-fetch, it only runs once on mount below.
-  const fetchSession = useCallback(async () => {
-    try {
-      setUser(unwrap(await api.api.v1.me.get(), { silent401: true }).user)
-    } catch (e) {
-      if (!(e instanceof ApiError && e.status === 401)) console.error(e)
-      setUser(null)
-    }
-  }, [setUser])
+  const [state, setState] = useState<SessionState>({ user: null, status: 'loading' })
+  const setUser = useCallback((u: UserDto | null) => setState(sessionFor(u)), [])
   const logout = useCallback(async () => {
     try {
       await api.api.v1.auth.logout.post()
     } catch (e) {
       console.error('logout request failed; clearing session anyway', e)
     } finally {
-      setUser(null)
+      setState(sessionFor(null))
     }
-  }, [setUser])
+  }, [])
   useEffect(() => {
-    // Initial session fetch on mount; `fetchSession` sets state asynchronously once
-    // the network response arrives, not synchronously during this effect.
-    // oxlint-disable-next-line react/set-state-in-effect
-    void fetchSession()
-  }, [fetchSession])
+    // Initial session fetch on mount; state is set asynchronously once the
+    // network response arrives, not synchronously during this effect.
+    void (async () => {
+      try {
+        setState(sessionFor(unwrap(await api.api.v1.me.get(), { silent401: true }).user))
+      } catch (e) {
+        if (!(e instanceof ApiError && e.status === 401)) console.error(e)
+        setState(sessionFor(null))
+      }
+    })()
+  }, [])
   useEffect(
-    () =>
-      onUnauthorized(() => {
-        setUserState(null)
-        setStatus((s) => (s === 'authed' ? 'guest' : s))
-      }),
+    () => onUnauthorized(() => setState((s) => (s.status === 'authed' ? sessionFor(null) : s))),
     [],
   )
-  const value = useMemo(() => ({ user, status, setUser, logout }), [user, status, setUser, logout])
+  const value = useMemo(() => ({ ...state, setUser, logout }), [state, setUser, logout])
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
 }

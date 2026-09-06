@@ -8,7 +8,7 @@
   "scripts": {
     "infra:up": "docker compose up -d && bun scripts/wait-for-infra.ts",
     "infra:down": "docker compose down",
-    "lint": "oxlint . && bun run lint:fsd && biome check .",
+    "lint": "oxlint --max-warnings=0 . && bun run lint:fsd && biome check .",
     "lint:fsd": "steiger apps/web/src",
     "format": "oxlint --fix . && biome format --write .",
     "typecheck": "bun run --filter '*' typecheck",
