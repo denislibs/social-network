@@ -29,6 +29,37 @@ apps/web (фронт: React + VKUI, см. спек 2026-09-06) · apps/api · ap
 - **Фронт** (`apps/web`): инфраструктура контейнера — `shared/di` (`createContainer()` — `defaultScope: 'Singleton'`, `DiProvider`, хук `useService(TOKEN)`, branded `ServiceIdentifier<T>`). Реальные биндинги живут только в композиционном корне `app/composition/container.ts` (`createAppContainer`), который `main.tsx` оборачивает в `<DiProvider>`. Слайсы объявляют порт и токен у себя (`model/ports.ts` или `shared/api`, если порт общий) и получают зависимость через `useService(TOKEN)` в хуке `model/`. Тест хука: `renderHook(() => useX(...), { wrapper: withDi(container) })`, где `container = createTestContainer()` и нужные токены забинжены на фейки через `c.bind(TOKEN).toConstantValue(fake)` — см. `apps/web/src/features/auth/model/useLoginForm.test.tsx`.
 - **Бэкенд** (`apps/api`): корень композиции — `apps/api/src/app.ts`, который вызывает `createKernelContainer(deps)` из `kernel/container.ts` (биндит инфраструктурные зависимости — `Db`, `Redis`, шины команд/запросов/событий, конфиг — на токены `kernel/tokens.ts`, `KERNEL.*`) и монтирует модули. Модули регистрируют свои биндинги поверх этого контейнера в `infrastructure/<module>.container.ts` (например, `bindIdentityInfrastructure` в модуле identity); хендлеры и роуты получают зависимости через `container.get(TOKEN)`, `new Drizzle…`/`new Redis…` внутри модулей не создаются.
 
+## Подсистема 2 — соцграф (друзья, сообщества, уведомления, поиск)
+
+Спек: `docs/superpowers/specs/2026-09-06-social-graph-design.md` (архитектура и отступления — §9).
+
+Маршруты фронта: `/friends` (табы «Все» / «Заявки» `?tab=requests` / «Рекомендации»
+`?tab=suggestions`), `/communities` (табы «Мои» / «Поиск», кнопка «Создать сообщество»),
+`/:handle` — единый маршрут профиля (`id123` или короткое имя) и сообщества (`club123` или
+короткое имя, приглашения на `/club<id>`), `/:handle/friends`, `/:handle/members`, `/search?q=`,
+`/edit`, `/notifications`.
+
+Демо-вход: `demo` / `demo1234` (переопределяется `SEED_DEMO_PASSWORD` при сидировании). После
+`bun run seed` у `demo` ровно 30 принятых дружб, 5 входящих заявок в друзья, 3 исходящих заявки
+и членство в 4 сообществах, город Москва — так на `/friends?tab=requests` и `/friends` сразу есть
+что показать без ручных действий.
+
+Счётчик непрочитанных уведомлений (колокольчик в шапке) обновляется без перезагрузки страницы:
+только вкладка-лидер (`Web Locks`) опрашивает `GET /me/notifications/unread-count` раз в 30 секунд
+и при фокусе окна, остальные вкладки того же браузерного контекста получают значение через
+`BroadcastChannel` (см. `apps/web/src/features/notifications/model/{useTabLeader,useUnreadCount,
+useNotificationSync}.ts`). Так открытие соцсети в нескольких вкладках не размножает поллинг.
+
+Приёмочный сценарий `apps/web/e2e/social.spec.ts` гоняет через UI (без прямых вызовов API) заявку
+в друзья между двумя пользователями в разных `browser.newContext()`, проверяет, что счётчик
+непрочитанных долетает во вторую вкладку без перезагрузки, и создание/вступление в сообщество.
+Запуск (нужны поднятые `bun run dev:api` и `bun run dev:web`, `playwright.config.ts` переиспользует
+уже запущенные серверы):
+```bash
+cd apps/web && bunx playwright test e2e/social.spec.ts
+```
+Полный прогон всех спеков (auth + design + social): `cd apps/web && bunx playwright test`.
+
 ## Деплой
 За TLS выставьте `COOKIE_SECURE=1` — иначе браузер примет cookie сессии, но при переходе на
 HTTPS-домен она не будет помечена `Secure`. Локально (`http://localhost:8080`) оставляйте `0`:
