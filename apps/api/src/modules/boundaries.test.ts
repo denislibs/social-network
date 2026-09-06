@@ -89,11 +89,10 @@ describe('module boundaries', () => {
     }
     expect(violations).toEqual([])
   })
-  it('domain, application and presentation import DI only through kernel/di, never inversify directly', () => {
+  it('every module file imports DI only through kernel/di, never inversify directly', () => {
     const violations: string[] = []
     for (const f of files) {
-      const layer = layerOf(f)
-      if (!layer || !['domain', 'application', 'presentation'].includes(layer)) continue
+      if (!moduleOf(f)) continue
       for (const spec of specsOf(readFileSync(f, 'utf8'))) {
         if (isPkg(spec, ['inversify'])) violations.push(`${relative(root, f)} -> ${spec}`)
       }

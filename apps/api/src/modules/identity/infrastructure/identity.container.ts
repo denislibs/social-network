@@ -6,15 +6,16 @@ import { DrizzleUserReadModel } from './drizzle-user-read-model'
 import { DrizzleUserRepository } from './drizzle-user-repository'
 import { RedisSessionStore } from './redis-session-store'
 
+/** Scope defaults to Singleton — set by `createKernelContainer` (`kernel/container.ts`). */
 export function bindIdentityInfrastructure(c: Container): void {
-  c.bind(IDENTITY.UserRepository)
-    .toResolvedValue((db) => new DrizzleUserRepository(db), [KERNEL.Db])
-    .inSingletonScope()
-  c.bind(IDENTITY.UserReadModel)
-    .toResolvedValue((db) => new DrizzleUserReadModel(db), [KERNEL.Db])
-    .inSingletonScope()
-  c.bind(IDENTITY.SessionStore)
-    .toResolvedValue((redis) => new RedisSessionStore(redis), [KERNEL.Redis])
-    .inSingletonScope()
+  c.bind(IDENTITY.UserRepository).toResolvedValue(
+    (db) => new DrizzleUserRepository(db),
+    [KERNEL.Db],
+  )
+  c.bind(IDENTITY.UserReadModel).toResolvedValue((db) => new DrizzleUserReadModel(db), [KERNEL.Db])
+  c.bind(IDENTITY.SessionStore).toResolvedValue(
+    (redis) => new RedisSessionStore(redis),
+    [KERNEL.Redis],
+  )
   c.bind(IDENTITY.PasswordHasher).toConstantValue(new BunPasswordHasher())
 }
