@@ -1,4 +1,4 @@
-import type { NotificationKind } from '../../../db/schema'
+import type { NotificationKind } from '@vkc/contracts'
 import { token } from '../../../kernel/di'
 import type { NotificationDto, Page } from './dto'
 

@@ -6,7 +6,9 @@ import { Login } from '../application/commands/login'
 import { Logout } from '../application/commands/logout'
 import { LogoutAll } from '../application/commands/logout-all'
 import { RegisterUser } from '../application/commands/register-user'
+import { UpdateProfile } from '../application/commands/update-profile'
 import { GetMe } from '../application/queries/get-me'
+import { GetProfile } from '../application/queries/get-profile'
 
 const SESSION_MAX_AGE = 30 * 86400
 const sessionCookie = t.Cookie({ sid: t.Optional(t.String()) })
@@ -17,6 +19,28 @@ const userSchema = t.Object({
   lastName: t.String(),
   screenName: t.Nullable(t.String()),
   createdAt: t.String(),
+})
+const relationSchema = t.UnionEnum(['none', 'outgoing', 'incoming', 'friends', 'self'])
+const countersSchema = t.Object({
+  friends: t.Number(),
+  followers: t.Number(),
+  communities: t.Number(),
+  incomingRequests: t.Number(),
+})
+const profileSchema = t.Object({
+  id: t.Number(),
+  login: t.String(),
+  firstName: t.String(),
+  lastName: t.String(),
+  screenName: t.Nullable(t.String()),
+  createdAt: t.String(),
+  status: t.Nullable(t.String()),
+  bio: t.Nullable(t.String()),
+  city: t.Nullable(t.String()),
+  birthday: t.Nullable(t.String()),
+  isVerified: t.Boolean(),
+  counters: countersSchema,
+  relation: relationSchema,
 })
 
 export function identityRoutes(c: Container) {
@@ -99,4 +123,37 @@ export function identityRoutes(c: Container) {
       auth: true,
       response: { 200: t.Object({ user: userSchema }) },
     })
+    .get(
+      '/users/:id',
+      async ({ params, viewer }) => ({
+        user: await d.queries.ask(new GetProfile(params.id, viewer?.id ?? null)),
+      }),
+      {
+        optionalAuth: true,
+        // Named `id` (not `idOrScreen`) so the router's radix tree can share this path segment
+        // with social-graph's `/users/:id/friends` etc. — memoirist requires the same param name
+        // at a shared tree position across every route mounted into the app, even though this
+        // route accepts either a numeric id or a screen name here (see `GetProfile`/`idOrScreen`
+        // parsing) while the others require a numeric id.
+        params: t.Object({ id: t.String() }),
+        response: { 200: t.Object({ user: profileSchema }) },
+      },
+    )
+    .patch(
+      '/me/profile',
+      async ({ body, user }) => ({
+        user: await d.commands.execute(new UpdateProfile({ me: user.id, ...body })),
+      }),
+      {
+        auth: true,
+        body: t.Object({
+          status: t.Optional(t.Nullable(t.String())),
+          bio: t.Optional(t.Nullable(t.String())),
+          city: t.Optional(t.Nullable(t.String())),
+          birthday: t.Optional(t.Nullable(t.String())),
+          screenName: t.Optional(t.Nullable(t.String())),
+        }),
+        response: { 200: t.Object({ user: profileSchema }) },
+      },
+    )
 }

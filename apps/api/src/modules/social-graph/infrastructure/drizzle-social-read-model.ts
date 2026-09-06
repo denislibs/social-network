@@ -161,10 +161,10 @@ export class DrizzleSocialReadModel implements SocialReadModel {
       .innerJoin(users, eq(users.id, friendIds.friendId))
       .where(
         key
-          ? sql`(${friendIds.sortTs}, ${friendIds.friendId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+          ? sql`(date_trunc('milliseconds', ${friendIds.sortTs}), ${friendIds.friendId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
           : undefined,
       )
-      .orderBy(desc(friendIds.sortTs), desc(friendIds.friendId))
+      .orderBy(desc(sql`date_trunc('milliseconds', ${friendIds.sortTs})`), desc(friendIds.friendId))
       .limit(PAGE_SIZE + 1)
     const page = paginate(rows, (r) => ({ createdAt: new Date(r.sortTs), id: r.id }))
     return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }
@@ -196,10 +196,10 @@ export class DrizzleSocialReadModel implements SocialReadModel {
       .innerJoin(users, eq(users.id, req.otherId))
       .where(
         key
-          ? sql`(${req.createdAt}, ${req.otherId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+          ? sql`(date_trunc('milliseconds', ${req.createdAt}), ${req.otherId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
           : undefined,
       )
-      .orderBy(desc(req.createdAt), desc(req.otherId))
+      .orderBy(desc(sql`date_trunc('milliseconds', ${req.createdAt})`), desc(req.otherId))
       .limit(PAGE_SIZE + 1)
     const page = paginate(rows, (r) => ({ createdAt: r.createdAt, id: r.id }))
     return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }
@@ -216,11 +216,14 @@ export class DrizzleSocialReadModel implements SocialReadModel {
           eq(follows.targetType, 'user'),
           eq(follows.targetId, userId),
           key
-            ? sql`(${follows.createdAt}, ${follows.followerId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+            ? sql`(date_trunc('milliseconds', ${follows.createdAt}), ${follows.followerId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
             : undefined,
         ),
       )
-      .orderBy(desc(follows.createdAt), desc(follows.followerId))
+      .orderBy(
+        desc(sql`date_trunc('milliseconds', ${follows.createdAt})`),
+        desc(follows.followerId),
+      )
       .limit(PAGE_SIZE + 1)
     const page = paginate(rows, (r) => ({ createdAt: r.createdAt, id: r.id }))
     return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }
@@ -282,11 +285,14 @@ export class DrizzleSocialReadModel implements SocialReadModel {
         and(
           eq(communityMembers.communityId, communityId),
           key
-            ? sql`(${communityMembers.createdAt}, ${communityMembers.userId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+            ? sql`(date_trunc('milliseconds', ${communityMembers.createdAt}), ${communityMembers.userId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
             : undefined,
         ),
       )
-      .orderBy(desc(communityMembers.createdAt), desc(communityMembers.userId))
+      .orderBy(
+        desc(sql`date_trunc('milliseconds', ${communityMembers.createdAt})`),
+        desc(communityMembers.userId),
+      )
       .limit(PAGE_SIZE + 1)
     const page = paginate(rows, (r) => ({ createdAt: r.createdAt, id: r.id }))
     return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }

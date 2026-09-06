@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     "./app": "./src/app.ts",
-    "./dto": "./src/modules/identity/application/dto.ts"
+    "./dto": "./src/modules/dto.ts"
   },
   "scripts": {
     "dev": "bun --watch src/main.ts",

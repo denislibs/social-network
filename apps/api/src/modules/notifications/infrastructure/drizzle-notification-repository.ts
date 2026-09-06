@@ -1,6 +1,6 @@
+import type { NotificationKind } from '@vkc/contracts'
 import { and, eq, isNull, lte } from 'drizzle-orm'
 import type { Db } from '../../../db/client'
-import type { NotificationKind } from '../../../db/schema'
 import { notifications } from '../../../db/schema'
 import type { NotificationRepository } from '../application/ports'
 

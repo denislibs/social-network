@@ -74,11 +74,14 @@ export class DrizzleNotificationReadModel implements NotificationReadModel {
         and(
           eq(notifications.userId, userId),
           key
-            ? sql`(${notifications.createdAt}, ${notifications.id}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+            ? sql`(date_trunc('milliseconds', ${notifications.createdAt}), ${notifications.id}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
             : undefined,
         ),
       )
-      .orderBy(desc(notifications.createdAt), desc(notifications.id))
+      .orderBy(
+        desc(sql`date_trunc('milliseconds', ${notifications.createdAt})`),
+        desc(notifications.id),
+      )
       .limit(PAGE_SIZE + 1)
 
     const page = paginate(rows, (r) => ({ createdAt: r.createdAt, id: r.id }))

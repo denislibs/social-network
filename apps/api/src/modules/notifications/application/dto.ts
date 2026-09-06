@@ -1,6 +1,10 @@
-import type { NotificationKind } from '../../../db/schema'
+import type { NotificationKind } from '@vkc/contracts'
 
-/** Copied from social-graph's `application/dto.ts` — Task 8 unifies the two exports. */
+/**
+ * Copied from social-graph's `application/dto.ts` (module boundaries forbid importing another
+ * module's inner layers). Task 8 unifies both into `apps/api/src/modules/dto.ts`, the single
+ * export surface `@vkc/contracts` re-exports from.
+ */
 export type UserCellDto = {
   id: number
   firstName: string

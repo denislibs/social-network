@@ -14,8 +14,8 @@ export async function buildApp(deps: AppDeps) {
   bindSocialGraph(container)
   bindNotifications(container)
   const identity = await mountIdentity(container)
-  await mountSocialGraph(container) // routes come in Task 8; this only registers command/query handlers
-  await mountNotifications(container) // routes come in Task 8; this registers handlers + the graph-event subscriber
+  const social = await mountSocialGraph(container)
+  const notifications = await mountNotifications(container)
   return new Elysia({ prefix: '/api/v1' })
     .onError(({ error, set, code }) => {
       if (error instanceof AppError) {
@@ -36,5 +36,7 @@ export async function buildApp(deps: AppDeps) {
     })
     .get('/health', () => ({ ok: true }))
     .use(identity)
+    .use(social)
+    .use(notifications)
 }
 export type App = Awaited<ReturnType<typeof buildApp>>

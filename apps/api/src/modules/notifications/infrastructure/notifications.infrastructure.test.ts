@@ -112,4 +112,31 @@ describe('DrizzleNotificationRepository + DrizzleNotificationReadModel', () => {
     const seen = new Set([...a.items, ...b.items].map((n) => n.id))
     expect(seen.size).toBe(25)
   })
+
+  it('regression: 25 rows batch-inserted in ONE insert (same timestamp) still paginate without gaps', async () => {
+    const repo = new DrizzleNotificationRepository(db)
+    const read = new DrizzleNotificationReadModel(db)
+    // A single insert() call batches all 25 rows into one INSERT statement, so every row shares
+    // the exact same `now()` value down to the microsecond — Postgres `timestamptz` has
+    // microsecond precision but the keyset cursor only round-trips milliseconds (`kernel/cursor.ts`
+    // encodes `toISOString()`, which is millisecond-precision). Comparing the raw column against a
+    // millisecond-truncated cursor would then incorrectly exclude rows sharing that millisecond,
+    // dropping them between page 1 and page 2. `date_trunc('milliseconds', ...)` in both the WHERE
+    // and ORDER BY of `DrizzleNotificationReadModel.list` fixes this.
+    await repo.insert(
+      Array.from({ length: 25 }, () => ({
+        userId: 1,
+        kind: 'friend_request' as const,
+        actorId: null,
+      })),
+    )
+    const a = await read.list(1, null)
+    expect(a.items).toHaveLength(20)
+    expect(a.nextCursor).not.toBeNull()
+    const b = await read.list(1, a.nextCursor)
+    expect(b.items).toHaveLength(5)
+    expect(b.nextCursor).toBeNull()
+    const seen = new Set([...a.items, ...b.items].map((n) => n.id))
+    expect(seen.size).toBe(25)
+  })
 })
