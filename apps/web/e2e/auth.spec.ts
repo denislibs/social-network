@@ -32,3 +32,19 @@ test('login with wrong password shows error, then succeeds', async ({ page }) =>
   await page.getByRole('button', { name: 'Войти' }).click()
   await expect(page).toHaveURL(/\/feed$/)
 })
+
+test('nav items open placeholder pages, not 404', async ({ page }) => {
+  await page.goto('/login')
+  await page.getByLabel('Логин').fill(login)
+  await page.getByLabel('Пароль').fill('password123')
+  await page.getByRole('button', { name: 'Войти' }).click()
+  await expect(page).toHaveURL(/\/feed$/)
+  await page.getByRole('link', { name: /Мессенджер/ }).click()
+  await expect(page).toHaveURL(/\/im$/)
+  await expect(page.getByText('Раздел скоро откроется')).toBeVisible()
+  await expect(page.getByRole('link', { name: /Мессенджер/ })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await expect(page.getByRole('banner')).toBeVisible()
+})
