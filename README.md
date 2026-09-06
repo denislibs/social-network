@@ -22,6 +22,13 @@ apps/web (фронт: React + VKUI, см. спек 2026-09-06) · apps/api · ap
 
 `apps/web` — React 19 + VKUI 8, строго по Feature-Sliced Design (`app → pages → widgets → features → entities → shared`, слайсы одного слоя друг друга не импортируют, вход только через `index.ts`). Три обязательных проверки: Steiger (`bun run lint:fsd`) и oxlint (`no-restricted-imports` по слоям) — обе в `bun run lint`; тест `vkui-only.test.ts` (запрещает свои цвета, `font-size` и «сырые» HTML-контролы вне VKUI) — в `bun run test:unit`. Соответствие компонентов и токенов оригиналу vk.ru — `docs/reference/vk-ru-vkui-map.md`. Подробности архитектуры и отступления от исходного плана — `docs/superpowers/specs/2026-09-06-web-react-vkui-migration-design.md`.
 
+## DI (InversifyJS)
+
+Побочные эффекты (HTTP-клиент, `localStorage`, `matchMedia`, шины событий) не импортируются напрямую — только через контейнер InversifyJS.
+
+- **Фронт** (`apps/web`): инфраструктура контейнера — `shared/di` (`createContainer()` — `defaultScope: 'Singleton'`, `DiProvider`, хук `useService(TOKEN)`, branded `ServiceIdentifier<T>`). Реальные биндинги живут только в композиционном корне `app/composition/container.ts` (`createAppContainer`), который `main.tsx` оборачивает в `<DiProvider>`. Слайсы объявляют порт и токен у себя (`model/ports.ts` или `shared/api`, если порт общий) и получают зависимость через `useService(TOKEN)` в хуке `model/`. Тест хука: `renderHook(() => useX(...), { wrapper: withDi(container) })`, где `container = createTestContainer()` и нужные токены забинжены на фейки через `c.bind(TOKEN).toConstantValue(fake)` — см. `apps/web/src/features/auth/model/useLoginForm.test.tsx`.
+- **Бэкенд** (`apps/api`): корень композиции — `kernel/container.ts` (`createKernelContainer(deps)`), который биндит инфраструктурные зависимости (`Db`, `Redis`, шины команд/запросов/событий, конфиг) на токены `kernel/tokens.ts` (`KERNEL.*`). Модули регистрируют свои биндинги поверх этого контейнера в `infrastructure/<module>.container.ts` (например, `bindIdentityInfrastructure` в модуле identity); хендлеры и роуты получают зависимости через `container.get(TOKEN)`, `new Drizzle…`/`new Redis…` внутри модулей не создаются.
+
 ## Деплой
 За TLS выставьте `COOKIE_SECURE=1` — иначе браузер примет cookie сессии, но при переходе на
 HTTPS-домен она не будет помечена `Secure`. Локально (`http://localhost:8080`) оставляйте `0`:
