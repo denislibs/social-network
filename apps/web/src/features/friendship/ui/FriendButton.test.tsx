@@ -7,10 +7,16 @@ import { withProviders } from '@/shared/lib'
 import { fakeFriendshipGateway, friendshipTestContainer } from '../model/testing'
 import { FriendButton } from './FriendButton'
 
-function mount(relation: Parameters<typeof FriendButton>[0]['relation'], overrides = {}) {
+function mount(
+  relation: Parameters<typeof FriendButton>[0]['relation'],
+  overrides = {},
+  variant: Parameters<typeof FriendButton>[0]['variant'] = 'button',
+) {
   const gateway = fakeFriendshipGateway(overrides)
   const container = friendshipTestContainer(gateway)
-  render(<FriendButton userId={1} relation={relation} />, { wrapper: withProviders(container) })
+  render(<FriendButton userId={1} relation={relation} variant={variant} />, {
+    wrapper: withProviders(container),
+  })
   return { gateway }
 }
 
@@ -69,6 +75,32 @@ describe('FriendButton', () => {
     const { gateway } = mount('none', { request: vi.fn().mockResolvedValue('outgoing') })
     await userEvent.click(screen.getByRole('button', { name: 'Добавить в друзья' }))
     expect(gateway.request).toHaveBeenCalledWith(1)
+  })
+
+  describe('variant="icon"', () => {
+    it('renders a single icon button whose accessible name is the action label', () => {
+      mount('none', {}, 'icon')
+      const buttons = screen.getAllByRole('button')
+      expect(buttons).toHaveLength(1)
+      expect(screen.getByRole('button', { name: 'Добавить в друзья' })).toBeInTheDocument()
+    })
+
+    it('drops the secondary action instead of crowding the row', () => {
+      mount('friends', {}, 'icon')
+      expect(screen.getByRole('button', { name: 'У вас в друзьях' })).toBeDisabled()
+      expect(screen.queryByRole('button', { name: 'Удалить из друзей' })).not.toBeInTheDocument()
+    })
+
+    it('still calls the gateway on click', async () => {
+      const { gateway } = mount('none', { request: vi.fn().mockResolvedValue('outgoing') }, 'icon')
+      await userEvent.click(screen.getByRole('button', { name: 'Добавить в друзья' }))
+      expect(gateway.request).toHaveBeenCalledWith(1)
+    })
+
+    it('self: renders nothing', () => {
+      mount('self', {}, 'icon')
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    })
   })
 
   it('shows a Snackbar with the mapped error text when the request fails, and it goes away once closed', async () => {

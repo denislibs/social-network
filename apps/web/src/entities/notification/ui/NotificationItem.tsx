@@ -18,6 +18,7 @@ export function NotificationItem({ notification }: { notification: NotificationD
             size={48}
             initials={initials(actor.firstName, actor.lastName)}
             gradientColor={calcInitialsAvatarColor(actor.id)}
+            aria-label={`${actor.firstName} ${actor.lastName}`}
           />
         ) : (
           <Icon width={28} height={28} />

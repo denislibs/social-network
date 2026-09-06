@@ -40,7 +40,7 @@ const NotificationsPage = lazy(() =>
 const S = (el: ReactNode) => <Suspense fallback={<PanelSpinner />}>{el}</Suspense>
 const authed = (el: ReactNode) => S(<RequireAuth>{el}</RequireAuth>)
 
-/** `/:handle/friends` is a route on its own (not nested under `HandlePage`, whose job is only
+/** `/:handle/friends` is a route on its own (not nested under `HandleRoute`, whose job is only
  * to tell a user handle from a community one), so it reads the `:handle` param itself and
  * forwards it as a prop — matching how `ProfileFriendsPage` is tested in isolation. */
 function ProfileFriendsRoute() {

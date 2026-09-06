@@ -58,8 +58,11 @@
 
 .nav a[aria-current="page"] {
   /* NavLink сам проставляет aria-current на активном пункте — берём его
-     как признак выбранного пункта, отдельного состояния у SimpleCell нет. */
-  background: var(--vkui--color_background_secondary);
+     как признак выбранного пункта, отдельного состояния у SimpleCell нет.
+     Фон карточек (`content`), а не `secondary`: в светлой схеме `secondary`
+     почти совпадает с фоном страницы и выделение было не видно; `content`
+     контрастен в обеих схемах ровно так же, как карточки контента. */
+  background: var(--vkui--color_background_content);
   border-radius: var(--vkui--size_border_radius--regular);
 }
 

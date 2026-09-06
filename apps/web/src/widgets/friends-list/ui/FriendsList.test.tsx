@@ -79,4 +79,37 @@ describe('FriendsList', () => {
     expect(await screen.findByText('Друг1 Тестов')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Показать ещё' })).not.toBeInTheDocument()
   })
+
+  it('filters the loaded friends by the search box, client-side', async () => {
+    mount(
+      vi.fn().mockResolvedValue({
+        items: [user(1), { ...user(2), firstName: 'Маша' }],
+        nextCursor: null,
+      } satisfies Page<UserCellDto>),
+    )
+    expect(await screen.findByText('Друг1 Тестов')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('searchbox'), 'Маша')
+
+    expect(screen.getByText('Маша Тестов')).toBeInTheDocument()
+    expect(screen.queryByText('Друг1 Тестов')).not.toBeInTheDocument()
+  })
+
+  it('says so when the filter matches nobody, without touching the gateway again', async () => {
+    const { gateway } = mount(
+      vi.fn().mockResolvedValue({ items: [user(1)], nextCursor: null } satisfies Page<UserCellDto>),
+    )
+    expect(await screen.findByText('Друг1 Тестов')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByRole('searchbox'), 'зззз')
+
+    expect(screen.getByText('Никого не найдено')).toBeInTheDocument()
+    expect(gateway.getFriends).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers no search box while the list is empty', async () => {
+    mount(vi.fn().mockResolvedValue({ items: [], nextCursor: null } satisfies Page<UserCellDto>))
+    expect(await screen.findByText('Пока нет друзей')).toBeInTheDocument()
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
+  })
 })

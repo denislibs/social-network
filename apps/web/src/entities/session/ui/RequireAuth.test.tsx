@@ -1,10 +1,9 @@
 import { render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { createMemoryRouter, RouterProvider, useLocation } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
-
-const { useSessionMock } = vi.hoisted(() => ({ useSessionMock: vi.fn() }))
-vi.mock('../model/useSession', () => ({ useSession: useSessionMock }))
-
+import { describe, expect, it } from 'vitest'
+import type { SessionStatus } from '../model/SessionProvider'
+import { sessionTestWrapper } from '../model/testing'
 import { RequireAuth } from './RequireAuth'
 
 function RedirectProbe() {
@@ -13,7 +12,10 @@ function RedirectProbe() {
   return <div>redirect:{redirect ?? 'none'}</div>
 }
 
-function mount(initialEntry: string) {
+/** Provides `SessionContext` directly instead of `vi.mock`-ing `useSession`: the sanctioned
+ * seam for a hook that has no DI binding of its own (see `model/testing.tsx`). */
+function mount(initialEntry: string, status: SessionStatus) {
+  const Session = sessionTestWrapper({ status })
   const router = createMemoryRouter(
     [
       {
@@ -28,25 +30,24 @@ function mount(initialEntry: string) {
     ],
     { initialEntries: [initialEntry] },
   )
-  return render(<RouterProvider router={router} />)
+  return render(<RouterProvider router={router} />, {
+    wrapper: ({ children }: { children: ReactNode }) => <Session>{children}</Session>,
+  })
 }
 
 describe('RequireAuth', () => {
   it('renders a spinner while loading', () => {
-    useSessionMock.mockReturnValue({ status: 'loading' })
-    mount('/protected')
+    mount('/protected', 'loading')
     expect(screen.getByRole('status')).toBeInTheDocument()
   })
 
   it('redirects a guest to /login with the attempted path (incl. search+hash) as state', () => {
-    useSessionMock.mockReturnValue({ status: 'guest' })
-    mount('/protected?tab=x#y')
+    mount('/protected?tab=x#y', 'guest')
     expect(screen.getByText('redirect:/protected?tab=x#y')).toBeInTheDocument()
   })
 
   it('renders children once authed', () => {
-    useSessionMock.mockReturnValue({ status: 'authed' })
-    mount('/protected')
+    mount('/protected', 'authed')
     expect(screen.getByText('PROTECTED')).toBeInTheDocument()
   })
 })

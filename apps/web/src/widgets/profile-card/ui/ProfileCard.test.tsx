@@ -121,4 +121,10 @@ describe('ProfileCard', () => {
     expect(await screen.findByRole('button', { name: 'Добавить в друзья' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Редактировать профиль' })).not.toBeInTheDocument()
   })
+
+  it('offers an "Ещё" dropdown and no "Поделиться" button (deferred to subsystem 3)', async () => {
+    mount(makeProfile())
+    expect(await screen.findByRole('button', { name: /Ещё/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Поделиться' })).not.toBeInTheDocument()
+  })
 })

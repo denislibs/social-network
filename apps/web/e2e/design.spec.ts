@@ -26,6 +26,16 @@ async function login(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/feed$/)
 }
 
+/** Sub-pixel layout rounding (and the scrollbar's own width) moves these boxes by a pixel or
+ * so between runs, so geometry is asserted to the nearest 2px rather than exactly. */
+const TOLERANCE = 2
+
+function expectAbout(actual: number, expected: number, what: string) {
+  expect(Math.abs(actual - expected), `${what}: ${actual} ≈ ${expected}`).toBeLessThanOrEqual(
+    TOLERANCE,
+  )
+}
+
 async function boxOf(page: Page, locator: ReturnType<Page['locator']>) {
   await expect(locator).toBeVisible()
   const box = await locator.boundingBox()
@@ -42,10 +52,10 @@ test.beforeEach(async ({ page }) => {
 
 test('shell geometry: 48px header and a 200px left menu', async ({ page }) => {
   const header = await boxOf(page, page.getByRole('banner'))
-  expect(header.height).toBe(48)
+  expectAbout(header.height, 48, 'header height')
 
   const nav = await boxOf(page, page.getByRole('navigation', { name: 'Основная навигация' }))
-  expect(nav.width).toBe(200)
+  expectAbout(nav.width, 200, 'nav width')
 
   // vk.ru's menu rows are 40px tall with 24px icons.
   const firstRow = await boxOf(page, page.getByRole('link', { name: /Профиль/ }))
@@ -88,7 +98,7 @@ test('community cover matches the profile cover width, like the profile header',
 
   await page.goto('/clubplenochnyyklub')
   const communityCover = await boxOf(page, page.getByTestId('community-cover'))
-  expect(communityCover.width).toBe(profileCover.width)
+  expectAbout(communityCover.width, profileCover.width, 'community cover width')
 })
 
 test('content columns are 551 + 345 at 1728px', async ({ page }) => {
@@ -98,9 +108,9 @@ test('content columns are 551 + 345 at 1728px', async ({ page }) => {
 
   const main = await boxOf(page, page.getByRole('main'))
   const aside = await boxOf(page, page.getByLabel('Дополнительно'))
-  expect(main.width).toBe(551)
-  expect(aside.width).toBe(345)
-  expect(Math.round(aside.x - (main.x + main.width))).toBe(16)
+  expectAbout(main.width, 551, 'main width')
+  expectAbout(aside.width, 345, 'aside width')
+  expectAbout(aside.x - (main.x + main.width), 16, 'column gap')
 })
 
 for (const scheme of SCHEMES) {

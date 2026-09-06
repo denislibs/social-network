@@ -36,9 +36,17 @@ function mount(s: SuggestionDto, overrides = {}) {
 describe('SuggestionCard', () => {
   it('shows the name, mutual-friends caption and the injected friend action', () => {
     mount(suggestion)
-    expect(screen.getByRole('link', { name: 'Соня Иванова' })).toHaveAttribute('href', '/sonya')
+    // The whole row is the link (vk.ru's compact `SimpleCell`), so its accessible name also
+    // carries the caption and the action labels — match on the name rather than the exact string.
+    expect(screen.getByRole('link', { name: /Соня Иванова/ })).toHaveAttribute('href', '/sonya')
     expect(screen.getByText('3 общих друга')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'friend' })).toBeInTheDocument()
+  })
+
+  it('a click on an action button does not follow the row link to the profile', async () => {
+    mount(suggestion, { hide: vi.fn().mockResolvedValue(undefined) })
+    await userEvent.click(screen.getByRole('button', { name: 'Скрыть' }))
+    expect(screen.queryByText('PROFILE')).not.toBeInTheDocument()
   })
 
   it('falls back to "Из вашего города" when there are no mutual friends but same city', () => {

@@ -60,4 +60,9 @@ describe('NotificationItem', () => {
     expect(screen.getByText('новая запись в сообществе')).toBeInTheDocument()
     expect(screen.getByRole('link')).toHaveAttribute('href', '/post5')
   })
+
+  it('labels the actor avatar with the actor name', () => {
+    mount(<NotificationItem notification={makeNotification()} />)
+    expect(screen.getByLabelText('Аня Смирнова')).toBeInTheDocument()
+  })
 })

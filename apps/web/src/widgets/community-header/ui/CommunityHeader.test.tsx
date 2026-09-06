@@ -1,6 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+
+/**
+ * What lives *inside* the «Вы участник»/«Ещё» dropdowns is covered by
+ * `../model/useCommunityMenu.test.tsx`: VKUI's floating layer never settles under jsdom (its
+ * position loop starves the timers RTL's async queries wait on), so opening a `Popover` here
+ * would hang. These tests assert the closed row — which controls the header offers at all — and
+ * the menu's contents are asserted on the hook that produces them.
+ */
 import type { CommunityDto, CommunityGateway } from '@/entities/community'
 import { COMMUNITY_GATEWAY } from '@/entities/community'
 import { createTestContainer } from '@/shared/di'
@@ -76,7 +84,7 @@ describe('CommunityHeader', () => {
     expect(screen.getByTestId('community-avatar')).toBeInTheDocument()
   })
 
-  it('shows an inert "Ещё" button next to the membership actions', async () => {
+  it('shows an "Ещё" dropdown next to the membership actions for a non-member', async () => {
     mount(makeCommunity())
     expect(await screen.findByRole('button', { name: /Ещё/ })).toBeInTheDocument()
   })
@@ -86,10 +94,20 @@ describe('CommunityHeader', () => {
     expect(await screen.findByRole('button', { name: 'Вступить' })).toBeInTheDocument()
   })
 
-  it('shows "Вы участник" and "Выйти" when already a member', async () => {
-    mount(makeCommunity({ membership: 'member' }))
-    expect(await screen.findByRole('button', { name: 'Вы участник' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Выйти' })).toBeInTheDocument()
+  it('a member sees one "Вы участник" control and nothing else', async () => {
+    mount(makeCommunity({ membership: 'member', isFollowing: true }))
+
+    expect(await screen.findByRole('button', { name: /Вы участник/ })).toBeInTheDocument()
+    // vk.ru shows no separate «Выйти»/«Подписаться»/«Ещё» buttons for a member — one dropdown.
+    expect(screen.queryByRole('button', { name: 'Выйти из сообщества' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Вступить' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ещё/ })).not.toBeInTheDocument()
+  })
+
+  it('shows "Подписаться" next to "Вступить" for a non-member', async () => {
+    mount(makeCommunity({ membership: 'none', isFollowing: false }))
+    expect(await screen.findByRole('button', { name: 'Вступить' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Подписаться' })).toBeInTheDocument()
   })
 
   it('joining updates the header even when the page was opened under the numeric /club<id> handle', async () => {

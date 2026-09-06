@@ -46,9 +46,9 @@ function fakeSuggestionsGateway(overrides: Partial<SuggestionsGateway> = {}): Su
   return { list: vi.fn().mockResolvedValue([]), hide: vi.fn(), ...overrides }
 }
 
-function mount(initialPath: string) {
+function mount(initialPath: string, userOverrides: Partial<UserGateway> = {}) {
   const container = createTestContainer()
-  container.bind(USER_GATEWAY).toConstantValue(fakeUserGateway())
+  container.bind(USER_GATEWAY).toConstantValue(fakeUserGateway(userOverrides))
   container.bind(FRIENDSHIP_GATEWAY).toConstantValue(fakeFriendshipGateway())
   container.bind(SUGGESTIONS_GATEWAY).toConstantValue(fakeSuggestionsGateway())
   const Session = createSessionTestProvider({
@@ -79,5 +79,25 @@ describe('FriendsPage', () => {
     mount('/friends?tab=suggestions')
     expect(screen.getByRole('tab', { name: 'Рекомендации', selected: true })).toBeInTheDocument()
     expect(await screen.findByText('Возможно, вы знакомы')).toBeInTheDocument()
+  })
+
+  it('counts incoming requests on the «Заявки» tab', async () => {
+    mount('/friends', {
+      getMyCounters: vi
+        .fn()
+        .mockResolvedValue({ friends: 4, followers: 0, communities: 0, incomingRequests: 3 }),
+    })
+
+    expect(await screen.findByRole('tab', { name: /Заявки\s*3/ })).toBeInTheDocument()
+  })
+
+  it('shows no counter when there are no incoming requests', async () => {
+    mount('/friends', {
+      getMyCounters: vi
+        .fn()
+        .mockResolvedValue({ friends: 4, followers: 0, communities: 0, incomingRequests: 0 }),
+    })
+
+    expect(await screen.findByRole('tab', { name: 'Заявки' })).toBeInTheDocument()
   })
 })

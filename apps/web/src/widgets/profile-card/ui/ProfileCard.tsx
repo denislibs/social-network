@@ -1,13 +1,15 @@
-import { Icon12Dropdown, Icon16Verified, Icon24ShareOutline } from '@vkontakte/icons'
+import { Icon12Dropdown, Icon16Verified } from '@vkontakte/icons'
 import {
   Box,
   Button,
   ButtonGroup,
+  CellButton,
   DisplayTitle,
   Flex,
   Footnote,
   Group,
   Link,
+  Popover,
   Text,
 } from '@vkontakte/vkui'
 import { type ProfileDto, UserAvatar } from '@/entities/user'
@@ -19,6 +21,25 @@ import { ProfileCardSkeleton } from './ProfileCardSkeleton'
 import styles from './profile-card.module.css'
 
 const FOLLOWER_FORMS: [string, string, string] = ['подписчик', 'подписчика', 'подписчиков']
+
+/** vk.ru's «Ещё» dropdown, with nothing in it until subsystem 3. Duplicated in
+ * `widgets/community-header` — Steiger forbids one widget slice importing another. */
+function MoreButton() {
+  return (
+    <Popover
+      placement="bottom-end"
+      content={
+        <Box paddingBlock="s">
+          <CellButton disabled>Скоро</CellButton>
+        </Box>
+      }
+    >
+      <Button mode="secondary" size="m" after={<Icon12Dropdown />}>
+        Ещё
+      </Button>
+    </Popover>
+  )
+}
 
 function registeredYear(createdAt: string): number {
   return new Date(createdAt).getFullYear()
@@ -74,12 +95,7 @@ function ProfileCardLoaded({ profile }: { profile: ProfileDto }) {
             ) : (
               <FriendButton userId={profile.id} relation={relation} />
             )}
-            <Button mode="secondary" size="m" aria-label="Поделиться">
-              <Icon24ShareOutline />
-            </Button>
-            <Button mode="secondary" size="m" after={<Icon12Dropdown />}>
-              Ещё
-            </Button>
+            <MoreButton />
           </ButtonGroup>
         </Flex>
       </div>

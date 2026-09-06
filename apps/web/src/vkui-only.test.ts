@@ -47,6 +47,16 @@ function hasDangerousHtml(src: string): boolean {
   return DANGEROUS_HTML.test(src)
 }
 
+/**
+ * `RouterAnchor`/`NavAnchor` are adapters, not components to render: used as a bare JSX tag they
+ * produce a plain react-router `<Link>` with browser-default link styling (blue/purple, no VKUI
+ * hover state). They must always be handed to a VKUI component as `Component={…}` instead.
+ */
+const BARE_ROUTER_ANCHOR = /<(?:RouterAnchor|NavAnchor)[\s/>]/
+function hasBareRouterAnchor(src: string): boolean {
+  return BARE_ROUTER_ANCHOR.test(src)
+}
+
 const STRING_CREATE_ELEMENT = /createElement\(\s*['"][a-z]/
 function hasStringCreateElement(src: string): boolean {
   return STRING_CREATE_ELEMENT.test(src)
@@ -136,6 +146,17 @@ describe('VKUI-only policy: pure rule helpers (fixtures)', () => {
     expect(hasStringCreateElement('createElement(MyComponent)')).toBe(false)
   })
 
+  it('detects a bare RouterAnchor/NavAnchor JSX tag', () => {
+    expect(hasBareRouterAnchor('<RouterAnchor href="/x">Имя</RouterAnchor>')).toBe(true)
+    expect(hasBareRouterAnchor('<NavAnchor href="/x" />')).toBe(true)
+  })
+
+  it('passing RouterAnchor/NavAnchor as a Component prop is allowed', () => {
+    expect(hasBareRouterAnchor('<Link Component={RouterAnchor} href="/x">Имя</Link>')).toBe(false)
+    expect(hasBareRouterAnchor('<SimpleCell Component={NavAnchor} href="/x" />')).toBe(false)
+    expect(hasBareRouterAnchor("import { RouterAnchor } from '@/shared/lib'")).toBe(false)
+  })
+
   it('detects raw interactive and media tags, including img', () => {
     for (const tag of ['button', 'input', 'select', 'textarea', 'a', 'img']) {
       expect(hasRawInteractiveOrMediaTag(`<${tag} />`)).toBe(true)
@@ -160,6 +181,14 @@ describe('VKUI-only policy', () => {
       const src = readFileSync(f, 'utf8')
       if (hasRawInteractiveOrMediaTag(src)) bad.push(relative(ROOT, f))
     }
+    expect(bad).toEqual([])
+  })
+
+  it('no bare <RouterAnchor>/<NavAnchor> tags (they must be passed as Component=)', () => {
+    const bad = files
+      .filter((f) => !f.endsWith(join('shared', 'lib', 'router-anchor.tsx')))
+      .filter((f) => hasBareRouterAnchor(readFileSync(f, 'utf8')))
+      .map((f) => relative(ROOT, f))
     expect(bad).toEqual([])
   })
 

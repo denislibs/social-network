@@ -48,7 +48,10 @@ test('friend request, leader-tab notification, and community join across two use
   await pageA.getByRole('searchbox').fill(bHandle)
   await pageA.getByRole('searchbox').press('Enter')
   await expect(pageA).toHaveURL(new RegExp(`/search\\?q=${bHandle}`))
-  await pageA.locator(`a[href="/${bHandle}"]`).first().click()
+  await pageA
+    .getByRole('link', { name: /Б Тестов/ })
+    .first()
+    .click()
   await expect(pageA).toHaveURL(new RegExp(`/${bHandle}$`))
   await pageA.getByRole('button', { name: 'Добавить в друзья' }).click()
   await expect(pageA.getByRole('button', { name: 'Заявка отправлена' })).toBeVisible()
@@ -59,7 +62,9 @@ test('friend request, leader-tab notification, and community join across two use
   await expect(pageB1.getByText('А Тестова')).toBeVisible()
   await expect(pageB1.getByRole('button', { name: 'Принять' })).toBeVisible()
 
-  await expect(pageB2.locator('.vkuiCounter__host')).toHaveText('1', { timeout: 45_000 })
+  await expect(pageB2.getByRole('button', { name: /непрочитанных: 1/ })).toBeVisible({
+    timeout: 45_000,
+  })
 
   // 4. B accepts; A sees the notification and B's profile now shows they are friends.
   await pageB1.getByRole('button', { name: 'Принять' }).click()
