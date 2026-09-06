@@ -1,6 +1,6 @@
 import { token } from '../../../kernel/di'
 import type { PasswordHasher, User } from '../domain/user'
-import type { ProfileDto, UserCellDto, UserDto } from './dto'
+import type { ProfileSource, UserCellDto, UserDto } from './dto'
 
 export type { PasswordHasher }
 export interface UserRepository {
@@ -17,7 +17,7 @@ export interface UserRepository {
 export interface UserReadModel {
   getMe(userId: number): Promise<UserDto | null>
   /** Resolves `id<N>` (e.g. `id123`) by user id, otherwise by (lower-cased) screen name. */
-  getProfile(idOrScreen: string): Promise<Omit<ProfileDto, 'counters' | 'relation'> | null>
+  getProfile(idOrScreen: string): Promise<ProfileSource | null>
   searchUsers(q: string, limit: number): Promise<UserCellDto[]>
 }
 export interface SessionStore {

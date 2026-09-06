@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
 import { EventBus } from '../../../kernel/event-bus'
 import { KERNEL } from '../../../kernel/tokens'
+import { Community } from '../domain/community'
 import { Friendship } from '../domain/friendship'
 import { AcceptFriendRequest } from './commands/accept-friend-request'
 import { CreateCommunity } from './commands/create-community'
@@ -16,6 +17,7 @@ import { GetSuggestedFriends } from './queries/get-suggested-friends'
 import { registerSocialGraphHandlers } from './register'
 import { createSocialGraphTestContainer } from './testing/container'
 import type {
+  InMemoryCommunities,
   InMemoryFollows,
   InMemoryFriendships,
   InMemorySocialRead,
@@ -170,6 +172,56 @@ describe('communities', () => {
       'CommunityLeft',
     ])
   })
+  it('two admins leaving concurrently: exactly one succeeds, the other hits last_admin', async () => {
+    const repo = c.get(SOCIAL.CommunityRepository) as InMemoryCommunities
+    const saved = await repo.save(
+      Community.rehydrate({
+        id: null,
+        screenName: 'two_admins',
+        name: 'Два админа',
+        description: null,
+        topic: 'it',
+        createdAt: new Date(),
+        members: new Map([
+          [1, 'admin'],
+          [2, 'admin'],
+        ]),
+      }),
+    )
+    const communityId = saved.props.id as number
+
+    const results = await Promise.allSettled([
+      exec(new LeaveCommunity({ me: 1, communityId })),
+      exec(new LeaveCommunity({ me: 2, communityId })),
+    ])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    expect(results.find((r) => r.status === 'rejected')?.reason).toMatchObject({
+      code: 'last_admin',
+    })
+    const after = await repo.findById(communityId)
+    expect(after?.adminCount()).toBe(1)
+  })
+
+  it('join returns the role the aggregate actually holds (an existing admin stays admin)', async () => {
+    const repo = c.get(SOCIAL.CommunityRepository) as InMemoryCommunities
+    const saved = await repo.save(
+      Community.rehydrate({
+        id: null,
+        screenName: 'already_admin',
+        name: 'Клуб',
+        description: null,
+        topic: 'it',
+        createdAt: new Date(),
+        members: new Map([[1, 'admin']]),
+      }),
+    )
+    const communityId = saved.props.id as number
+    expect(await exec(new JoinCommunity({ me: 1, communityId }))).toEqual({
+      membership: 'admin',
+      isFollowing: true,
+    })
+  })
+
   it('unknown community → 404', async () => {
     await expect(exec(new JoinCommunity({ me: 1, communityId: 999 }))).rejects.toMatchObject({
       code: 'community_not_found',

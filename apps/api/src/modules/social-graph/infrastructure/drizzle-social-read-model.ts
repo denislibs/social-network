@@ -235,7 +235,9 @@ export class DrizzleSocialReadModel implements SocialReadModel {
       .select()
       .from(communities)
       .where(
-        isNumeric ? eq(communities.id, Number(idOrScreen)) : eq(communities.screenName, idOrScreen),
+        isNumeric
+          ? eq(communities.id, Number(idOrScreen))
+          : eq(communities.screenName, idOrScreen.toLowerCase()),
       )
       .limit(1)
     if (!row) return null
@@ -332,8 +334,11 @@ export class DrizzleSocialReadModel implements SocialReadModel {
     return rows.map(({ sim: _sim, ...c }) => c)
   }
 
+  /** Handles are case-insensitive: screen names are stored lower-cased, and the `id{n}`/`club{n}`
+   * prefixes must match however the user typed them (`ID1`, `ClubKino`, a pasted `/Club42` link). */
   async resolveHandle(handle: string): Promise<HandleDto | null> {
-    const idMatch = /^id(\d+)$/.exec(handle)
+    const normalized = handle.toLowerCase()
+    const idMatch = /^id(\d+)$/i.exec(handle)
     if (idMatch) {
       const [u] = await this.db
         .select({ id: users.id })
@@ -342,7 +347,7 @@ export class DrizzleSocialReadModel implements SocialReadModel {
         .limit(1)
       return u ? { kind: 'user', id: u.id } : null
     }
-    const clubMatch = /^club(\d+)$/.exec(handle)
+    const clubMatch = /^club(\d+)$/i.exec(handle)
     if (clubMatch) {
       const [c] = await this.db
         .select({ id: communities.id })
@@ -354,13 +359,13 @@ export class DrizzleSocialReadModel implements SocialReadModel {
     const [u] = await this.db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.screenName, handle))
+      .where(eq(users.screenName, normalized))
       .limit(1)
     if (u) return { kind: 'user', id: u.id }
     const [c] = await this.db
       .select({ id: communities.id })
       .from(communities)
-      .where(eq(communities.screenName, handle))
+      .where(eq(communities.screenName, normalized))
       .limit(1)
     return c ? { kind: 'community', id: c.id } : null
   }

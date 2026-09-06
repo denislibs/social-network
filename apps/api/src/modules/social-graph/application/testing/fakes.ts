@@ -1,5 +1,7 @@
+import type { Topic } from '@vkc/contracts'
 import type { Counters, Relation } from '../../../../kernel/social-read'
-import type { Community } from '../../domain/community'
+import { Community, type MemberRole } from '../../domain/community'
+import { CommunityNotFound } from '../../domain/errors'
 import { Friendship } from '../../domain/friendship'
 import { orderPair } from '../../domain/value-objects'
 import type {
@@ -87,23 +89,71 @@ export class InMemoryFollows implements FollowRepository {
   }
 }
 
+type CommunitySnapshot = {
+  id: number
+  screenName: string
+  name: string
+  description: string | null
+  topic: Topic
+  createdAt: Date
+  members: Map<number, MemberRole>
+}
+
 export class InMemoryCommunities implements CommunityRepository {
-  private rows = new Map<number, Community>()
+  private rows = new Map<number, CommunitySnapshot>()
   private byScreenName = new Map<string, number>()
   private seq = 0
+  /**
+   * One promise chain per community id, so `withLock` calls for the same community run strictly
+   * one after another — the in-memory stand-in for `SELECT … FOR UPDATE`. Without it a test of
+   * two concurrent handlers would prove nothing.
+   */
+  private locks = new Map<number, Promise<unknown>>()
+
+  /** Rehydrates a *fresh* aggregate on every load, exactly like the Drizzle repository. Handing
+   * out one shared mutable instance would make concurrent handlers accidentally see each other's
+   * uncommitted changes and hide the very race these fakes exist to model. */
+  private load(id: number): Community | null {
+    const s = this.rows.get(id)
+    return s ? Community.rehydrate({ ...s, members: new Map(s.members) }) : null
+  }
+  private store(c: Community): void {
+    const p = c.props
+    const id = p.id as number
+    this.rows.set(id, { ...p, id, members: new Map(c.memberEntries()) })
+    this.byScreenName.set(p.screenName, id)
+  }
+
   async findById(id: number): Promise<Community | null> {
-    return this.rows.get(id) ?? null
+    return this.load(id)
   }
   async findByScreenName(s: string): Promise<Community | null> {
     const id = this.byScreenName.get(s)
-    return id === undefined ? null : (this.rows.get(id) ?? null)
+    return id === undefined ? null : this.load(id)
   }
   async save(c: Community): Promise<Community> {
     if (c.props.id === null) c.assignId(++this.seq)
-    const id = c.props.id as number
-    this.byScreenName.set(c.props.screenName, id)
-    this.rows.set(id, c)
+    this.store(c)
     return c
+  }
+  async withLock<T>(id: number, fn: (c: Community) => Promise<T>): Promise<T> {
+    const run = (this.locks.get(id) ?? Promise.resolve()).then(async () => {
+      const community = this.load(id)
+      if (!community) throw new CommunityNotFound()
+      const result = await fn(community)
+      this.store(community)
+      return result
+    })
+    // The chain must survive a rejection (a rolled-back `last_admin` leave), or every later
+    // waiter on this community would inherit that failure instead of running.
+    this.locks.set(
+      id,
+      run.then(
+        () => undefined,
+        () => undefined,
+      ),
+    )
+    return run
   }
 }
 

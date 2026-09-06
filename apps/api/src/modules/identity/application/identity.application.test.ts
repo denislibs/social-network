@@ -129,6 +129,7 @@ describe('identity application', () => {
         screenName: 'denis1',
         isVerified: false,
         relation: 'self',
+        login: 'denis',
         counters: { friends: 0, followers: 0, communities: 0, incomingRequests: 0 },
       })
     })
@@ -185,6 +186,12 @@ describe('identity application', () => {
         code: 'user_not_found',
         status: 404,
       })
+    })
+    it('exposes `login` only to the profile owner', async () => {
+      await commands.execute(new RegisterUser(input))
+      expect(await queries.ask(new GetProfile('id1', 1))).toMatchObject({ login: 'denis' })
+      expect(await queries.ask(new GetProfile('id1', 2))).not.toHaveProperty('login')
+      expect(await queries.ask(new GetProfile('id1', null))).not.toHaveProperty('login')
     })
   })
 

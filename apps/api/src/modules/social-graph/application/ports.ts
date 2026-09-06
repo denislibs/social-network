@@ -35,7 +35,17 @@ export interface FollowRepository {
 export interface CommunityRepository {
   findById(id: number): Promise<Community | null>
   findByScreenName(s: string): Promise<Community | null>
+  /** Blind write — for creating a community (and for tests seeding a known state). A membership
+   * change that has to respect an invariant goes through `withLock`. */
   save(c: Community): Promise<Community>
+  /**
+   * Loads the community under a lock, hands it to `fn`, then persists whatever `fn` changed —
+   * all inside one transaction, so concurrent membership changes on the same community serialise
+   * and each one reasons about the previous one's committed state. Rejects with
+   * `CommunityNotFound` when no such community exists, and rolls the whole thing back when `fn`
+   * throws (e.g. `LastAdminCannotLeave`).
+   */
+  withLock<T>(id: number, fn: (c: Community) => Promise<T>): Promise<T>
 }
 export interface SocialReadModel extends SocialReadPort {
   friends(userId: number, cursor?: string): Promise<Page<UserCellDto>>

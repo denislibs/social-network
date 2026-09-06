@@ -26,5 +26,10 @@ export const getProfileHandler =
       d.social().relation(q.viewer, base.id),
       d.social().counters(base.id),
     ])
-    return { ...base, relation, counters }
+    // `login` is the sign-in credential, not profile content: it stays in the response only when
+    // the viewer is the profile's owner, and is dropped for every other (and anonymous) viewer.
+    const { login, ...publicFields } = base
+    return relation === 'self'
+      ? { ...publicFields, login, relation, counters }
+      : { ...publicFields, relation, counters }
   }

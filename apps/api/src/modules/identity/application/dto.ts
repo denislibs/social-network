@@ -34,19 +34,37 @@ export type UserCellDto = {
   lastSeenAt: string | null
 }
 
-export type ProfileDto = UserDto & {
+/**
+ * Everything a profile carries that is safe for anyone to read. `login` is deliberately absent:
+ * it is the credential the account signs in with, so it is not part of a public profile.
+ */
+export type PublicProfile = Omit<UserDto, 'login'> & {
   status: string | null
   bio: string | null
   city: string | null
   birthday: string | null
   isVerified: boolean
+}
+
+/** What the read model hands back — the public fields plus the private `login`, which the query
+ * handler then keeps or drops depending on who is asking. */
+export type ProfileSource = PublicProfile & { login: string }
+
+/**
+ * `login` is present **only** when `relation === 'self'`; for any other viewer (including an
+ * unauthenticated one) the field is absent from the response entirely.
+ */
+export type ProfileDto = PublicProfile & {
+  login?: string
   counters: Counters
   relation: Relation
 }
 
 export function toProfileDto(user: User, counters: Counters, relation: Relation): ProfileDto {
+  const { login, ...base } = toUserDto(user)
   return {
-    ...toUserDto(user),
+    ...base,
+    ...(relation === 'self' ? { login } : {}),
     status: user.status,
     bio: user.bio,
     city: user.city,

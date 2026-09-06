@@ -286,4 +286,50 @@ describe('social graph + profile e2e', () => {
       id: createdBody.community.id,
     })
   })
+
+  it('GET /users/:id exposes `login` to the owner only', async () => {
+    const a = await registerUser('nina')
+    const b = await registerUser('oscar')
+
+    const own = await get(`/users/id${a.id}`, a.cookie)
+    expect(((await own.json()) as { user: { login?: string } }).user.login).toBe('nina')
+
+    const other = await get(`/users/id${b.id}`, a.cookie)
+    expect(((await other.json()) as { user: { login?: string } }).user).not.toHaveProperty('login')
+
+    const anon = await get(`/users/id${a.id}`)
+    expect(anon.status).toBe(200)
+    expect(((await anon.json()) as { user: { login?: string } }).user).not.toHaveProperty('login')
+  })
+
+  it('handles are case-insensitive: /users/:screenName, /handles/:handle, /communities/:screenName', async () => {
+    const a = await registerUser('mira')
+    await patch('/me/profile', { screenName: 'denis' }, a.cookie)
+    const created = await post(
+      '/communities',
+      { name: 'Кино', screenName: 'kino', topic: 'cinema', description: null },
+      a.cookie,
+    )
+    const createdBody = (await created.json()) as { community: { id: number } }
+
+    const profile = await get('/users/DENIS', a.cookie)
+    expect(profile.status).toBe(200)
+    expect(((await profile.json()) as { user: { id: number } }).user.id).toBe(a.id)
+
+    const handle = await get('/handles/DeNiS', a.cookie)
+    expect(handle.status).toBe(200)
+    expect(await handle.json()).toEqual({ kind: 'user', id: a.id })
+
+    const upperId = await get(`/handles/ID${a.id}`, a.cookie)
+    expect(await upperId.json()).toEqual({ kind: 'user', id: a.id })
+
+    const community = await get('/communities/KINO', a.cookie)
+    expect(community.status).toBe(200)
+    expect(((await community.json()) as { community: { id: number } }).community.id).toBe(
+      createdBody.community.id,
+    )
+
+    const clubHandle = await get(`/handles/Club${createdBody.community.id}`, a.cookie)
+    expect(await clubHandle.json()).toEqual({ kind: 'community', id: createdBody.community.id })
+  })
 })

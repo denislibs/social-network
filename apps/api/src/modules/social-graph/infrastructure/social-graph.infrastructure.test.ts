@@ -222,6 +222,22 @@ describe('DrizzleSocialReadModel', () => {
     expect(await rm.resolveHandle('nobody')).toBeNull()
   })
 
+  it('resolveHandle and community() are case-insensitive for handles', async () => {
+    await graphFixture(db)
+    const rm = new DrizzleSocialReadModel(db)
+    const kino = await rm.resolveHandle('kino')
+
+    expect(await rm.resolveHandle('U1')).toEqual({ kind: 'user', id: 1 })
+    expect(await rm.resolveHandle('ID1')).toEqual({ kind: 'user', id: 1 })
+    expect(await rm.resolveHandle('KINO')).toEqual({ kind: 'community', id: kino!.id })
+    expect(await rm.resolveHandle(`Club${kino!.id}`)).toEqual({
+      kind: 'community',
+      id: kino!.id,
+    })
+
+    expect(await rm.community('KINO', 1)).toMatchObject({ screenName: 'kino', membership: 'admin' })
+  })
+
   it('community() reports membership and follow state', async () => {
     await graphFixture(db)
     const rm = new DrizzleSocialReadModel(db)
@@ -344,6 +360,97 @@ describe('DrizzleCommunityRepository', () => {
     const afterLeave = await repo.findByScreenName('music_club')
     expect(afterLeave?.roleOf(21)).toBeNull()
     expect(afterLeave?.membersCount()).toBe(1)
+  })
+
+  it('withLock serialises concurrent joins: both members land, members_count matches the rows', async () => {
+    await graphFixture(db)
+    const repo = new DrizzleCommunityRepository(db)
+    const saved = await repo.save(
+      Community.create({
+        ownerId: 20,
+        name: 'Параллель',
+        screenName: 'parallel_club',
+        topic: 'it',
+        description: null,
+      }),
+    )
+    const id = saved.props.id as number
+
+    await Promise.all([
+      repo.withLock(id, async (c) => {
+        c.join(21)
+      }),
+      repo.withLock(id, async (c) => {
+        c.join(22)
+      }),
+    ])
+
+    const after = await repo.findById(id)
+    expect(after?.roleOf(21)).toBe('member')
+    expect(after?.roleOf(22)).toBe('member')
+    const [row] = await db
+      .select({ membersCount: communities.membersCount })
+      .from(communities)
+      .where(eq(communities.id, id))
+    expect(row?.membersCount).toBe(3) // owner + 2
+  })
+
+  it('withLock serialises concurrent leaves by two admins: exactly one succeeds, an admin remains', async () => {
+    await graphFixture(db)
+    const repo = new DrizzleCommunityRepository(db)
+    const saved = await repo.save(
+      Community.create({
+        ownerId: 20,
+        name: 'Два админа',
+        screenName: 'two_admins',
+        topic: 'it',
+        description: null,
+      }),
+    )
+    const id = saved.props.id as number
+    await repo.save(
+      Community.rehydrate({
+        id,
+        screenName: 'two_admins',
+        name: 'Два админа',
+        description: null,
+        topic: 'it',
+        createdAt: saved.props.createdAt,
+        members: new Map([
+          [20, 'admin'],
+          [21, 'admin'],
+        ]),
+      }),
+    )
+
+    const results = await Promise.allSettled([
+      repo.withLock(id, async (c) => {
+        c.leave(20)
+      }),
+      repo.withLock(id, async (c) => {
+        c.leave(21)
+      }),
+    ])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    const rejected = results.find((r) => r.status === 'rejected')
+    expect(rejected?.reason).toMatchObject({ code: 'last_admin' })
+
+    const after = await repo.findById(id)
+    expect(after?.adminCount()).toBe(1)
+    expect(after?.membersCount()).toBe(1)
+    const [row] = await db
+      .select({ membersCount: communities.membersCount })
+      .from(communities)
+      .where(eq(communities.id, id))
+    expect(row?.membersCount).toBe(1)
+  })
+
+  it('withLock throws community_not_found for an unknown id', async () => {
+    await graphFixture(db)
+    const repo = new DrizzleCommunityRepository(db)
+    await expect(repo.withLock(999999, async () => 1)).rejects.toMatchObject({
+      code: 'community_not_found',
+    })
   })
 
   it('a failing member insert rolls back the whole save, leaving members_count unchanged', async () => {

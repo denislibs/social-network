@@ -1,6 +1,6 @@
 import type { Counters, Relation, SocialReadPort } from '../../../../kernel/social-read'
 import type { User } from '../../domain/user'
-import { type ProfileDto, toUserDto, type UserCellDto } from '../dto'
+import { type ProfileSource, toUserDto, type UserCellDto } from '../dto'
 import type { PasswordHasher, SessionStore, UserReadModel, UserRepository } from '../ports'
 
 export class FakeHasher implements PasswordHasher {
@@ -39,7 +39,7 @@ export class InMemoryUserReadModel implements UserReadModel {
     const u = await this.users.findById(userId)
     return u ? toUserDto(u) : null
   }
-  async getProfile(idOrScreen: string): Promise<Omit<ProfileDto, 'counters' | 'relation'> | null> {
+  async getProfile(idOrScreen: string): Promise<ProfileSource | null> {
     const m = /^id(\d+)$/.exec(idOrScreen)
     const u = m
       ? await this.users.findById(Number(m[1]))

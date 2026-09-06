@@ -1,6 +1,5 @@
 import type { Command } from '../../../../kernel/command-bus'
-import type { EventBus } from '../../../../kernel/event-bus'
-import { CommunityNotFound } from '../../domain/errors'
+import type { DomainEvent, EventBus } from '../../../../kernel/event-bus'
 import type { Membership } from '../dto'
 import type { CommunityRepository, FollowRepository } from '../ports'
 
@@ -15,12 +14,17 @@ export function leaveCommunityHandler(d: {
   events: EventBus
 }) {
   return async (cmd: LeaveCommunity) => {
-    const community = await d.communities.findById(cmd.input.communityId)
-    if (!community) throw new CommunityNotFound()
-    community.leave(cmd.input.me)
-    await d.communities.save(community)
-    await d.follows.remove(cmd.input.me, { type: 'community', id: cmd.input.communityId })
-    await d.events.publish(community.pullEvents())
+    const { me, communityId } = cmd.input
+    let events: DomainEvent[] = []
+    // Under the row lock, two admins leaving at the same time are serialised: the second one
+    // sees the first one's committed departure and `Community.leave` raises `last_admin`.
+    // A throw inside `withLock` rolls the whole transaction back, so nothing is half-written.
+    await d.communities.withLock(communityId, async (community) => {
+      community.leave(me)
+      events = community.pullEvents()
+    })
+    await d.follows.remove(me, { type: 'community', id: communityId })
+    await d.events.publish(events)
     return { membership: 'none' as Membership, isFollowing: false }
   }
 }

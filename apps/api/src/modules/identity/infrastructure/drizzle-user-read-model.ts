@@ -1,7 +1,7 @@
 import { asc, desc, eq, sql } from 'drizzle-orm'
 import type { Db } from '../../../db/client'
 import { users } from '../../../db/schema'
-import type { ProfileDto, UserCellDto, UserDto } from '../application/dto'
+import type { ProfileSource, UserCellDto, UserDto } from '../application/dto'
 import type { UserReadModel } from '../application/ports'
 
 /**
@@ -26,7 +26,7 @@ export class DrizzleUserReadModel implements UserReadModel {
     return r ? { ...r, createdAt: r.createdAt.toISOString() } : null
   }
 
-  async getProfile(idOrScreen: string): Promise<Omit<ProfileDto, 'counters' | 'relation'> | null> {
+  async getProfile(idOrScreen: string): Promise<ProfileSource | null> {
     const idMatch = /^id(\d+)$/.exec(idOrScreen)
     const cond = idMatch
       ? eq(users.id, Number(idMatch[1]))

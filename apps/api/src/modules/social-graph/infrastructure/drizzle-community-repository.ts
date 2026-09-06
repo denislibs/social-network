@@ -1,24 +1,27 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { Db } from '../../../db/client'
 import { communities, communityMembers } from '../../../db/schema'
 import type { CommunityRepository } from '../application/ports'
 import { Community, type MemberRole } from '../domain/community'
+import { CommunityNotFound } from '../domain/errors'
 
 type CommunityRow = typeof communities.$inferSelect
+/** The transaction handle drizzle hands to `db.transaction(cb)` — same query surface as `Db`. */
+type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
 
 export class DrizzleCommunityRepository implements CommunityRepository {
   constructor(private db: Db) {}
 
-  private async loadMembers(communityId: number): Promise<Map<number, MemberRole>> {
-    const rows = await this.db
+  private async loadMembers(tx: Tx | Db, communityId: number): Promise<Map<number, MemberRole>> {
+    const rows = await tx
       .select({ userId: communityMembers.userId, role: communityMembers.role })
       .from(communityMembers)
       .where(eq(communityMembers.communityId, communityId))
     return new Map(rows.map((r) => [r.userId, r.role]))
   }
 
-  private async toDomain(row: CommunityRow): Promise<Community> {
-    const members = await this.loadMembers(row.id)
+  private async toDomain(row: CommunityRow, tx: Tx | Db = this.db): Promise<Community> {
+    const members = await this.loadMembers(tx, row.id)
     return Community.rehydrate({
       id: row.id,
       screenName: row.screenName,
@@ -39,19 +42,60 @@ export class DrizzleCommunityRepository implements CommunityRepository {
     const [r] = await this.db
       .select()
       .from(communities)
-      .where(eq(communities.screenName, s))
+      .where(eq(communities.screenName, s.toLowerCase()))
       .limit(1)
     return r ? this.toDomain(r) : null
   }
 
   /**
-   * Upserts the community row, then diffs `community_members` against the aggregate's member map
-   * (insert what's new, delete what's gone, update roles that changed) instead of a delete-then-
-   * reinsert-everything, so unrelated members' `created_at` isn't churned on every save.
+   * Diffs `community_members` against the aggregate's member map (insert what's new, delete what's
+   * gone, update roles that changed) instead of a delete-then-reinsert-everything, so unrelated
+   * members' `created_at` isn't churned on every write.
+   */
+  private async syncMembers(
+    tx: Tx,
+    id: number,
+    members: ReadonlyMap<number, MemberRole>,
+  ): Promise<void> {
+    const existingRows = await tx
+      .select({ userId: communityMembers.userId, role: communityMembers.role })
+      .from(communityMembers)
+      .where(eq(communityMembers.communityId, id))
+    const existing = new Map(existingRows.map((r) => [r.userId, r.role]))
+
+    const toInsert: { communityId: number; userId: number; role: MemberRole }[] = []
+    const toUpdate: { userId: number; role: MemberRole }[] = []
+    for (const [userId, role] of members) {
+      const cur = existing.get(userId)
+      if (cur === undefined) toInsert.push({ communityId: id, userId, role })
+      else if (cur !== role) toUpdate.push({ userId, role })
+    }
+    const toDelete = [...existing.keys()].filter((userId) => !members.has(userId))
+
+    if (toInsert.length) await tx.insert(communityMembers).values(toInsert)
+    for (const u of toUpdate)
+      await tx
+        .update(communityMembers)
+        .set({ role: u.role })
+        .where(and(eq(communityMembers.communityId, id), eq(communityMembers.userId, u.userId)))
+    if (toDelete.length)
+      await tx
+        .delete(communityMembers)
+        .where(
+          and(eq(communityMembers.communityId, id), inArray(communityMembers.userId, toDelete)),
+        )
+  }
+
+  /**
+   * Upserts the community row, then syncs its members.
    *
    * Wrapped in a transaction: the community row's `members_count` and the actual member rows must
    * commit together, or a failed member insert (e.g. a nonexistent user id violating the FK) would
    * leave `members_count` updated without the corresponding row ever landing.
+   *
+   * `save` reads nothing first, so it carries no protection against a concurrent writer — it is
+   * for creating a community (and for tests that set up a known state). Every membership change
+   * that has to respect an invariant goes through `withLock` instead.
    */
   async save(c: Community): Promise<Community> {
     const p = c.props
@@ -83,37 +127,46 @@ export class DrizzleCommunityRepository implements CommunityRepository {
           })
           .where(eq(communities.id, p.id))
       }
-      const id = c.props.id as number
-
-      const existingRows = await tx
-        .select({ userId: communityMembers.userId, role: communityMembers.role })
-        .from(communityMembers)
-        .where(eq(communityMembers.communityId, id))
-      const existing = new Map(existingRows.map((r) => [r.userId, r.role]))
-
-      const toInsert: { communityId: number; userId: number; role: MemberRole }[] = []
-      const toUpdate: { userId: number; role: MemberRole }[] = []
-      for (const [userId, role] of members) {
-        const cur = existing.get(userId)
-        if (cur === undefined) toInsert.push({ communityId: id, userId, role })
-        else if (cur !== role) toUpdate.push({ userId, role })
-      }
-      const toDelete = [...existing.keys()].filter((userId) => !members.has(userId))
-
-      if (toInsert.length) await tx.insert(communityMembers).values(toInsert)
-      for (const u of toUpdate)
-        await tx
-          .update(communityMembers)
-          .set({ role: u.role })
-          .where(and(eq(communityMembers.communityId, id), eq(communityMembers.userId, u.userId)))
-      if (toDelete.length)
-        await tx
-          .delete(communityMembers)
-          .where(
-            and(eq(communityMembers.communityId, id), inArray(communityMembers.userId, toDelete)),
-          )
+      await this.syncMembers(tx, c.props.id as number, members)
     })
 
     return c
+  }
+
+  /**
+   * Read-modify-write of one community's membership under a row lock.
+   *
+   * `SELECT … FOR UPDATE` on the `communities` row is taken *first*, so two concurrent membership
+   * changes on the same community serialise: the second transaction blocks until the first
+   * commits and only then loads the member rows, seeing the first one's committed state. That is
+   * what makes `Community`'s invariants (last admin cannot leave, join is idempotent) hold under
+   * real concurrency — the aggregate stays the invariant holder, the lock just guarantees it is
+   * reasoning about current state rather than a stale snapshot.
+   *
+   * `members_count` is recomputed from the member rows themselves (`select count(*)`) rather than
+   * from the aggregate's map, so the denormalised counter can never drift from the rows it counts.
+   */
+  async withLock<T>(id: number, fn: (c: Community) => Promise<T>): Promise<T> {
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(communities)
+        .where(eq(communities.id, id))
+        .limit(1)
+        .for('update')
+      if (!row) throw new CommunityNotFound()
+
+      const community = await this.toDomain(row, tx)
+      const result = await fn(community)
+
+      await this.syncMembers(tx, id, community.memberEntries())
+      await tx
+        .update(communities)
+        .set({
+          membersCount: sql`(select count(*) from ${communityMembers} where ${communityMembers.communityId} = ${id})`,
+        })
+        .where(eq(communities.id, id))
+      return result
+    })
   }
 }

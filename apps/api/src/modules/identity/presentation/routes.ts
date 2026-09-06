@@ -29,7 +29,9 @@ const countersSchema = t.Object({
 })
 const profileSchema = t.Object({
   id: t.Number(),
-  login: t.String(),
+  // Present only when the viewer is the profile's owner (`relation === 'self'`) — see
+  // `toProfileDto`/`getProfileHandler`.
+  login: t.Optional(t.String()),
   firstName: t.String(),
   lastName: t.String(),
   screenName: t.Nullable(t.String()),
