@@ -1,3 +1,4 @@
 export type { UserDto } from '@vkc/contracts'
-export { ApiError, api, unwrap } from './client'
-export { emitUnauthorized, onUnauthorized } from './unauthorized'
+export { type ApiClient, ApiError, createApi, unwrap } from './client'
+export { API_CLIENT, UNAUTHORIZED_BUS } from './ports'
+export { UnauthorizedBus } from './unauthorized'

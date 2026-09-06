@@ -1,10 +1,10 @@
-const target = new EventTarget()
-
-export function emitUnauthorized(): void {
-  target.dispatchEvent(new Event('unauthorized'))
-}
-
-export function onUnauthorized(handler: () => void): () => void {
-  target.addEventListener('unauthorized', handler)
-  return () => target.removeEventListener('unauthorized', handler)
+export class UnauthorizedBus {
+  private readonly target = new EventTarget()
+  emit(): void {
+    this.target.dispatchEvent(new Event('unauthorized'))
+  }
+  on(handler: () => void): () => void {
+    this.target.addEventListener('unauthorized', handler)
+    return () => this.target.removeEventListener('unauthorized', handler)
+  }
 }
