@@ -1,3 +1,4 @@
+import type { Topic } from '@vkc/contracts'
 import { and, desc, eq, ne, or, sql } from 'drizzle-orm'
 import type { Db } from '../../../db/client'
 import { communities, communityMembers, follows, friendships, users } from '../../../db/schema'
@@ -17,15 +18,9 @@ import { orderPair } from '../domain/value-objects'
 import { PYMK_SQL } from './pymk.sql'
 import { rawQuery } from './raw'
 
-/** `similarity()`/trigram `%` need `pg_trgm` (installed by migration 0003); `like ... || '%'`
- * covers the prefix case trigram similarity alone tends to under-rank for short queries. */
-const SEARCH_COMMUNITIES_SQL = `
-select id::int as id, screen_name as "screenName", name, topic, is_verified as "isVerified", members_count as "membersCount",
-  similarity(lower(name), lower($1)) as sim
-from communities
-where similarity(lower(name), lower($1)) > 0.2 or lower(name) like lower($1) || '%'
-order by sim desc, members_count desc
-limit $2`
+/** Threshold the trigram `%` operator compares against — the same 0.2 the old
+ * `similarity(...) > 0.2` predicate used. */
+const SEARCH_SIMILARITY_THRESHOLD = 0.2
 
 type UserCellRow = {
   id: number
@@ -325,13 +320,39 @@ export class DrizzleSocialReadModel implements SocialReadModel {
     return rows.map((r) => ({ ...toUserCell(r), mutual: r.mutual, sameCity: r.sameCity }))
   }
 
+  /**
+   * `lower(name) % lower($1)` is the indexable trigram operator, served by `communities_name_trgm`
+   * (`gin_trgm_ops`, migration 0003); the `similarity(...) > 0.2` it replaces is an ordinary
+   * function call in a predicate, which the planner cannot match to an index — it seq-scanned
+   * every community. The `like … || '%'` arm still covers the short prefixes trigram similarity
+   * under-ranks, and `similarity()` still drives ORDER BY, which needs no index.
+   *
+   * The `%` threshold is session state and bun-sql pools connections, so `SET LOCAL` inside a
+   * transaction pins it to this query instead of leaking onto the next user of that connection.
+   */
   async searchCommunities(q: string, limit: number): Promise<CommunityCellDto[]> {
-    const rows = await rawQuery<CommunityCellDto & { sim: number }>(
-      this.db,
-      SEARCH_COMMUNITIES_SQL,
-      [q, limit],
-    )
-    return rows.map(({ sim: _sim, ...c }) => c)
+    const rows = await this.db.transaction(async (tx) => {
+      await tx.execute(
+        sql`SET LOCAL pg_trgm.similarity_threshold = ${sql.raw(String(SEARCH_SIMILARITY_THRESHOLD))}`,
+      )
+      return tx.execute(sql`
+        select id::int as id, screen_name as "screenName", name, topic,
+               is_verified as "isVerified", members_count as "membersCount"
+        from communities
+        where lower(name) % lower(${q}) or lower(name) like lower(${q}) || '%'
+        order by similarity(lower(name), lower(${q})) desc, members_count desc
+        limit ${limit}`)
+    })
+    // `execute` on a raw statement is untyped (`Record<string, any>`), so the projection back
+    // into the DTO is spelled out rather than asserted wholesale.
+    return rows.map((r) => ({
+      id: r.id as number,
+      screenName: r.screenName as string,
+      name: r.name as string,
+      topic: r.topic as Topic,
+      isVerified: r.isVerified as boolean,
+      membersCount: r.membersCount as number,
+    }))
   }
 
   /** Handles are case-insensitive: screen names are stored lower-cased, and the `id{n}`/`club{n}`

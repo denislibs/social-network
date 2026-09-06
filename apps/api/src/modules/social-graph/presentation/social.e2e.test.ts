@@ -287,6 +287,40 @@ describe('social graph + profile e2e', () => {
     })
   })
 
+  it('GET /search rejects a query shorter than 2 characters with 422', async () => {
+    const a = await registerUser('rita')
+    const tooShort = await get('/search?q=a', a.cookie)
+    expect(tooShort.status).toBe(422)
+    expect(await tooShort.json()).toMatchObject({ error: { code: 'validation' } })
+
+    const tooLong = await get(`/search?q=${'a'.repeat(65)}`, a.cookie)
+    expect(tooLong.status).toBe(422)
+
+    expect((await get('/search?q=ri', a.cookie)).status).toBe(200)
+  })
+
+  it('mutations aimed at a nonexistent user or community are 404, not 500', async () => {
+    const a = await registerUser('pavel')
+
+    const request = await post('/friends/999999/request', {}, a.cookie)
+    expect(request.status).toBe(404)
+    expect(await request.json()).toMatchObject({ error: { code: 'user_not_found' } })
+
+    const hide = await post('/me/friends/suggestions/999999/hide', {}, a.cookie)
+    expect(hide.status).toBe(404)
+    expect(await hide.json()).toMatchObject({ error: { code: 'user_not_found' } })
+
+    const follow = await post('/communities/999999/follow', {}, a.cookie)
+    expect(follow.status).toBe(404)
+    expect(await follow.json()).toMatchObject({ error: { code: 'community_not_found' } })
+
+    const unfollow = await del('/communities/999999/follow', a.cookie)
+    expect(unfollow.status).toBe(404)
+
+    const join = await post('/communities/999999/join', {}, a.cookie)
+    expect(join.status).toBe(404)
+  })
+
   it('GET /users/:id exposes `login` to the owner only', async () => {
     const a = await registerUser('nina')
     const b = await registerUser('oscar')

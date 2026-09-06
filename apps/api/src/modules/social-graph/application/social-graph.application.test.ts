@@ -6,11 +6,13 @@ import { Friendship } from '../domain/friendship'
 import { AcceptFriendRequest } from './commands/accept-friend-request'
 import { CreateCommunity } from './commands/create-community'
 import { DeclineFriendRequest } from './commands/decline-friend-request'
+import { FollowCommunity } from './commands/follow-community'
 import { HideSuggestion } from './commands/hide-suggestion'
 import { JoinCommunity } from './commands/join-community'
 import { LeaveCommunity } from './commands/leave-community'
 import { RemoveFriend } from './commands/remove-friend'
 import { SendFriendRequest } from './commands/send-friend-request'
+import { UnfollowCommunity } from './commands/unfollow-community'
 import { SOCIAL } from './ports'
 import { GetRelation } from './queries/get-relation'
 import { GetSuggestedFriends } from './queries/get-suggested-friends'
@@ -22,6 +24,7 @@ import type {
   InMemoryFriendships,
   InMemorySocialRead,
   InMemorySuggestionCache,
+  InMemoryUserExistence,
 } from './testing/fakes'
 
 let c: ReturnType<typeof createSocialGraphTestContainer>, published: string[]
@@ -56,11 +59,24 @@ describe('friend requests', () => {
     ).toBe(true)
     expect(published).toEqual(['FriendRequested:{"requesterId":1,"addresseeId":2}'])
   })
-  it('accept → friends both ways, FriendshipAccepted published, follow row kept', async () => {
+  it('accept → friends both ways, FriendshipAccepted published, the request follow row is dropped', async () => {
+    const follows = c.get(SOCIAL.FollowRepository) as InMemoryFollows
     await exec(new SendFriendRequest({ me: 1, other: 2 }))
+    expect(follows.has(1, { type: 'user', id: 2 })).toBe(true)
+
     expect(await exec(new AcceptFriendRequest({ me: 2, other: 1 }))).toBe('friends')
     expect(await ask(new GetRelation(1, 2))).toBe('friends')
     expect(published.at(-1)).toContain('FriendshipAccepted')
+    // Friends are not followers: the row the request created goes away once it is mutual.
+    expect(follows.has(1, { type: 'user', id: 2 })).toBe(false)
+    expect(follows.has(2, { type: 'user', id: 1 })).toBe(false)
+  })
+  it('a counter-request that accepts also drops the original requester\u2019s follow row', async () => {
+    const follows = c.get(SOCIAL.FollowRepository) as InMemoryFollows
+    await exec(new SendFriendRequest({ me: 1, other: 2 }))
+    expect(await exec(new SendFriendRequest({ me: 2, other: 1 }))).toBe('friends')
+    expect(follows.has(1, { type: 'user', id: 2 })).toBe(false)
+    expect(follows.has(2, { type: 'user', id: 1 })).toBe(false)
   })
   it('accept by requester → 403 not_addressee', async () => {
     await exec(new SendFriendRequest({ me: 1, other: 2 }))
@@ -131,12 +147,41 @@ describe('friend requests', () => {
     expect(published).toEqual([])
   })
   it('remove → none, removed side now follows the remover', async () => {
+    const follows = c.get(SOCIAL.FollowRepository) as InMemoryFollows
     await exec(new SendFriendRequest({ me: 1, other: 2 }))
     await exec(new AcceptFriendRequest({ me: 2, other: 1 }))
     expect(await exec(new RemoveFriend({ me: 2, other: 1 }))).toBe('none')
-    expect(
-      (c.get(SOCIAL.FollowRepository) as InMemoryFollows).has(1, { type: 'user', id: 2 }),
-    ).toBe(true)
+    // 1 was demoted from friend to follower of 2; 2 (the remover) follows nobody.
+    expect(follows.has(1, { type: 'user', id: 2 })).toBe(true)
+    expect(follows.has(2, { type: 'user', id: 1 })).toBe(false)
+  })
+  it('the original requester removing an accepted friendship leaves no stale follow of their own', async () => {
+    const follows = c.get(SOCIAL.FollowRepository) as InMemoryFollows
+    await exec(new SendFriendRequest({ me: 1, other: 2 }))
+    await exec(new AcceptFriendRequest({ me: 2, other: 1 }))
+    expect(await exec(new RemoveFriend({ me: 1, other: 2 }))).toBe('none')
+    // The removed side keeps following the remover…
+    expect(follows.has(2, { type: 'user', id: 1 })).toBe(true)
+    // …and the remover — who happened to be the original requester — follows nobody.
+    expect(follows.has(1, { type: 'user', id: 2 })).toBe(false)
+  })
+  it('a request to a nonexistent user is a 404 and writes nothing', async () => {
+    const follows = c.get(SOCIAL.FollowRepository) as InMemoryFollows
+    const friendships = c.get(SOCIAL.FriendshipRepository) as InMemoryFriendships
+    ;(c.get(SOCIAL.UserExists) as InMemoryUserExistence).missing.add(999)
+    await expect(exec(new SendFriendRequest({ me: 1, other: 999 }))).rejects.toMatchObject({
+      code: 'user_not_found',
+      status: 404,
+    })
+    expect(follows.has(1, { type: 'user', id: 999 })).toBe(false)
+    expect(friendships.rows.size).toBe(0)
+  })
+  it('hiding a nonexistent user is a 404', async () => {
+    ;(c.get(SOCIAL.UserExists) as InMemoryUserExistence).missing.add(999)
+    await expect(exec(new HideSuggestion({ me: 1, other: 999 }))).rejects.toMatchObject({
+      code: 'user_not_found',
+      status: 404,
+    })
   })
   it('self request → 400', async () => {
     await expect(exec(new SendFriendRequest({ me: 1, other: 1 }))).rejects.toMatchObject({
@@ -232,10 +277,23 @@ describe('communities', () => {
     })
   })
 
-  it('unknown community → 404', async () => {
-    await expect(exec(new JoinCommunity({ me: 1, communityId: 999 }))).rejects.toMatchObject({
-      code: 'community_not_found',
-    })
+  it('unknown community → 404 for join, leave, follow and unfollow', async () => {
+    const notFound = { code: 'community_not_found' }
+    await expect(exec(new JoinCommunity({ me: 1, communityId: 999 }))).rejects.toMatchObject(
+      notFound,
+    )
+    await expect(exec(new LeaveCommunity({ me: 1, communityId: 999 }))).rejects.toMatchObject(
+      notFound,
+    )
+    await expect(exec(new FollowCommunity({ me: 1, communityId: 999 }))).rejects.toMatchObject(
+      notFound,
+    )
+    await expect(exec(new UnfollowCommunity({ me: 1, communityId: 999 }))).rejects.toMatchObject(
+      notFound,
+    )
+    expect(
+      (c.get(SOCIAL.FollowRepository) as InMemoryFollows).has(1, { type: 'community', id: 999 }),
+    ).toBe(false)
   })
 })
 

@@ -311,7 +311,10 @@ export function socialGraphRoutes(c: Container) {
       {
         auth: true,
         query: t.Object({
-          q: t.String(),
+          // A one-character query matches a trigram index on nothing useful and would scan the
+          // whole table for a result nobody can read; the cap keeps a pathological query from
+          // becoming a pathological trigram comparison.
+          q: t.String({ minLength: 2, maxLength: 64 }),
           kind: t.Optional(t.UnionEnum(['all', 'users', 'communities'])),
         }),
         response: {

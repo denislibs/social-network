@@ -6,6 +6,7 @@ import { DrizzleFollowRepository } from './drizzle-follow-repository'
 import { DrizzleFriendshipRepository } from './drizzle-friendship-repository'
 import { DrizzleSocialReadModel } from './drizzle-social-read-model'
 import { DrizzleSuggestionHider } from './drizzle-suggestion-hider'
+import { DrizzleUserExistence } from './drizzle-user-existence'
 import { RedisSuggestionCache } from './redis-suggestion-cache'
 
 /** Scope defaults to Singleton — set by `createKernelContainer` (`kernel/container.ts`). */
@@ -31,5 +32,6 @@ export function bindSocialGraphInfrastructure(c: Container): void {
     (db) => new DrizzleSuggestionHider(db),
     [KERNEL.Db],
   )
+  c.bind(SOCIAL.UserExists).toResolvedValue((db) => new DrizzleUserExistence(db), [KERNEL.Db])
   c.bind(SOCIAL.Clock).toConstantValue({ now: () => new Date() })
 }

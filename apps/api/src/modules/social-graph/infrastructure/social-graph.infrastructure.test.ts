@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test'
 import { eq, sql } from 'drizzle-orm'
 import { testDb, truncateAll } from '../../../../test/helpers/db'
-import { graphFixture } from '../../../../test/helpers/graph-fixture'
+import { graphFixture, syntheticGraph } from '../../../../test/helpers/graph-fixture'
 import { testRedis } from '../../../../test/helpers/redis'
 import type { Db } from '../../../db/client'
 import { communities, follows, friendships, users } from '../../../db/schema'
@@ -187,23 +187,7 @@ describe('DrizzleSocialReadModel', () => {
     // The fixture's handful of rows gives the planner no reason to prefer an index (a seq scan
     // over 30 rows *is* the cheap plan), so this asserts against a synthetic dataset large enough
     // for real statistics: 3000 users, ~30000 friendship rows, freshly ANALYZEd.
-    await db.execute(sql`
-      insert into users (id, login, password_hash, first_name, last_name, city)
-      select g, 'bulk' || g, 'x', 'Имя' || g, 'Фамилия' || g, case when g % 2 = 0 then 'Москва' else 'Казань' end
-      from generate_series(1, 3000) g
-    `)
-    await db.execute(sql`
-      insert into friendships (user_lo, user_hi, status, requester_id, created_at, accepted_at)
-      select lo, hi, 'accepted', lo, now(), now()
-      from (
-        select g as lo, 1 + ((g + o) % 3000) as hi, o
-        from generate_series(1, 3000) g, generate_series(1, 10) o
-      ) pairs
-      where lo < hi
-      on conflict (user_lo, user_hi) do nothing
-    `)
-    await db.execute(sql`analyze friendships`)
-    await db.execute(sql`analyze users`)
+    await syntheticGraph(db, { friendships: true })
 
     const plan = await db.execute<{ 'QUERY PLAN': unknown }>(
       sql.raw(`EXPLAIN (FORMAT JSON) ${PYMK_SQL.replace(/\$1::bigint/g, '1::bigint')}`),

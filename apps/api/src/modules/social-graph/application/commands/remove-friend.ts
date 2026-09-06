@@ -25,9 +25,13 @@ export function removeFriendHandler(d: {
       f.cancel(me)
       await d.follows.remove(me, { type: 'user', id: other })
     } else {
-      // Removing an accepted friendship: the removed side keeps following the remover.
+      // Removing an accepted friendship: the removed side keeps following the remover, and the
+      // remover follows nobody. The explicit removal of our own row matters when *we* were the
+      // original requester — that direction had a follow row while the request was pending, and
+      // a stale copy surviving here would make the person we just unfriended one of our follows.
       f.remove(me)
       await d.follows.add(other, { type: 'user', id: me })
+      await d.follows.remove(me, { type: 'user', id: other })
     }
     await d.friendships.save(f)
     await d.events.publish(f.pullEvents())

@@ -35,6 +35,18 @@ describe('buildDemoGraph', () => {
     for (const f of accepted) expect(f.acceptedAt).not.toBeNull()
   })
 
+  it('accepted friendships produce no user-follow rows: friends are not followers', () => {
+    // Mirrors what the API does on accept (`acceptFriendRequestHandler` drops the requester's
+    // `follows` row): a pending request implies a follow, an accepted friendship does not.
+    const userFollowPairs = new Set(
+      follows.filter((f) => f.targetType === 'user').map((f) => `${f.followerId}:${f.targetId}`),
+    )
+    for (const pair of friendships.filter((f) => f.status === 'accepted')) {
+      expect(userFollowPairs.has(`${pair.lo}:${pair.hi}`)).toBe(false)
+      expect(userFollowPairs.has(`${pair.hi}:${pair.lo}`)).toBe(false)
+    }
+  })
+
   it('demo has exactly 5 incoming pending requests, each mirrored by a follow from the requester', () => {
     const incoming = demoFriendships.filter(
       (f) => f.status === 'pending' && f.requesterId !== demo.id,

@@ -22,12 +22,15 @@ export type GraphFixtureResult = {
  * BASE layout (default, `pymk` falsy) — `friendsOf1` accepted friends for user 1:
  *   - Users 1..N (N = max(30, 3 + friendsOf1)): names `Имя{n} Фамилия{n}`; screen names `u{n}`
  *     for n<=5 (rest null); city «Москва» for n<=15, else «Казань».
- *   - Friendships: user 1 accepted-friends with ids 2..(1+friendsOf1). To mirror what
- *     `sendFriendRequestHandler` does (a `follows` row from whoever requested), the *first half*
- *     of that range (2..1+ceil(friendsOf1/2)) are the requesters — each contributes a follow row
- *     them→1, counted in user 1's followers — and user 1 is the requester for the *second half*
- *     (contributing a follow row 1→them, NOT counted in user 1's followers). With the default
- *     friendsOf1=10 that is ids 2..6 (5 users) requesting user 1, and user 1 requesting ids 7..11.
+ *   - Friendships: user 1 accepted-friends with ids 2..(1+friendsOf1). Each accepted pair also
+ *     carries a `follows` row — NOT because accepting creates one (it does not: since the I1 fix
+ *     `acceptFriendRequestHandler` deletes the requester's row, friends are not followers), but
+ *     as a stand-in for a follow that existed independently of the friendship, which is a legal
+ *     state and gives `followers()` enough rows to be worth asserting on. Direction follows the
+ *     nominal requester: the *first half* of the range (2..1+ceil(friendsOf1/2)) contribute a
+ *     follow row them→1, counted in user 1's followers, and the *second half* a row 1→them, not
+ *     counted. With the default friendsOf1=10 that is ids 2..6 (5 rows toward user 1) and ids
+ *     7..11 (5 rows away from user 1).
  *   - `pendingIncoming` (id = 2+friendsOf1) → pending, requested *them* to user 1: relation
  *     'incoming' for user 1, plus a follow row pendingIncoming→1.
  *   - `pendingOutgoing` (id = 3+friendsOf1) → pending, user 1 requested *them*: relation
@@ -70,6 +73,35 @@ export async function graphFixture(
 
 const MOSCOW = 'Москва'
 const KAZAN = 'Казань'
+
+/**
+ * Synthetic dataset for the query-plan (EXPLAIN) tests: 3000 users — and, with
+ * `{ friendships: true }`, ~30000 accepted friendship rows — followed by `ANALYZE`, so the
+ * planner reasons from real statistics instead of the empty-table defaults the small fixtures
+ * above give it. Shared by the PYMK plan test and the user-search index test so both assert
+ * against the same shape of data.
+ */
+export async function syntheticGraph(db: Db, opts: { friendships?: boolean } = {}): Promise<void> {
+  await db.execute(sql`
+    insert into users (id, login, password_hash, first_name, last_name, city)
+    select g, 'bulk' || g, 'x', 'Имя' || g, 'Фамилия' || g, case when g % 2 = 0 then 'Москва' else 'Казань' end
+    from generate_series(1, 3000) g
+  `)
+  if (opts.friendships) {
+    await db.execute(sql`
+      insert into friendships (user_lo, user_hi, status, requester_id, created_at, accepted_at)
+      select lo, hi, 'accepted', lo, now(), now()
+      from (
+        select g as lo, 1 + ((g + o) % 3000) as hi, o
+        from generate_series(1, 3000) g, generate_series(1, 10) o
+      ) pairs
+      where lo < hi
+      on conflict (user_lo, user_hi) do nothing
+    `)
+    await db.execute(sql`analyze friendships`)
+  }
+  await db.execute(sql`analyze users`)
+}
 
 async function insertUsers(db: Db, ids: number[], cityOf: (n: number) => string): Promise<void> {
   await db.insert(users).values(

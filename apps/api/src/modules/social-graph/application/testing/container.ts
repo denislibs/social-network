@@ -11,6 +11,7 @@ import {
   InMemorySocialRead,
   InMemorySuggestionCache,
   InMemorySuggestionHider,
+  InMemoryUserExistence,
 } from './fakes'
 
 /** Application-layer test container: social-graph ports bound to in-memory fakes, fresh buses. */
@@ -26,6 +27,7 @@ export function createSocialGraphTestContainer(
   c.bind(SOCIAL.ReadModel).toConstantValue(read)
   c.bind(SOCIAL.SuggestionCache).toConstantValue(new InMemorySuggestionCache())
   c.bind(SOCIAL.SuggestionHider).toConstantValue(new InMemorySuggestionHider())
+  c.bind(SOCIAL.UserExists).toConstantValue(new InMemoryUserExistence())
   c.bind(SOCIAL.Clock).toConstantValue({ now: o.now ?? (() => new Date()) })
   c.bind(KERNEL.CommandBus).toConstantValue(new CommandBus())
   c.bind(KERNEL.QueryBus).toConstantValue(new QueryBus())

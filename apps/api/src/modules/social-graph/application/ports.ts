@@ -66,6 +66,15 @@ export interface SuggestionCache {
 export interface SuggestionHider {
   hide(userId: number, hiddenId: number): Promise<void>
 }
+/**
+ * Minimal cross-context check: does this user id exist at all? Social-graph must not reach into
+ * identity's aggregate or read model, but it does need to refuse a request/hide aimed at a
+ * nonexistent user *before* writing anything — otherwise `friendships`/`follows` rows are only
+ * stopped by a foreign key, which surfaces as a 500 rather than a 404.
+ */
+export interface UserExistence {
+  exists(userId: number): Promise<boolean>
+}
 export interface Clock {
   now(): Date
 }
@@ -77,5 +86,6 @@ export const SOCIAL = {
   ReadModel: token<SocialReadModel>('SocialReadModel'),
   SuggestionCache: token<SuggestionCache>('SuggestionCache'),
   SuggestionHider: token<SuggestionHider>('SuggestionHider'),
+  UserExists: token<UserExistence>('UserExists'),
   Clock: token<Clock>('Clock'),
 }

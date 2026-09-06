@@ -34,6 +34,7 @@ export async function registerSocialGraphHandlers(c: Container): Promise<void> {
     read: c.get(SOCIAL.ReadModel),
     cache: c.get(SOCIAL.SuggestionCache),
     hider: c.get(SOCIAL.SuggestionHider),
+    users: c.get(SOCIAL.UserExists),
     clock: c.get(SOCIAL.Clock),
     events: c.get(KERNEL.EventBus),
   }

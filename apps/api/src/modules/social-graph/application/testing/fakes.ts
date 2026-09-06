@@ -20,6 +20,7 @@ import type {
   SocialReadModel,
   SuggestionCache,
   SuggestionHider,
+  UserExistence,
 } from '../ports'
 
 const emptyPage = <T>(): Page<T> => ({ items: [], nextCursor: null })
@@ -232,6 +233,18 @@ export class InMemorySuggestionCache implements SuggestionCache {
   }
   async invalidate(userIds: number[]): Promise<void> {
     for (const id of userIds) this.rows.delete(id)
+  }
+}
+
+/**
+ * Permissive by default: the application tests are about graph rules, not about maintaining a
+ * user table, so every id exists unless a test explicitly adds it to `missing` to exercise the
+ * not-found path.
+ */
+export class InMemoryUserExistence implements UserExistence {
+  missing = new Set<number>()
+  async exists(userId: number): Promise<boolean> {
+    return !this.missing.has(userId)
   }
 }
 
