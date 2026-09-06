@@ -8,13 +8,13 @@ export class EdenSessionGateway implements SessionGateway {
   ) {}
   async me(): Promise<UserDto | null> {
     try {
-      return unwrap(await this.api.api.v1.me.get(), { silent401: true, bus: this.bus }).user
+      return unwrap(await this.api.api.v1.me.get(), { silent401: true }).user
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) return null
       throw e
     }
   }
   async logout(): Promise<void> {
-    unwrap(await this.api.api.v1.auth.logout.post(), { silent401: true, bus: this.bus })
+    unwrap(await this.api.api.v1.auth.logout.post(), { silent401: true })
   }
 }

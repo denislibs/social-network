@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { SESSION_GATEWAY } from '@/entities/session'
 import { AUTH_GATEWAY } from '@/features/auth'
-import { API_CLIENT, UNAUTHORIZED_BUS } from '@/shared/api'
+import { API_CLIENT, type ApiClient, UNAUTHORIZED_BUS } from '@/shared/api'
 import type { ServiceIdentifier } from '@/shared/di'
 import { COLOR_SCHEME_STORE } from '@/shared/lib'
 import { createAppContainer } from './container'
@@ -21,5 +21,38 @@ describe('createAppContainer', () => {
     check(AUTH_GATEWAY)
     check(SESSION_GATEWAY)
     check(COLOR_SCHEME_STORE)
+  })
+
+  it('shares one UnauthorizedBus instance between gateways and the session controller', async () => {
+    const c = createAppContainer()
+    const fakeApi = {
+      api: {
+        v1: {
+          auth: {
+            register: {
+              post: vi
+                .fn()
+                .mockResolvedValue({ data: null, error: { status: 401, value: undefined } }),
+            },
+          },
+        },
+      },
+    } as unknown as ApiClient
+    c.unbind(API_CLIENT)
+    c.bind(API_CLIENT).toConstantValue(fakeApi)
+
+    const onUnauthorized = vi.fn()
+    c.get(UNAUTHORIZED_BUS).on(onUnauthorized)
+
+    await expect(
+      c.get(AUTH_GATEWAY).register({
+        login: 'demo',
+        password: 'demo1234',
+        firstName: 'Demo',
+        lastName: 'User',
+      }),
+    ).rejects.toThrow()
+
+    expect(onUnauthorized).toHaveBeenCalledTimes(1)
   })
 })

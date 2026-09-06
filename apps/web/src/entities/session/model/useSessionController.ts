@@ -6,8 +6,9 @@ import type { Session, SessionStatus } from './SessionProvider'
 
 type SessionState = { user: UserDto | null; status: SessionStatus }
 
-// Pure, module-level: the state setter is the only thing the callbacks below
-// close over, so none of them needs another hook value in its dependency list.
+// Pure, module-level: the callbacks below close only over the state setter and
+// the injected singletons (gateway, bus) from the surrounding hook, so `logout`
+// depends on `[gateway]` and the effects below depend on `[gateway]`/`[bus]`.
 const sessionFor = (user: UserDto | null): SessionState => ({
   user,
   status: user ? 'authed' : 'guest',

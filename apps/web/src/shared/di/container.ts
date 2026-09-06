@@ -20,7 +20,11 @@ export type ServiceIdentifier<T> = InversifyServiceIdentifier<T> & {
 }
 export { Container }
 
-/** One container per application root; tests create their own via createTestContainer(). */
+/**
+ * One container per application root; tests create their own via createTestContainer().
+ * Default scope is Singleton, so a binding that needs a fresh instance per resolution
+ * must opt out explicitly with `.inTransientScope()`.
+ */
 export function createContainer(): Container {
   return new Container({ defaultScope: 'Singleton' })
 }
