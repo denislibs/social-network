@@ -1,3 +1,5 @@
+export { EdenSessionGateway } from './api/sessionApi'
+export { SESSION_GATEWAY, type SessionGateway } from './model/ports'
 export type { Session, SessionStatus } from './model/SessionProvider'
 export { SessionProvider } from './model/SessionProvider'
 export { useSession } from './model/useSession'
