@@ -29,7 +29,7 @@ export function useRegisterForm(onSuccess: (u: UserDto) => void) {
       setError(null)
       setBusy(true)
       try {
-        onSuccess(await auth.register(values))
+        onSuccess(await auth.register({ ...values, login: values.login.trim() }))
       } catch (err) {
         const code = codeOf(err)
         setError({ field: fieldFor(code), text: messageFor(code) })

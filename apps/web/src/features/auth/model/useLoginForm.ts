@@ -22,7 +22,7 @@ export function useLoginForm(onSuccess: (u: UserDto) => void) {
       setError(null)
       setBusy(true)
       try {
-        onSuccess(await auth.login(values))
+        onSuccess(await auth.login({ ...values, login: values.login.trim() }))
       } catch (err) {
         const code = codeOf(err)
         setError({ field: fieldFor(code), text: messageFor(code) })

@@ -8,10 +8,7 @@ export class EdenAuthGateway implements AuthGateway {
   ) {}
 
   async login(input: { login: string; password: string }): Promise<UserDto> {
-    return unwrap(await this.api.api.v1.auth.login.post(input), {
-      silent401: true,
-      bus: this.bus,
-    }).user
+    return unwrap(await this.api.api.v1.auth.login.post(input), { silent401: true }).user
   }
 
   async register(input: {

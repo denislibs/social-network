@@ -16,5 +16,5 @@ export function useColorScheme(): {
     applyDocumentAttr(scheme)
   }, [scheme])
 
-  return { pref, scheme, cycle: () => store.cycle() }
+  return { pref, scheme, cycle: store.cycle }
 }

@@ -1,11 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const { logout } = vi.hoisted(() => ({ logout: vi.fn() }))
-vi.mock('@/entities/session', () => ({ useSession: () => ({ logout }) }))
-
+import { describe, expect, it, vi } from 'vitest'
+import { createSessionTestProvider } from '@/entities/session'
 import { useLogout } from './useLogout'
 
 function LogoutProbe() {
@@ -13,25 +10,28 @@ function LogoutProbe() {
   return <button onClick={() => void doLogout()}>logout</button>
 }
 
-function mount() {
+function mount(logout = vi.fn().mockResolvedValue(undefined)) {
+  const Session = createSessionTestProvider({ logout })
   const router = createMemoryRouter(
     [
-      { path: '/settings', element: <LogoutProbe /> },
+      {
+        path: '/settings',
+        element: (
+          <Session>
+            <LogoutProbe />
+          </Session>
+        ),
+      },
       { path: '/login', element: <div>LOGIN</div> },
     ],
     { initialEntries: ['/settings'] },
   )
-  return render(<RouterProvider router={router} />)
+  return { ...render(<RouterProvider router={router} />), logout }
 }
-
-beforeEach(() => {
-  logout.mockReset()
-})
 
 describe('useLogout', () => {
   it('logs out via session and navigates to /login', async () => {
-    logout.mockResolvedValue(undefined)
-    mount()
+    const { logout } = mount()
     await userEvent.click(screen.getByRole('button', { name: 'logout' }))
     expect(logout).toHaveBeenCalled()
     expect(await screen.findByText('LOGIN')).toBeInTheDocument()

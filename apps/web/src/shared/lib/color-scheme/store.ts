@@ -22,7 +22,8 @@ export class ColorSchemeStore {
     return resolveScheme(this.pref, this.system.prefersDark())
   }
 
-  cycle(): void {
+  /** Arrow-function property: stable identity across renders for useSyncExternalStore. */
+  readonly cycle = (): void => {
     this.pref = nextPref(this.pref)
     if (this.pref === 'system') this.storage.remove()
     else this.storage.set(this.pref)

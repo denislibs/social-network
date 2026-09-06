@@ -22,10 +22,10 @@ function setup(gateway: Partial<AuthGateway>) {
 }
 
 describe('useRegisterForm', () => {
-  it('submits values and reports success', async () => {
+  it('submits trimmed login and reports success', async () => {
     const { result, onSuccess, gateway } = setup({ register: vi.fn().mockResolvedValue(user) })
     act(() => {
-      result.current.setField('login', 'newbie')
+      result.current.setField('login', '  newbie ')
       result.current.setField('firstName', 'Тест')
       result.current.setField('lastName', 'Тестов')
       result.current.setField('password', 'password123')

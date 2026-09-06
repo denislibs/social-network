@@ -6,9 +6,6 @@ import type { Session, SessionStatus } from './SessionProvider'
 
 type SessionState = { user: UserDto | null; status: SessionStatus }
 
-// Pure, module-level: the callbacks below close only over the state setter and
-// the injected singletons (gateway, bus) from the surrounding hook, so `logout`
-// depends on `[gateway]` and the effects below depend on `[gateway]`/`[bus]`.
 const sessionFor = (user: UserDto | null): SessionState => ({
   user,
   status: user ? 'authed' : 'guest',
@@ -19,6 +16,10 @@ export function useSessionController(): Session {
   const bus = useService(UNAUTHORIZED_BUS)
   const [state, setState] = useState<SessionState>({ user: null, status: 'loading' })
   const setUser = useCallback((u: UserDto | null) => setState(sessionFor(u)), [])
+  // `sessionFor` is pure and module-level; the callbacks below close only over
+  // the state setter and the injected singletons (gateway, bus) from this hook,
+  // so `logout` depends on `[gateway]` and the effects below depend on
+  // `[gateway]`/`[bus]`.
   const logout = useCallback(async () => {
     try {
       await gateway.logout()

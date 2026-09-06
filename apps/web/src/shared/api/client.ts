@@ -17,15 +17,19 @@ export class ApiError extends Error {
 
 type EdenResult<T> = { data: T | null; error: { status: number; value: unknown } | null }
 
-export function unwrap<T>(
-  res: EdenResult<T>,
-  opts: { silent401?: boolean; bus?: UnauthorizedBus } = {},
-): T {
+/**
+ * `silent401: true` — caller handles 401 itself (login, /me, logout).
+ * `{ bus }` — any other authenticated call; the bus is notified on 401.
+ * Required, with no default, so the compiler forces every call site to pick one.
+ */
+export type UnwrapOptions = { silent401: true } | { bus: UnauthorizedBus; silent401?: false }
+
+export function unwrap<T>(res: EdenResult<T>, opts: UnwrapOptions): T {
   if (res.error) {
     const body = res.error.value as { error?: { code?: string; message?: string } } | undefined
     const code = body?.error?.code ?? (res.error.status === 422 ? 'validation' : 'unknown')
     const message = body?.error?.message ?? 'Request failed'
-    if (res.error.status === 401 && !opts.silent401) opts.bus?.emit()
+    if (res.error.status === 401 && 'bus' in opts) opts.bus.emit()
     throw new ApiError(res.error.status, code, message)
   }
   return res.data as T

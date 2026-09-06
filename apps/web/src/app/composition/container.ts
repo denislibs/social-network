@@ -1,12 +1,6 @@
 import { EdenSessionGateway, SESSION_GATEWAY } from '@/entities/session'
 import { AUTH_GATEWAY, EdenAuthGateway } from '@/features/auth'
-import {
-  API_CLIENT,
-  type ApiClient,
-  createApi,
-  UNAUTHORIZED_BUS,
-  UnauthorizedBus,
-} from '@/shared/api'
+import { API_CLIENT, createApi, UNAUTHORIZED_BUS, UnauthorizedBus } from '@/shared/api'
 import { APP_ORIGIN, STORAGE_KEYS } from '@/shared/config'
 import { type Container, createContainer } from '@/shared/di'
 import {
@@ -22,7 +16,7 @@ import {
 export function createAppContainer(): Container {
   const container = createContainer()
 
-  container.bind(API_CLIENT).toConstantValue(createApi(APP_ORIGIN) as ApiClient)
+  container.bind(API_CLIENT).toConstantValue(createApi(APP_ORIGIN))
   container.bind(UNAUTHORIZED_BUS).toConstantValue(new UnauthorizedBus())
 
   container

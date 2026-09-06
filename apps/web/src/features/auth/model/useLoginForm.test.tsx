@@ -25,7 +25,7 @@ describe('useLoginForm', () => {
   it('submits trimmed values and reports success', async () => {
     const { result, onSuccess, gateway } = setup({ login: vi.fn().mockResolvedValue(user) })
     act(() => {
-      result.current.setField('login', 'demo')
+      result.current.setField('login', '  demo ')
       result.current.setField('password', 'demo1234')
     })
     await act(() => result.current.submit())
