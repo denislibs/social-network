@@ -15,6 +15,9 @@ export type FriendshipProps = {
   requesterId: number
   createdAt: Date
   acceptedAt: Date | null
+  /** When the addressee declined, `null` while the request has never been declined. Anchors the
+   * re-request cooldown; `null` on a `declined` row only for rows written before migration 0004. */
+  declinedAt: Date | null
 }
 const COOLDOWN_MS = 24 * 3600_000
 
@@ -33,6 +36,7 @@ export class Friendship {
       requesterId: from,
       createdAt: now,
       acceptedAt: null,
+      declinedAt: null,
     })
     f.events.push({
       type: 'FriendRequested',
@@ -75,6 +79,7 @@ export class Friendship {
   decline(by: number, now = new Date()): void {
     if (this.p.status !== 'pending' || by !== this.addresseeId) throw new NotRequestAddressee()
     this.p.status = 'declined'
+    this.p.declinedAt = now
     this.events.push({
       type: 'FriendRequestDeclined',
       occurredAt: now,
@@ -98,11 +103,22 @@ export class Friendship {
     if (this.p.status !== 'pending' || by !== this.p.requesterId) throw new NotRequestAddressee()
     this.removed = true
   }
-  /** Either side may restart contact after a decline, but not sooner than 24h after the request. */
+  /**
+   * Restarts contact after a decline. The person who *declined* may reach out whenever they like
+   * — they are the one who said no, and a change of mind is not harassment. The original
+   * requester has to wait out a 24h cooldown measured **from the decline**, not from their
+   * original request: anchoring it at `createdAt` would let a request that sat unanswered for a
+   * week be re-sent the instant it was declined. Rows written before migration 0004 have no
+   * `declinedAt`, so they fall back to `createdAt` (the old behaviour) instead of being
+   * permanently blocked or instantly repeatable.
+   */
   rerequest(by: number, now: Date): void {
     this.assertParticipant(by)
     if (this.p.status !== 'declined') throw new NotRequestAddressee()
-    if (now.getTime() - this.p.createdAt.getTime() < COOLDOWN_MS) throw new RequestCooldown()
+    if (by === this.p.requesterId) {
+      const since = this.p.declinedAt ?? this.p.createdAt
+      if (now.getTime() - since.getTime() < COOLDOWN_MS) throw new RequestCooldown()
+    }
     this.p.status = 'pending'
     this.p.requesterId = by
     this.p.createdAt = now

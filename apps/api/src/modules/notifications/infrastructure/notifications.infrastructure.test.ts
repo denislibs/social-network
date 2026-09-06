@@ -3,6 +3,8 @@ import { sql } from 'drizzle-orm'
 import { testDb, truncateAll } from '../../../../test/helpers/db'
 import type { Db } from '../../../db/client'
 import { users } from '../../../db/schema'
+import { EventBus } from '../../../kernel/event-bus'
+import { subscribeGraphNotifications } from '../application/subscribers/graph-subscriber'
 import { DrizzleNotificationReadModel } from './drizzle-notification-read-model'
 import { DrizzleNotificationRepository } from './drizzle-notification-repository'
 
@@ -91,6 +93,66 @@ describe('DrizzleNotificationRepository + DrizzleNotificationReadModel', () => {
     await repo.insert([{ userId: 2, kind: 'friend_request', actorId: 1 }])
     await repo.markRead(1, 999999) // wrong user — must not touch user 2's row
     expect(await read.unreadCount(2)).toBe(1)
+  })
+
+  it('the same unread (user, kind, actor) is inserted once; after markRead a new one lands', async () => {
+    const repo = new DrizzleNotificationRepository(db)
+    const read = new DrizzleNotificationReadModel(db)
+    const events = new EventBus()
+    subscribeGraphNotifications(events, repo)
+    const requested = {
+      type: 'FriendRequested' as const,
+      occurredAt: new Date(),
+      payload: { requesterId: 2, addresseeId: 1 },
+    }
+
+    await events.publish([requested])
+    await events.publish([requested])
+    expect(await read.unreadCount(1)).toBe(1)
+
+    await repo.markRead(1, 999999)
+    expect(await read.unreadCount(1)).toBe(0)
+
+    // The read row no longer sits under the partial index, so a genuinely new request from the
+    // same actor notifies again instead of being swallowed forever.
+    await events.publish([requested])
+    expect(await read.unreadCount(1)).toBe(1)
+    expect((await read.list(1, null)).items).toHaveLength(2)
+  })
+
+  it('a batch carrying a duplicate keeps the other rows of the batch', async () => {
+    const repo = new DrizzleNotificationRepository(db)
+    const read = new DrizzleNotificationReadModel(db)
+    await repo.insert([{ userId: 1, kind: 'friend_request', actorId: 2 }])
+    await repo.insert([
+      { userId: 1, kind: 'friend_request', actorId: 2 }, // duplicate, dropped
+      { userId: 2, kind: 'friend_request', actorId: 1 }, // different recipient, kept
+    ])
+    expect(await read.unreadCount(1)).toBe(1)
+    expect(await read.unreadCount(2)).toBe(1)
+  })
+
+  it('reads are scoped to one user: list/unreadCount/markRead never cross over', async () => {
+    const repo = new DrizzleNotificationRepository(db)
+    const read = new DrizzleNotificationReadModel(db)
+    await repo.insert([
+      { userId: 1, kind: 'friend_request', actorId: 2 },
+      { userId: 1, kind: 'friend_accepted', actorId: 2 },
+      { userId: 2, kind: 'friend_request', actorId: 1 },
+      { userId: 2, kind: 'new_follower', actorId: 1 },
+    ])
+
+    const forU1 = await read.list(1, null)
+    expect(forU1.items).toHaveLength(2)
+    expect(forU1.items.map((n) => n.kind).toSorted()).toEqual(['friend_accepted', 'friend_request'])
+    expect(await read.unreadCount(1)).toBe(2)
+    expect(await read.unreadCount(2)).toBe(2)
+
+    // A markRead with an id far above every row must still stop at the caller's own rows.
+    await repo.markRead(1, 999999)
+    expect(await read.unreadCount(1)).toBe(0)
+    expect(await read.unreadCount(2)).toBe(2)
+    expect((await read.list(2, null)).items.every((n) => n.readAt === null)).toBe(true)
   })
 
   it('paginates by (created_at, id) desc: 25 rows split into 20 then 5', async () => {

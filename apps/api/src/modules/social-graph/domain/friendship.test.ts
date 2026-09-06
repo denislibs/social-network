@@ -71,27 +71,52 @@ describe('Friendship', () => {
     )
     expect(g.props.requesterId).toBe(7)
   })
-  it('original requester may re-request after the 24h cooldown', () => {
+  it('decline records when it happened', () => {
     const f = Friendship.request(7, 3, t0)
-    f.decline(3)
+    const declinedAt = new Date(t0.getTime() + 10 * 3600_000)
+    f.decline(3, declinedAt)
+    expect(f.props.declinedAt).toEqual(declinedAt)
+  })
+  it('original requester may re-request 24h after the DECLINE, not after the request', () => {
+    const f = Friendship.request(7, 3, t0)
+    const declinedAt = new Date(t0.getTime() + 10 * 3600_000)
+    f.decline(3, declinedAt)
     f.pullEvents()
-    f.rerequest(7, new Date(t0.getTime() + 25 * 3600_000))
+    // 25h after the original request, but only 15h after the decline — still inside the window.
+    expect(() => f.rerequest(7, new Date(t0.getTime() + 25 * 3600_000))).toThrow(
+      expect.objectContaining({ code: 'request_cooldown' }),
+    )
+    f.rerequest(7, new Date(declinedAt.getTime() + 25 * 3600_000))
     expect(f.props).toMatchObject({ status: 'pending', requesterId: 7 })
     expect(f.pullEvents()[0]).toMatchObject({
       type: 'FriendRequested',
       payload: { requesterId: 7, addresseeId: 3 },
     })
   })
-  it('rerequest after decline: other side within 24h → cooldown; after 24h → pending with new requester', () => {
+  it('the decliner may re-open contact immediately — the cooldown only binds the requester', () => {
     const f = Friendship.request(7, 3, t0)
-    f.decline(3)
+    const declinedAt = new Date(t0.getTime() + 10 * 3600_000)
+    f.decline(3, declinedAt)
     f.pullEvents()
+    const rightAfter = new Date(declinedAt.getTime() + 60_000)
+    f.rerequest(3, rightAfter)
+    expect(f.props).toMatchObject({ status: 'pending', requesterId: 3, createdAt: rightAfter })
+    expect(f.pullEvents().map((e) => e.type)).toEqual(['FriendRequested'])
+  })
+  it('a row declined before declined_at existed falls back to created_at for the cooldown', () => {
+    const f = Friendship.rehydrate({
+      lo: 3,
+      hi: 7,
+      status: 'declined',
+      requesterId: 7,
+      createdAt: t0,
+      acceptedAt: null,
+      declinedAt: null,
+    })
     expect(() => f.rerequest(7, new Date(t0.getTime() + 3600_000))).toThrow(
       expect.objectContaining({ code: 'request_cooldown' }),
     )
-    const later = new Date(t0.getTime() + 25 * 3600_000)
-    f.rerequest(3, later)
-    expect(f.props).toMatchObject({ status: 'pending', requesterId: 3, createdAt: later })
-    expect(f.pullEvents().map((e) => e.type)).toEqual(['FriendRequested'])
+    f.rerequest(7, new Date(t0.getTime() + 25 * 3600_000))
+    expect(f.props.status).toBe('pending')
   })
 })

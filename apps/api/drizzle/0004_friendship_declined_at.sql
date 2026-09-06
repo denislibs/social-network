@@ -1,0 +1,2 @@
+ALTER TABLE "friendships" ADD COLUMN "declined_at" timestamp with time zone;--> statement-breakpoint
+CREATE UNIQUE INDEX "notifications_dedupe_uq" ON "notifications" USING btree ("user_id","kind","actor_id") WHERE "notifications"."read_at" is null;

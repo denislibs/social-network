@@ -47,6 +47,9 @@ export const friendships = pgTable(
     requesterId: bigint('requester_id', { mode: 'number' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    /** Anchors the re-request cooldown (see `Friendship.rerequest`): the original requester may
+     * only ask again 24h after the decline, the decliner may re-open contact immediately. */
+    declinedAt: timestamp('declined_at', { withTimezone: true }),
   },
   (t) => [
     primaryKey({ columns: [t.userLo, t.userHi] }),

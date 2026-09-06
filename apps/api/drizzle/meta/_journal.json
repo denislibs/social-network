@@ -29,6 +29,13 @@
       "when": 1788677741040,
       "tag": "0003_social_graph",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788701675605,
+      "tag": "0004_friendship_declined_at",
+      "breakpoints": true
     }
   ]
 }

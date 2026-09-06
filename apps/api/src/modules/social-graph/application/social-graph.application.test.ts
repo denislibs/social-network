@@ -111,6 +111,16 @@ describe('friend requests', () => {
     now.t = new Date('2026-09-07T01:00:00Z')
     expect(await exec(new SendFriendRequest({ me: 1, other: 2 }))).toBe('outgoing')
   })
+  it('the decliner can initiate a request straight after declining', async () => {
+    const now = { t: new Date('2026-09-06T00:00:00Z') }
+    c = createSocialGraphTestContainer({ now: () => now.t })
+    await registerSocialGraphHandlers(c)
+    await exec(new SendFriendRequest({ me: 1, other: 2 }))
+    await exec(new DeclineFriendRequest({ me: 2, other: 1 }))
+    now.t = new Date('2026-09-06T00:05:00Z')
+    expect(await exec(new SendFriendRequest({ me: 2, other: 1 }))).toBe('outgoing')
+    expect(await ask(new GetRelation(1, 2))).toBe('incoming')
+  })
   it('remove on own pending request = cancel: none, follow removed, no event', async () => {
     await exec(new SendFriendRequest({ me: 1, other: 2 }))
     published.length = 0

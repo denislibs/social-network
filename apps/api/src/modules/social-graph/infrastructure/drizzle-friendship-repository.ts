@@ -23,6 +23,7 @@ export class DrizzleFriendshipRepository implements FriendshipRepository {
       requesterId: r.requesterId,
       createdAt: r.createdAt,
       acceptedAt: r.acceptedAt,
+      declinedAt: r.declinedAt,
     })
   }
 
@@ -74,6 +75,7 @@ export class DrizzleFriendshipRepository implements FriendshipRepository {
         requesterId: p.requesterId,
         createdAt: p.createdAt,
         acceptedAt: p.acceptedAt,
+        declinedAt: p.declinedAt,
       })
       .onConflictDoUpdate({
         target: [friendships.userLo, friendships.userHi],
@@ -82,6 +84,7 @@ export class DrizzleFriendshipRepository implements FriendshipRepository {
           requesterId: sql`case when ${mutualRace} then ${friendships.requesterId} else excluded.requester_id end`,
           createdAt: sql`case when ${mutualRace} then ${friendships.createdAt} else excluded.created_at end`,
           acceptedAt: sql`case when ${mutualRace} then now() else excluded.accepted_at end`,
+          declinedAt: sql`case when ${mutualRace} then ${friendships.declinedAt} else excluded.declined_at end`,
         },
       })
       .returning({ status: friendships.status, inserted: sql<boolean>`(xmax = 0)` })
