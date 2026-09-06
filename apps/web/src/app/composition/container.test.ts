@@ -4,6 +4,8 @@ import { NOTIFICATION_GATEWAY } from '@/entities/notification'
 import { SESSION_GATEWAY } from '@/entities/session'
 import { USER_GATEWAY } from '@/entities/user'
 import { AUTH_GATEWAY } from '@/features/auth'
+import { FRIENDSHIP_GATEWAY } from '@/features/friendship'
+import { SUGGESTIONS_GATEWAY } from '@/features/suggestions'
 import { API_CLIENT, type ApiClient, UNAUTHORIZED_BUS } from '@/shared/api'
 import type { ServiceIdentifier } from '@/shared/di'
 import { COLOR_SCHEME_STORE, TAB_COORDINATOR } from '@/shared/lib'
@@ -26,6 +28,8 @@ describe('createAppContainer', () => {
     check(USER_GATEWAY)
     check(COMMUNITY_GATEWAY)
     check(NOTIFICATION_GATEWAY)
+    check(FRIENDSHIP_GATEWAY)
+    check(SUGGESTIONS_GATEWAY)
     check(TAB_COORDINATOR)
     check(COLOR_SCHEME_STORE)
   })

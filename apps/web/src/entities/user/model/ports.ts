@@ -7,12 +7,11 @@ export interface UserGateway {
   getFollowers(userId: number, cursor: string | null): Promise<Page<UserCellDto>>
   getRequests(dir: 'incoming' | 'outgoing', cursor: string | null): Promise<Page<UserCellDto>>
   /**
-   * Backed by `getProfile` under the hood: the backend has no standalone
-   * `GET /users/:id/counters` route (`GetCounters` is an application query with
-   * no HTTP route yet), and `ProfileDto` already carries `counters` — so this
-   * reuses `GET /users/:id` rather than requiring a second endpoint.
+   * Hits `GET /me/counters` for the signed-in user's own counters. Another user's counters
+   * come from `getProfile(handle).counters` instead — there is no `GET /users/:id/counters`
+   * route, only the `/me` one backed by the `GetCounters` application query.
    */
-  getCounters(userId: number): Promise<Counters>
+  getMyCounters(): Promise<Counters>
   searchUsers(q: string): Promise<UserCellDto[]>
   updateProfile(patch: ProfilePatch): Promise<ProfileDto>
   resolve(handle: string): Promise<HandleDto>

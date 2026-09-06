@@ -3,6 +3,8 @@ import { EdenNotificationGateway, NOTIFICATION_GATEWAY } from '@/entities/notifi
 import { EdenSessionGateway, SESSION_GATEWAY } from '@/entities/session'
 import { EdenUserGateway, USER_GATEWAY } from '@/entities/user'
 import { AUTH_GATEWAY, EdenAuthGateway } from '@/features/auth'
+import { EdenFriendshipGateway, FRIENDSHIP_GATEWAY } from '@/features/friendship'
+import { EdenSuggestionsGateway, SUGGESTIONS_GATEWAY } from '@/features/suggestions'
 import { API_CLIENT, createApi, UNAUTHORIZED_BUS, UnauthorizedBus } from '@/shared/api'
 import { APP_ORIGIN, STORAGE_KEYS } from '@/shared/config'
 import { type Container, createContainer } from '@/shared/di'
@@ -43,6 +45,18 @@ export function createAppContainer(): Container {
     .bind(NOTIFICATION_GATEWAY)
     .toResolvedValue(
       (api, bus) => new EdenNotificationGateway(api, bus),
+      [API_CLIENT, UNAUTHORIZED_BUS],
+    )
+  container
+    .bind(FRIENDSHIP_GATEWAY)
+    .toResolvedValue(
+      (api, bus) => new EdenFriendshipGateway(api, bus),
+      [API_CLIENT, UNAUTHORIZED_BUS],
+    )
+  container
+    .bind(SUGGESTIONS_GATEWAY)
+    .toResolvedValue(
+      (api, bus) => new EdenSuggestionsGateway(api, bus),
       [API_CLIENT, UNAUTHORIZED_BUS],
     )
 

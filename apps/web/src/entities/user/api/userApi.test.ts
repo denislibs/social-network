@@ -22,7 +22,7 @@ function fakeApi(): {
       v1: {
         users,
         handles,
-        me: { friends: { requests: { get } }, profile: { patch } },
+        me: { friends: { requests: { get } }, profile: { patch }, counters: { get } },
         search: { get },
       },
     },
@@ -76,16 +76,21 @@ describe('EdenUserGateway', () => {
     expect(get).toHaveBeenCalledWith({ query: { dir: 'outgoing', cursor: 'c1' } })
   })
 
-  it('getCounters resolves the profile by numeric id and returns its counters', async () => {
-    const { api, get, users } = fakeApi()
+  it('getMyCounters calls GET /me/counters and returns the counters', async () => {
+    const { api, get } = fakeApi()
     get.mockResolvedValue({
-      data: { user: { id: 5, counters: { friends: 3, followers: 1 } } },
+      data: { friends: 3, followers: 1, communities: 0, incomingRequests: 2 },
       error: null,
     })
     const gateway = new EdenUserGateway(api, new UnauthorizedBus())
 
-    await expect(gateway.getCounters(5)).resolves.toEqual({ friends: 3, followers: 1 })
-    expect(users).toHaveBeenCalledWith({ id: '5' })
+    await expect(gateway.getMyCounters()).resolves.toEqual({
+      friends: 3,
+      followers: 1,
+      communities: 0,
+      incomingRequests: 2,
+    })
+    expect(get).toHaveBeenCalled()
   })
 
   it('searchUsers hits /search?kind=users and returns the users array', async () => {

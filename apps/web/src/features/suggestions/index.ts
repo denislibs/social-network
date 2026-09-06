@@ -1,0 +1,6 @@
+export { EdenSuggestionsGateway } from './api/suggestionsApi'
+export { SUGGESTIONS_GATEWAY, type SuggestionsGateway } from './model/ports'
+export { useHideSuggestion } from './model/useHideSuggestion'
+export { useSuggestions } from './model/useSuggestions'
+export { SuggestionCard } from './ui/SuggestionCard'
+export { SuggestionCardSkeleton } from './ui/SuggestionCardSkeleton'

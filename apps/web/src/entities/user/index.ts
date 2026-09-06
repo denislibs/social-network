@@ -8,6 +8,7 @@ export type {
   ProfileDto,
   ProfilePatch,
   Relation,
+  SuggestionDto,
   UserCellDto,
   UserDto,
 } from './model/types'

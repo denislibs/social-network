@@ -4,6 +4,7 @@ export type {
   Page,
   ProfileDto,
   Relation,
+  SuggestionDto,
   UserCellDto,
   UserDto,
 } from '@vkc/contracts'

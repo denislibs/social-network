@@ -47,8 +47,8 @@ export class EdenUserGateway implements UserGateway {
     )
   }
 
-  async getCounters(userId: number): Promise<Counters> {
-    return (await this.getProfile(String(userId))).counters
+  async getMyCounters(): Promise<Counters> {
+    return unwrap(await this.api.api.v1.me.counters.get(), { bus: this.bus })
   }
 
   async searchUsers(q: string): Promise<UserCellDto[]> {
