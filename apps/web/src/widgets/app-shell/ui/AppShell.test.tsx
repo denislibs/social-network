@@ -3,16 +3,19 @@ import type { ReactNode } from 'react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { createSessionTestProvider } from '@/entities/session'
-import { createTestContainer, withDi } from '@/shared/di'
+import type { Counters, UserGateway } from '@/entities/user'
+import { USER_GATEWAY } from '@/entities/user'
+import { createTestContainer } from '@/shared/di'
 import {
   COLOR_SCHEME_STORE,
   ColorSchemeStore,
   fakeSystemScheme,
   memPrefStorage,
+  withProviders,
 } from '@/shared/lib'
 import { AppShell } from './AppShell'
 
-/** Nests two RTL wrapper components (DI container, session context) into one. */
+/** Nests two RTL wrapper components (DI + query client, session context) into one. */
 function compose(
   Outer: (props: { children: ReactNode }) => ReactNode,
   Inner: (props: { children: ReactNode }) => ReactNode,
@@ -26,11 +29,42 @@ function compose(
   }
 }
 
-function mount(path: string, bare = false) {
+function fakeUserGateway(overrides: Partial<UserGateway> = {}): UserGateway {
+  return {
+    getProfile: vi.fn(),
+    getFriends: vi.fn(),
+    getFollowers: vi.fn(),
+    getRequests: vi.fn(),
+    getMyCounters: vi.fn().mockResolvedValue({
+      friends: 0,
+      followers: 0,
+      communities: 0,
+      incomingRequests: 0,
+    } satisfies Counters),
+    searchUsers: vi.fn(),
+    updateProfile: vi.fn(),
+    resolve: vi.fn(),
+    ...overrides,
+  }
+}
+
+function mount(
+  path: string,
+  bare = false,
+  options: { rightColumn?: ReactNode; incomingRequests?: number } = {},
+) {
+  const { rightColumn, incomingRequests = 0 } = options
   const container = createTestContainer()
   container
     .bind(COLOR_SCHEME_STORE)
     .toConstantValue(new ColorSchemeStore(memPrefStorage(null), fakeSystemScheme(false).system))
+  container.bind(USER_GATEWAY).toConstantValue(
+    fakeUserGateway({
+      getMyCounters: vi
+        .fn()
+        .mockResolvedValue({ friends: 0, followers: 0, communities: 0, incomingRequests }),
+    }),
+  )
   const Session = createSessionTestProvider({
     user: {
       id: 1,
@@ -47,7 +81,7 @@ function mount(path: string, bare = false) {
   const router = createMemoryRouter(
     [
       {
-        element: <AppShell bare={bare} />,
+        element: <AppShell bare={bare} rightColumn={rightColumn} />,
         children: [
           { path: '/feed', element: <div>FEED</div> },
           { path: '/im', element: <div>IM</div> },
@@ -58,7 +92,7 @@ function mount(path: string, bare = false) {
     { initialEntries: [path] },
   )
   return render(<RouterProvider router={router} />, {
-    wrapper: compose(withDi(container), Session),
+    wrapper: compose(withProviders(container), Session),
   })
 }
 
@@ -81,5 +115,31 @@ describe('AppShell', () => {
   it('header shows logout for an authed user', () => {
     mount('/feed')
     expect(screen.getByRole('button', { name: 'Выйти' })).toBeInTheDocument()
+  })
+
+  it('shows the profile nav item linking to the signed-in user handle', () => {
+    mount('/feed')
+    expect(screen.getByRole('link', { name: /Профиль/ })).toHaveAttribute('href', '/id1')
+  })
+
+  it('renders the injected rightColumn content inside the "Дополнительно" aside', () => {
+    mount('/feed', false, { rightColumn: <div>PYMK</div> })
+    const aside = screen.getByLabelText('Дополнительно')
+    expect(aside).toHaveTextContent('PYMK')
+  })
+
+  it('renders no aside in bare mode, even with a rightColumn', () => {
+    mount('/login', true, { rightColumn: <div>PYMK</div> })
+    expect(screen.queryByLabelText('Дополнительно')).not.toBeInTheDocument()
+  })
+
+  it('shows a friend-request counter with an accessible label when there are incoming requests', async () => {
+    mount('/feed', false, { incomingRequests: 3 })
+    expect(await screen.findByLabelText('3 заявки')).toBeInTheDocument()
+  })
+
+  it('shows no counter when there are no incoming requests', () => {
+    mount('/feed')
+    expect(screen.queryByLabelText(/заявк/)).not.toBeInTheDocument()
   })
 })
