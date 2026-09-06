@@ -2,13 +2,14 @@ import { Elysia } from 'elysia'
 import { createKernelContainer } from './kernel/container'
 import type { AppDeps } from './kernel/deps'
 import { AppError } from './kernel/errors'
-import { identityModule } from './modules/identity'
+import { bindIdentity, mountIdentity } from './modules/identity'
 
 export type { AppDeps }
 
 export async function buildApp(deps: AppDeps) {
   const container = createKernelContainer(deps)
-  const identity = await identityModule(container)
+  bindIdentity(container) // later tasks add bindSocialGraph, bindNotifications here
+  const identity = await mountIdentity(container)
   return new Elysia({ prefix: '/api/v1' })
     .onError(({ error, set, code }) => {
       if (error instanceof AppError) {
@@ -28,6 +29,6 @@ export async function buildApp(deps: AppDeps) {
       return { error: { code: 'internal', message: 'Internal error' } }
     })
     .get('/health', () => ({ ok: true }))
-    .use(identity.plugin)
+    .use(identity)
 }
 export type App = Awaited<ReturnType<typeof buildApp>>

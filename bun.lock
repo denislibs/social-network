@@ -17,6 +17,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@elysia/eden": "^1.4.10",
+        "@vkc/contracts": "workspace:*",
         "drizzle-orm": "^0.45.2",
         "elysia": "^1.4.30",
         "inversify": "^8.2.3",
@@ -33,6 +34,7 @@
       "dependencies": {
         "@faker-js/faker": "^10.6.0",
         "@vkc/api": "workspace:*",
+        "@vkc/contracts": "workspace:*",
         "drizzle-orm": "^0.45.2",
       },
       "devDependencies": {

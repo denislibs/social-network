@@ -18,4 +18,5 @@ export function bindIdentityInfrastructure(c: Container): void {
     [KERNEL.Redis],
   )
   c.bind(IDENTITY.PasswordHasher).toConstantValue(new BunPasswordHasher())
+  c.bind(KERNEL.SessionResolver).toResolvedValue((s) => s, [IDENTITY.SessionStore])
 }

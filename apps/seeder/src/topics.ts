@@ -1,18 +1,8 @@
-export const TOPICS = [
-  'cinema',
-  'music',
-  'memes',
-  'games',
-  'it',
-  'sport',
-  'travel',
-  'food',
-  'science',
-  'auto',
-  'fashion',
-  'city',
-] as const
-export type Topic = (typeof TOPICS)[number]
+import type { Topic } from '@vkc/contracts'
+
+export type { Topic } from '@vkc/contracts'
+export { TOPICS } from '@vkc/contracts'
+
 export const TOPIC_TITLES: Record<Topic, string> = {
   cinema: 'Кино',
   music: 'Музыка',

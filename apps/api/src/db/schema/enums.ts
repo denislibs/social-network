@@ -1,20 +1,9 @@
+import type { Topic } from '@vkc/contracts'
+import { TOPICS } from '@vkc/contracts'
 import { pgEnum } from 'drizzle-orm/pg-core'
 
-export const TOPICS = [
-  'cinema',
-  'music',
-  'memes',
-  'games',
-  'it',
-  'sport',
-  'travel',
-  'food',
-  'science',
-  'auto',
-  'fashion',
-  'city',
-] as const
-export type Topic = (typeof TOPICS)[number]
+export type { Topic }
+export { TOPICS }
 export const topicEnum = pgEnum('topic', TOPICS)
 export const authorTypeEnum = pgEnum('author_type', ['user', 'community'])
 export const friendshipStatusEnum = pgEnum('friendship_status', ['pending', 'accepted', 'declined'])

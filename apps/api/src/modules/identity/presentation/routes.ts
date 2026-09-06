@@ -1,13 +1,12 @@
 import { Elysia, t } from 'elysia'
 import type { Container } from '../../../kernel/di'
+import { authPlugin } from '../../../kernel/http/auth-plugin'
 import { KERNEL } from '../../../kernel/tokens'
 import { Login } from '../application/commands/login'
 import { Logout } from '../application/commands/logout'
 import { LogoutAll } from '../application/commands/logout-all'
 import { RegisterUser } from '../application/commands/register-user'
-import { IDENTITY } from '../application/ports'
 import { GetMe } from '../application/queries/get-me'
-import { authPlugin } from './auth-macro'
 
 const SESSION_MAX_AGE = 30 * 86400
 const sessionCookie = t.Cookie({ sid: t.Optional(t.String()) })
@@ -24,7 +23,6 @@ export function identityRoutes(c: Container) {
   const d = {
     commands: c.get(KERNEL.CommandBus),
     queries: c.get(KERNEL.QueryBus),
-    sessions: c.get(IDENTITY.SessionStore),
     cookieSecure: c.get(KERNEL.Config).cookieSecure,
   }
   const setSession = (cookie: { sid: { set(o: object): unknown } }, token: string) => {
@@ -39,7 +37,7 @@ export function identityRoutes(c: Container) {
   }
 
   return new Elysia()
-    .use(authPlugin(d.sessions))
+    .use(authPlugin(c.get(KERNEL.SessionResolver)))
     .group('/auth', (app) =>
       app
         .post(

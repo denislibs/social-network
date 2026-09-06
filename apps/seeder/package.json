@@ -11,6 +11,7 @@
   "dependencies": {
     "@faker-js/faker": "^10.6.0",
     "@vkc/api": "workspace:*",
+    "@vkc/contracts": "workspace:*",
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
