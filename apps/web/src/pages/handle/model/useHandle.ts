@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { HandleDto } from '@/entities/user'
 import { USER_GATEWAY } from '@/entities/user'
 import { useService } from '@/shared/di'
+import { queryKeys, useDelayedPending } from '@/shared/lib'
 
 export function useHandle(handle: string): {
   data: HandleDto | undefined
@@ -10,8 +11,9 @@ export function useHandle(handle: string): {
 } {
   const gateway = useService(USER_GATEWAY)
   const query = useQuery({
-    queryKey: ['handle', handle] as const,
+    queryKey: queryKeys.user.handle(handle),
     queryFn: () => gateway.resolve(handle),
   })
-  return { data: query.data, isPending: query.isPending, isError: query.isError }
+  const isPending = useDelayedPending(query.isPending)
+  return { data: query.data, isPending, isError: query.isError }
 }

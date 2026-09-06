@@ -16,7 +16,9 @@ const NotFoundPage = lazy(() =>
 const ComingSoonPage = lazy(() =>
   import('@/pages/coming-soon').then((m) => ({ default: m.ComingSoonPage })),
 )
-const HandlePage = lazy(() => import('@/pages/handle').then((m) => ({ default: m.HandlePage })))
+const HandleRoute = lazy(() =>
+  import('@/app/routes/HandleRoute').then((m) => ({ default: m.HandleRoute })),
+)
 const FriendsPage = lazy(() => import('@/pages/friends').then((m) => ({ default: m.FriendsPage })))
 const CommunitiesPage = lazy(() =>
   import('@/pages/communities').then((m) => ({ default: m.CommunitiesPage })),
@@ -67,7 +69,7 @@ export const router = createBrowserRouter([
       { path: '/friends', element: authed(<FriendsPage />) },
       { path: '/communities', element: authed(<CommunitiesPage />) },
       ...comingSoonRoutes,
-      { path: '/:handle', element: authed(<HandlePage />) },
+      { path: '/:handle', element: authed(<HandleRoute />) },
       { path: '/:handle/friends', element: authed(<ProfileFriendsRoute />) },
       { path: '*', element: S(<NotFoundPage />) },
     ],

@@ -9,6 +9,13 @@ describe('queryKeys', () => {
     void typeCheck
   })
 
+  it('user.handle is an `as const` tuple keyed by handle', () => {
+    const key = queryKeys.user.handle('durov')
+    expect(key).toEqual(['handle', 'durov'])
+    const typeCheck: readonly ['handle', string] = key
+    void typeCheck
+  })
+
   it('user.requests is an `as const` tuple keyed by direction', () => {
     const key = queryKeys.user.requests('incoming')
     expect(key).toEqual(['requests', 'incoming'])

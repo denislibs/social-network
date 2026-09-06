@@ -24,7 +24,7 @@ export function SideNav() {
               Component={NavAnchor}
               href={href}
               before={<Icon />}
-              after={
+              indicator={
                 isFriends && count > 0 ? (
                   <Counter aria-label={`${count} ${pluralRu(count, REQUEST_FORMS)}`} size="s">
                     {count}

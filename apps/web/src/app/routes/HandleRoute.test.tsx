@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CommunityDto, CommunityGateway } from '@/entities/community'
 import { COMMUNITY_GATEWAY } from '@/entities/community'
 import type { HandleDto, ProfileDto, UserGateway } from '@/entities/user'
@@ -8,7 +8,7 @@ import { USER_GATEWAY } from '@/entities/user'
 import { FRIENDSHIP_GATEWAY, type FriendshipGateway } from '@/features/friendship'
 import { createTestContainer } from '@/shared/di'
 import { withProviders } from '@/shared/lib'
-import { HandlePage } from './HandlePage'
+import { HandleRoute } from './HandleRoute'
 
 function makeProfile(): ProfileDto {
   return {
@@ -90,21 +90,22 @@ function mount(
     .bind(COMMUNITY_GATEWAY)
     .toConstantValue(fakeCommunityGateway(gatewayOverrides.community))
   container.bind(FRIENDSHIP_GATEWAY).toConstantValue(fakeFriendshipGateway())
-  const router = createMemoryRouter([{ path: '/:handle', element: <HandlePage /> }], {
+  const router = createMemoryRouter([{ path: '/:handle', element: <HandleRoute /> }], {
     initialEntries: [`/${handle}`],
   })
   return render(<RouterProvider router={router} />, { wrapper: withProviders(container) })
 }
 
-describe('HandlePage', () => {
-  it('renders the profile card when the handle resolves to a user', async () => {
+describe('HandleRoute', () => {
+  it('renders the profile page when the handle resolves to a user', async () => {
     mount('id5', () => Promise.resolve({ kind: 'user', id: 5 }), {
       user: { getProfile: vi.fn().mockResolvedValue(makeProfile()) },
     })
     expect(await screen.findByText('Ден Иванов')).toBeInTheDocument()
+    expect(screen.getByText('Стена скоро')).toBeInTheDocument()
   })
 
-  it('renders the community header when the handle resolves to a community', async () => {
+  it('renders the community page when the handle resolves to a community', async () => {
     mount('games', () => Promise.resolve({ kind: 'community', id: 9 }), {
       community: {
         get: vi.fn().mockResolvedValue(makeCommunity()),
@@ -117,5 +118,34 @@ describe('HandlePage', () => {
   it('shows a 404 placeholder when the handle does not resolve', async () => {
     mount('nope', () => Promise.reject(new Error('not_found')))
     expect(await screen.findByText('Страница не найдена')).toBeInTheDocument()
+  })
+
+  describe('while the handle is resolving', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('shows a profile-card skeleton instead of a blank frame', async () => {
+      let resolveHandle!: (dto: HandleDto) => void
+      const pending = new Promise<HandleDto>((resolve) => {
+        resolveHandle = resolve
+      })
+      mount('id5', () => pending, {
+        user: { getProfile: vi.fn().mockResolvedValue(makeProfile()) },
+      })
+
+      act(() => {
+        vi.advanceTimersByTime(200)
+      })
+      expect(screen.getByLabelText('Загрузка')).toBeInTheDocument()
+
+      resolveHandle({ kind: 'user', id: 5 })
+      vi.useRealTimers()
+      expect(await screen.findByText('Ден Иванов')).toBeInTheDocument()
+    })
   })
 })
