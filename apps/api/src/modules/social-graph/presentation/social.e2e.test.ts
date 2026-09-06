@@ -132,17 +132,21 @@ describe('social graph + profile e2e', () => {
     const body = (await profile.json()) as { user: { relation: string } }
     expect(body.user.relation).toBe('friends')
 
-    // Both concurrent requests publish their own FriendRequested (2 total across the pair), and
-    // exactly one side of the race publishes the synthetic FriendshipAccepted (1 total) — which
-    // one depends on request-arrival order, which Promise.all doesn't pin down, so assert counts
-    // instead of which specific user got which notification.
+    // Exactly one FriendshipAccepted reaches somebody, whichever way the two requests interleave:
+    // if they truly race, the side that loses the insert publishes the synthetic event and both
+    // sides publish their own FriendRequested (2); if one request happens to finish before the
+    // other starts, the second takes the sequential counter-request path, which accepts without
+    // ever publishing a FriendRequested of its own (1). `Promise.all` does not pin down which
+    // happened, and which user receives which notification depends on arrival order, so this
+    // asserts the invariant both shapes share rather than one arbitrary interleaving.
     const [cNotifs, dNotifs] = await Promise.all([
       get('/me/notifications', c.cookie),
       get('/me/notifications', d.cookie),
     ])
     const allKinds = [...(await kindsOf(cNotifs)), ...(await kindsOf(dNotifs))]
-    expect(allKinds.filter((k) => k === 'friend_request')).toHaveLength(2)
     expect(allKinds.filter((k) => k === 'friend_accepted')).toHaveLength(1)
+    expect(allKinds.filter((k) => k === 'friend_request').length).toBeGreaterThanOrEqual(1)
+    expect(allKinds.filter((k) => k === 'friend_request').length).toBeLessThanOrEqual(2)
   })
 
   it('PATCH /me/profile: reserved screen name 422, taken 409, success then resolves by screen name', async () => {
