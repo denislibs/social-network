@@ -3,7 +3,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
 import { SessionProvider } from '@/entities/session'
+import { DiProvider } from '@/shared/di'
 import { useColorScheme } from '@/shared/lib'
+import { createAppContainer } from './composition/container'
 import { QueryProvider } from './composition/QueryProvider'
 import { router } from './router'
 import './styles/global.css'
@@ -25,10 +27,14 @@ function App() {
   )
 }
 
+const container = createAppContainer()
+
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('#root not found')
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <DiProvider container={container}>
+      <App />
+    </DiProvider>
   </StrictMode>,
 )

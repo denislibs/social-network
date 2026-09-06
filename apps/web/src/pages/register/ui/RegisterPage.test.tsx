@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 const { onAuthenticatedMock } = vi.hoisted(() => ({ onAuthenticatedMock: vi.fn() }))
 vi.mock('@/features/auth', () => ({
-  LoginForm: ({ onSuccess }: { onSuccess: (u: { id: number }) => void }) => (
+  RegisterForm: ({ onSuccess }: { onSuccess: (u: { id: number }) => void }) => (
     <button type="button" onClick={() => onSuccess({ id: 1 })}>
       submit
     </button>
@@ -13,11 +13,11 @@ vi.mock('@/features/auth', () => ({
   useAuthRedirect: () => ({ onAuthenticated: onAuthenticatedMock }),
 }))
 
-import { LoginPage } from './LoginPage'
+import { RegisterPage } from './RegisterPage'
 
-describe('LoginPage', () => {
+describe('RegisterPage', () => {
   it('calls onAuthenticated from useAuthRedirect with the authenticated user on success', async () => {
-    render(<LoginPage />, { wrapper: MemoryRouter })
+    render(<RegisterPage />, { wrapper: MemoryRouter })
     await userEvent.click(screen.getByRole('button', { name: 'submit' }))
     expect(onAuthenticatedMock).toHaveBeenCalledWith({ id: 1 })
   })

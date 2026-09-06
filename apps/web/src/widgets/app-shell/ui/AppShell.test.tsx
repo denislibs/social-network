@@ -1,6 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
+import { createTestContainer, withDi } from '@/shared/di'
+import {
+  COLOR_SCHEME_STORE,
+  ColorSchemeStore,
+  fakeSystemScheme,
+  memPrefStorage,
+} from '@/shared/lib'
 
 vi.mock('@/entities/session', () => ({
   useSession: () => ({
@@ -22,6 +29,10 @@ vi.mock('@/entities/session', () => ({
 import { AppShell } from './AppShell'
 
 function mount(path: string, bare = false) {
+  const container = createTestContainer()
+  container
+    .bind(COLOR_SCHEME_STORE)
+    .toConstantValue(new ColorSchemeStore(memPrefStorage(null), fakeSystemScheme(false).system))
   const router = createMemoryRouter(
     [
       {
@@ -35,7 +46,7 @@ function mount(path: string, bare = false) {
     ],
     { initialEntries: [path] },
   )
-  return render(<RouterProvider router={router} />)
+  return render(<RouterProvider router={router} />, { wrapper: withDi(container) })
 }
 
 describe('AppShell', () => {
