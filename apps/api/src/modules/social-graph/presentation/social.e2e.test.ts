@@ -86,6 +86,10 @@ describe('social graph + profile e2e', () => {
     expect(sent.status).toBe(200)
     expect(await sent.json()).toEqual({ relation: 'outgoing' })
 
+    const bCountersAfterRequest = await get('/me/counters', b.cookie)
+    expect(bCountersAfterRequest.status).toBe(200)
+    expect(await bCountersAfterRequest.json()).toMatchObject({ incomingRequests: 1 })
+
     const incoming = await get('/me/friends/requests?dir=incoming', b.cookie)
     expect(incoming.status).toBe(200)
     const incomingBody = (await incoming.json()) as { items: { id: number }[] }
@@ -94,6 +98,9 @@ describe('social graph + profile e2e', () => {
     const accepted = await post(`/friends/${a.id}/accept`, {}, b.cookie)
     expect(accepted.status).toBe(200)
     expect(await accepted.json()).toEqual({ relation: 'friends' })
+
+    const bCountersAfterAccept = await get('/me/counters', b.cookie)
+    expect(await bCountersAfterAccept.json()).toMatchObject({ friends: 1, incomingRequests: 0 })
 
     const profile = await get(`/users/id${a.id}`, b.cookie)
     expect(profile.status).toBe(200)

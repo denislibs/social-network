@@ -16,6 +16,7 @@ import { SendFriendRequest } from '../application/commands/send-friend-request'
 import { UnfollowCommunity } from '../application/commands/unfollow-community'
 import { GetCommunity } from '../application/queries/get-community'
 import { GetCommunityMembers } from '../application/queries/get-community-members'
+import { GetCounters } from '../application/queries/get-counters'
 import { GetFollowers } from '../application/queries/get-followers'
 import { GetFriendRequests } from '../application/queries/get-friend-requests'
 import { GetFriends } from '../application/queries/get-friends'
@@ -71,6 +72,12 @@ const suggestionSchema = t.Object({
 const handleSchema = t.Object({
   kind: t.UnionEnum(['user', 'community']),
   id: t.Number(),
+})
+const countersSchema = t.Object({
+  friends: t.Number(),
+  followers: t.Number(),
+  communities: t.Number(),
+  incomingRequests: t.Number(),
 })
 const cursorQuery = t.Object({ cursor: t.Optional(t.String()) })
 
@@ -164,6 +171,10 @@ export function socialGraphRoutes(c: Container) {
         response: { 200: t.Object({ relation: relationSchema }) },
       },
     )
+    .get('/me/counters', ({ user }) => d.queries.ask(new GetCounters(user.id)), {
+      auth: true,
+      response: { 200: countersSchema },
+    })
     .get(
       '/me/friends/suggestions',
       async ({ user }) => ({ items: await d.queries.ask(new GetSuggestedFriends(user.id)) }),
