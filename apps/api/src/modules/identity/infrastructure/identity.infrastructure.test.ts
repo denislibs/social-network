@@ -4,6 +4,7 @@ import { testRedis } from '../../../../test/helpers/redis'
 import type { Db } from '../../../db/client'
 import { User } from '../domain/user'
 import { BunPasswordHasher } from './bun-password-hasher'
+import { DrizzleUserReadModel } from './drizzle-user-read-model'
 import { DrizzleUserRepository } from './drizzle-user-repository'
 import { RedisSessionStore } from './redis-session-store'
 
@@ -55,6 +56,102 @@ describe('DrizzleUserRepository', () => {
       code: 'login_taken',
       status: 409,
     })
+  })
+  it('persists updateProfile changes (status, bio, city, birthday, screenName)', async () => {
+    const repo = new DrizzleUserRepository(db)
+    const hasher = new BunPasswordHasher()
+    const saved = await repo.save(
+      await User.register(
+        { login: 'profile1', password: 'password123', firstName: 'Д', lastName: 'К' },
+        hasher,
+      ),
+    )
+    saved.updateProfile({
+      status: 'Hi',
+      bio: 'About',
+      city: 'Москва',
+      birthday: '1990-01-01',
+      screenName: 'profileuser',
+    })
+    await repo.save(saved)
+    const found = await repo.findById(saved.id!)
+    expect(found).toMatchObject({
+      status: 'Hi',
+      bio: 'About',
+      city: 'Москва',
+      birthday: '1990-01-01',
+      screenName: 'profileuser',
+    })
+  })
+  it('maps a duplicate screen name to 409 screen_name_taken, not a 500', async () => {
+    const repo = new DrizzleUserRepository(db)
+    const hasher = new BunPasswordHasher()
+    const a = await repo.save(
+      await User.register(
+        { login: 'sn1', password: 'password123', firstName: 'Д', lastName: 'К' },
+        hasher,
+      ),
+    )
+    const b = await repo.save(
+      await User.register(
+        { login: 'sn2', password: 'password123', firstName: 'Д', lastName: 'К' },
+        hasher,
+      ),
+    )
+    a.updateProfile({ screenName: 'sharedname' })
+    await repo.save(a)
+    b.updateProfile({ screenName: 'sharedname' })
+    await expect(repo.save(b)).rejects.toMatchObject({ code: 'screen_name_taken', status: 409 })
+  })
+  it('findByScreenName finds a user by screen name, null when absent', async () => {
+    const repo = new DrizzleUserRepository(db)
+    const hasher = new BunPasswordHasher()
+    const u = await repo.save(
+      await User.register(
+        { login: 'sn3', password: 'password123', firstName: 'Д', lastName: 'К' },
+        hasher,
+      ),
+    )
+    u.updateProfile({ screenName: 'findme' })
+    await repo.save(u)
+    expect((await repo.findByScreenName('findme'))?.id).toBe(u.id)
+    expect(await repo.findByScreenName('nope')).toBeNull()
+  })
+})
+
+describe('DrizzleUserReadModel', () => {
+  it('getProfile resolves by id and by (lower-cased) screen name, null when unknown', async () => {
+    const repo = new DrizzleUserRepository(db)
+    const rm = new DrizzleUserReadModel(db)
+    const hasher = new BunPasswordHasher()
+    const u = await repo.save(
+      await User.register(
+        { login: 'denis', password: 'password123', firstName: 'Денис', lastName: 'Кораблев' },
+        hasher,
+      ),
+    )
+    u.updateProfile({ screenName: 'denis' })
+    await repo.save(u)
+    expect((await rm.getProfile(`id${u.id}`))?.id).toBe(u.id!)
+    expect((await rm.getProfile('denis'))?.id).toBe(u.id!)
+    expect(await rm.getProfile('id999999')).toBeNull()
+  })
+  it('searchUsers finds by trigram name similarity and by screen-name prefix', async () => {
+    const repo = new DrizzleUserRepository(db)
+    const rm = new DrizzleUserReadModel(db)
+    const hasher = new BunPasswordHasher()
+    const u = await repo.save(
+      await User.register(
+        { login: 'denis2', password: 'password123', firstName: 'Денис', lastName: 'Кораблев' },
+        hasher,
+      ),
+    )
+    u.updateProfile({ screenName: 'den' })
+    await repo.save(u)
+    const byName = await rm.searchUsers('Ден', 10)
+    expect(byName.some((r) => r.id === u.id)).toBe(true)
+    const byScreenName = await rm.searchUsers('den', 10)
+    expect(byScreenName.some((r) => r.id === u.id)).toBe(true)
   })
 })
 

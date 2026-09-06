@@ -7,8 +7,11 @@ import { Login } from './commands/login'
 import { Logout } from './commands/logout'
 import { LogoutAll } from './commands/logout-all'
 import { RegisterUser } from './commands/register-user'
+import { UpdateProfile } from './commands/update-profile'
 import { IDENTITY } from './ports'
 import { GetMe } from './queries/get-me'
+import { GetProfile } from './queries/get-profile'
+import { SearchUsers } from './queries/search-users'
 import { registerIdentityHandlers } from './register'
 import { createIdentityTestContainer } from './testing/container'
 import { FakeHasher, type InMemorySessions } from './testing/fakes'
@@ -102,5 +105,97 @@ describe('identity application', () => {
     expect(await sessions.get(b.token)).not.toBeNull()
     await commands.execute(new LogoutAll(1))
     expect(await sessions.get(b.token)).toBeNull()
+  })
+
+  describe('UpdateProfile', () => {
+    it('sets fields (trimming status/bio) and returns a ProfileDto with self relation/counters', async () => {
+      await commands.execute(new RegisterUser(input))
+      const dto = await commands.execute(
+        new UpdateProfile({
+          me: 1,
+          status: '  Hello there  ',
+          bio: ' About me ',
+          city: 'Москва',
+          birthday: '1990-05-15',
+          screenName: 'denis1',
+        }),
+      )
+      expect(dto).toMatchObject({
+        id: 1,
+        status: 'Hello there',
+        bio: 'About me',
+        city: 'Москва',
+        birthday: '1990-05-15',
+        screenName: 'denis1',
+        isVerified: false,
+        relation: 'self',
+        counters: { friends: 0, followers: 0, communities: 0, incomingRequests: 0 },
+      })
+    })
+    it('applies only patched fields and clears a field set to null', async () => {
+      await commands.execute(new RegisterUser(input))
+      await commands.execute(new UpdateProfile({ me: 1, status: 'first', city: 'Казань' }))
+      const dto = await commands.execute(new UpdateProfile({ me: 1, status: null }))
+      expect(dto).toMatchObject({ status: null, city: 'Казань' })
+    })
+    it('rejects a status over 140 chars', async () => {
+      await commands.execute(new RegisterUser(input))
+      await expect(
+        commands.execute(new UpdateProfile({ me: 1, status: 'x'.repeat(141) })),
+      ).rejects.toMatchObject({ code: 'status_too_long', status: 422 })
+    })
+    it('rejects a bio over 2000 chars', async () => {
+      await commands.execute(new RegisterUser(input))
+      await expect(
+        commands.execute(new UpdateProfile({ me: 1, bio: 'x'.repeat(2001) })),
+      ).rejects.toMatchObject({ code: 'bio_too_long', status: 422 })
+    })
+    it('rejects a city not in CITIES', async () => {
+      await commands.execute(new RegisterUser(input))
+      await expect(
+        commands.execute(new UpdateProfile({ me: 1, city: 'Атлантида' })),
+      ).rejects.toMatchObject({ code: 'invalid_city', status: 422 })
+    })
+    it('rejects an invalid/future/too-old birthday', async () => {
+      await commands.execute(new RegisterUser(input))
+      for (const bad of ['not-a-date', '2020-02-30', '1899-12-31', '2999-01-01'])
+        await expect(
+          commands.execute(new UpdateProfile({ me: 1, birthday: bad })),
+        ).rejects.toMatchObject({ code: 'invalid_birthday', status: 422 })
+    })
+    it('rejects a reserved screen name', async () => {
+      await commands.execute(new RegisterUser(input))
+      await expect(
+        commands.execute(new UpdateProfile({ me: 1, screenName: 'feed' })),
+      ).rejects.toMatchObject({ code: 'screen_name_reserved', status: 422 })
+    })
+  })
+
+  describe('GetProfile', () => {
+    it('resolves by id, by screen name, relation comes from the social port, 404 for unknown', async () => {
+      await commands.execute(new RegisterUser(input))
+      const self = await queries.ask(new GetProfile('id1', 1))
+      expect(self).toMatchObject({ id: 1, relation: 'self' })
+      const asOther = await queries.ask(new GetProfile('id1', 2))
+      expect(asOther.relation).toBe('none')
+      await commands.execute(new UpdateProfile({ me: 1, screenName: 'denis1' }))
+      const byScreen = await queries.ask(new GetProfile('denis1', null))
+      expect(byScreen.id).toBe(1)
+      await expect(queries.ask(new GetProfile('id999', null))).rejects.toMatchObject({
+        code: 'user_not_found',
+        status: 404,
+      })
+    })
+  })
+
+  describe('SearchUsers', () => {
+    it('matches by name/screen-name prefix via the in-memory read model', async () => {
+      await commands.execute(new RegisterUser(input))
+      await commands.execute(
+        new RegisterUser({ ...input, login: 'anna', firstName: 'Анна', lastName: 'Иванова' }),
+      )
+      const results = await queries.ask(new SearchUsers('ден'))
+      expect(results.map((r) => r.firstName)).toEqual(['Денис'])
+    })
   })
 })
