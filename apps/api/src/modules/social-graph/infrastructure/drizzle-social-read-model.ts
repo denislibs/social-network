@@ -1,0 +1,361 @@
+import { and, desc, eq, ne, or, sql } from 'drizzle-orm'
+import type { Db } from '../../../db/client'
+import { communities, communityMembers, follows, friendships, users } from '../../../db/schema'
+import { type CursorKey, decodeCursor, encodeCursor, PAGE_SIZE } from '../../../kernel/cursor'
+import type { Counters, Relation } from '../../../kernel/social-read'
+import type {
+  CommunityCellDto,
+  CommunityDto,
+  HandleDto,
+  Membership,
+  Page,
+  SuggestionDto,
+  UserCellDto,
+} from '../application/dto'
+import type { SocialReadModel } from '../application/ports'
+import { orderPair } from '../domain/value-objects'
+import { PYMK_SQL } from './pymk.sql'
+import { rawQuery } from './raw'
+
+/** `similarity()`/trigram `%` need `pg_trgm` (installed by migration 0003); `like ... || '%'`
+ * covers the prefix case trigram similarity alone tends to under-rank for short queries. */
+const SEARCH_COMMUNITIES_SQL = `
+select id::int as id, screen_name as "screenName", name, topic, is_verified as "isVerified", members_count as "membersCount",
+  similarity(lower(name), lower($1)) as sim
+from communities
+where similarity(lower(name), lower($1)) > 0.2 or lower(name) like lower($1) || '%'
+order by sim desc, members_count desc
+limit $2`
+
+type UserCellRow = {
+  id: number
+  firstName: string
+  lastName: string
+  screenName: string | null
+  city: string | null
+  isVerified: boolean
+  lastSeenAt: Date | string | null
+}
+
+function toUserCell(r: UserCellRow): UserCellDto {
+  return {
+    id: r.id,
+    firstName: r.firstName,
+    lastName: r.lastName,
+    screenName: r.screenName,
+    city: r.city,
+    isVerified: r.isVerified,
+    lastSeenAt: r.lastSeenAt ? new Date(r.lastSeenAt).toISOString() : null,
+  }
+}
+
+/**
+ * Fetches `PAGE_SIZE + 1` rows ordered by the same key `keyOf` reads back. When the extra row is
+ * present it proves there's a next page; the returned page is the first `PAGE_SIZE` rows, and
+ * `nextCursor` is built from the *last row actually returned* (not the extra 21st row) — the
+ * keyset predicate is a strict `<`, so a cursor built from the 21st row would make its own key
+ * unreachable by the next page (it's excluded by both this page, which never returns it, and the
+ * next page's strict `<`), silently dropping one row at every page boundary.
+ */
+function paginate<R>(rows: R[], keyOf: (r: R) => CursorKey): Page<R> {
+  if (rows.length > PAGE_SIZE) {
+    const items = rows.slice(0, PAGE_SIZE)
+    return { items, nextCursor: encodeCursor(keyOf(items[PAGE_SIZE - 1] as R)) }
+  }
+  return { items: rows, nextCursor: null }
+}
+
+const cellCols = {
+  id: users.id,
+  firstName: users.firstName,
+  lastName: users.lastName,
+  screenName: users.screenName,
+  city: users.city,
+  isVerified: users.isVerified,
+  lastSeenAt: users.lastSeenAt,
+}
+
+export class DrizzleSocialReadModel implements SocialReadModel {
+  constructor(private db: Db) {}
+
+  async relation(me: number | null, other: number): Promise<Relation> {
+    if (me === null) return 'none'
+    if (me === other) return 'self'
+    const { lo, hi } = orderPair(me, other)
+    const [row] = await this.db
+      .select({ status: friendships.status, requesterId: friendships.requesterId })
+      .from(friendships)
+      .where(and(eq(friendships.userLo, lo), eq(friendships.userHi, hi)))
+      .limit(1)
+    if (!row || row.status === 'declined') return 'none'
+    if (row.status === 'accepted') return 'friends'
+    return row.requesterId === me ? 'outgoing' : 'incoming'
+  }
+
+  async counters(userId: number): Promise<Counters> {
+    const n = sql<number>`count(*)::int`
+    const [[friendsRow], [followersRow], [communitiesRow], [incomingRow]] = await Promise.all([
+      this.db
+        .select({ n })
+        .from(friendships)
+        .where(
+          and(
+            eq(friendships.status, 'accepted'),
+            or(eq(friendships.userLo, userId), eq(friendships.userHi, userId)),
+          ),
+        ),
+      this.db
+        .select({ n })
+        .from(follows)
+        .where(and(eq(follows.targetType, 'user'), eq(follows.targetId, userId))),
+      this.db.select({ n }).from(communityMembers).where(eq(communityMembers.userId, userId)),
+      this.db
+        .select({ n })
+        .from(friendships)
+        .where(
+          and(
+            eq(friendships.status, 'pending'),
+            or(eq(friendships.userLo, userId), eq(friendships.userHi, userId)),
+            ne(friendships.requesterId, userId),
+          ),
+        ),
+    ])
+    return {
+      friends: friendsRow?.n ?? 0,
+      followers: followersRow?.n ?? 0,
+      communities: communitiesRow?.n ?? 0,
+      incomingRequests: incomingRow?.n ?? 0,
+    }
+  }
+
+  /**
+   * A friend's page key is `(coalesce(accepted_at, created_at), <friend's user id>)` — the friend
+   * row itself has no single id column (it's keyed by the ordered pair), so the *other* user's id
+   * stands in for "this row's id" in the keyset.
+   */
+  async friends(userId: number, cursor?: string): Promise<Page<UserCellDto>> {
+    const key = decodeCursor(cursor)
+    const friendIds = this.db.$with('friend_ids').as(
+      this.db
+        .select({
+          friendId:
+            sql<number>`case when ${friendships.userLo} = ${userId} then ${friendships.userHi} else ${friendships.userLo} end`.as(
+              'friend_id',
+            ),
+          sortTs: sql<Date>`coalesce(${friendships.acceptedAt}, ${friendships.createdAt})`.as(
+            'sort_ts',
+          ),
+        })
+        .from(friendships)
+        .where(
+          and(
+            eq(friendships.status, 'accepted'),
+            or(eq(friendships.userLo, userId), eq(friendships.userHi, userId)),
+          ),
+        ),
+    )
+    const rows = await this.db
+      .with(friendIds)
+      .select({ ...cellCols, sortTs: friendIds.sortTs })
+      .from(friendIds)
+      .innerJoin(users, eq(users.id, friendIds.friendId))
+      .where(
+        key
+          ? sql`(${friendIds.sortTs}, ${friendIds.friendId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+          : undefined,
+      )
+      .orderBy(desc(friendIds.sortTs), desc(friendIds.friendId))
+      .limit(PAGE_SIZE + 1)
+    const page = paginate(rows, (r) => ({ createdAt: new Date(r.sortTs), id: r.id }))
+    return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }
+  }
+
+  async requests(
+    me: number,
+    dir: 'incoming' | 'outgoing',
+    cursor?: string,
+  ): Promise<Page<UserCellDto>> {
+    const key = decodeCursor(cursor)
+    const otherExpr = sql<number>`case when ${friendships.userLo} = ${me} then ${friendships.userHi} else ${friendships.userLo} end`
+    const req = this.db.$with('req').as(
+      this.db
+        .select({ otherId: otherExpr.as('other_id'), createdAt: friendships.createdAt })
+        .from(friendships)
+        .where(
+          and(
+            eq(friendships.status, 'pending'),
+            or(eq(friendships.userLo, me), eq(friendships.userHi, me)),
+            dir === 'incoming' ? ne(friendships.requesterId, me) : eq(friendships.requesterId, me),
+          ),
+        ),
+    )
+    const rows = await this.db
+      .with(req)
+      .select({ ...cellCols, createdAt: req.createdAt })
+      .from(req)
+      .innerJoin(users, eq(users.id, req.otherId))
+      .where(
+        key
+          ? sql`(${req.createdAt}, ${req.otherId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+          : undefined,
+      )
+      .orderBy(desc(req.createdAt), desc(req.otherId))
+      .limit(PAGE_SIZE + 1)
+    const page = paginate(rows, (r) => ({ createdAt: r.createdAt, id: r.id }))
+    return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }
+  }
+
+  async followers(userId: number, cursor?: string): Promise<Page<UserCellDto>> {
+    const key = decodeCursor(cursor)
+    const rows = await this.db
+      .select({ ...cellCols, createdAt: follows.createdAt })
+      .from(follows)
+      .innerJoin(users, eq(users.id, follows.followerId))
+      .where(
+        and(
+          eq(follows.targetType, 'user'),
+          eq(follows.targetId, userId),
+          key
+            ? sql`(${follows.createdAt}, ${follows.followerId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+            : undefined,
+        ),
+      )
+      .orderBy(desc(follows.createdAt), desc(follows.followerId))
+      .limit(PAGE_SIZE + 1)
+    const page = paginate(rows, (r) => ({ createdAt: r.createdAt, id: r.id }))
+    return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }
+  }
+
+  async community(idOrScreen: string, me: number | null): Promise<CommunityDto | null> {
+    const isNumeric = /^\d+$/.test(idOrScreen)
+    const [row] = await this.db
+      .select()
+      .from(communities)
+      .where(
+        isNumeric ? eq(communities.id, Number(idOrScreen)) : eq(communities.screenName, idOrScreen),
+      )
+      .limit(1)
+    if (!row) return null
+
+    let membership: Membership = 'none'
+    let isFollowing = false
+    if (me !== null) {
+      const [m] = await this.db
+        .select({ role: communityMembers.role })
+        .from(communityMembers)
+        .where(and(eq(communityMembers.communityId, row.id), eq(communityMembers.userId, me)))
+        .limit(1)
+      membership = m?.role ?? 'none'
+      const [f] = await this.db
+        .select({ followerId: follows.followerId })
+        .from(follows)
+        .where(
+          and(
+            eq(follows.followerId, me),
+            eq(follows.targetType, 'community'),
+            eq(follows.targetId, row.id),
+          ),
+        )
+        .limit(1)
+      isFollowing = f !== undefined
+    }
+    return {
+      id: row.id,
+      screenName: row.screenName,
+      name: row.name,
+      description: row.description,
+      topic: row.topic,
+      isVerified: row.isVerified,
+      membersCount: row.membersCount,
+      membership,
+      isFollowing,
+    }
+  }
+
+  async members(communityId: number, cursor?: string): Promise<Page<UserCellDto>> {
+    const key = decodeCursor(cursor)
+    const rows = await this.db
+      .select({ ...cellCols, createdAt: communityMembers.createdAt })
+      .from(communityMembers)
+      .innerJoin(users, eq(users.id, communityMembers.userId))
+      .where(
+        and(
+          eq(communityMembers.communityId, communityId),
+          key
+            ? sql`(${communityMembers.createdAt}, ${communityMembers.userId}) < (${key.createdAt.toISOString()}::timestamptz, ${key.id})`
+            : undefined,
+        ),
+      )
+      .orderBy(desc(communityMembers.createdAt), desc(communityMembers.userId))
+      .limit(PAGE_SIZE + 1)
+    const page = paginate(rows, (r) => ({ createdAt: r.createdAt, id: r.id }))
+    return { items: page.items.map(toUserCell), nextCursor: page.nextCursor }
+  }
+
+  async myCommunities(me: number): Promise<CommunityCellDto[]> {
+    return this.db
+      .select({
+        id: communities.id,
+        screenName: communities.screenName,
+        name: communities.name,
+        topic: communities.topic,
+        isVerified: communities.isVerified,
+        membersCount: communities.membersCount,
+      })
+      .from(communityMembers)
+      .innerJoin(communities, eq(communities.id, communityMembers.communityId))
+      .where(eq(communityMembers.userId, me))
+      .orderBy(desc(communityMembers.createdAt))
+  }
+
+  async suggestions(me: number): Promise<SuggestionDto[]> {
+    const rows = await rawQuery<UserCellRow & { mutual: number; sameCity: boolean }>(
+      this.db,
+      PYMK_SQL,
+      [me],
+    )
+    return rows.map((r) => ({ ...toUserCell(r), mutual: r.mutual, sameCity: r.sameCity }))
+  }
+
+  async searchCommunities(q: string, limit: number): Promise<CommunityCellDto[]> {
+    const rows = await rawQuery<CommunityCellDto & { sim: number }>(
+      this.db,
+      SEARCH_COMMUNITIES_SQL,
+      [q, limit],
+    )
+    return rows.map(({ sim: _sim, ...c }) => c)
+  }
+
+  async resolveHandle(handle: string): Promise<HandleDto | null> {
+    const idMatch = /^id(\d+)$/.exec(handle)
+    if (idMatch) {
+      const [u] = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, Number(idMatch[1])))
+        .limit(1)
+      return u ? { kind: 'user', id: u.id } : null
+    }
+    const clubMatch = /^club(\d+)$/.exec(handle)
+    if (clubMatch) {
+      const [c] = await this.db
+        .select({ id: communities.id })
+        .from(communities)
+        .where(eq(communities.id, Number(clubMatch[1])))
+        .limit(1)
+      return c ? { kind: 'community', id: c.id } : null
+    }
+    const [u] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.screenName, handle))
+      .limit(1)
+    if (u) return { kind: 'user', id: u.id }
+    const [c] = await this.db
+      .select({ id: communities.id })
+      .from(communities)
+      .where(eq(communities.screenName, handle))
+      .limit(1)
+    return c ? { kind: 'community', id: c.id } : null
+  }
+}

@@ -81,6 +81,10 @@ export class Community {
   roleOf(userId: number): MemberRole | null {
     return this.members.get(userId) ?? null
   }
+  /** Read-only snapshot of member ids and roles, for a repository to diff against persisted rows. */
+  memberEntries(): ReadonlyMap<number, MemberRole> {
+    return this.members
+  }
   adminCount(): number {
     let n = 0
     for (const role of this.members.values()) if (role === 'admin') n++
