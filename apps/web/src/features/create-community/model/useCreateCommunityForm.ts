@@ -27,7 +27,7 @@ function clientError(values: Values): { field: CommunityFormField; text: string 
   if (name.length < NAME_MIN || name.length > NAME_MAX)
     return { field: 'name', text: messageFor('invalid_community_name') }
   const screenName = values.screenName.trim()
-  if (!SCREEN_NAME_RE.test(screenName))
+  if (!SCREEN_NAME_RE.test(screenName.toLowerCase()))
     return { field: 'screenName', text: messageFor('invalid_screen_name') }
   return null
 }

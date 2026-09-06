@@ -29,7 +29,7 @@ function clientError(values: Values): { field: ProfileFormField; text: string } 
     return { field: 'status', text: messageFor('status_too_long') }
   if (values.bio.length > BIO_MAX) return { field: 'bio', text: messageFor('bio_too_long') }
   const screenName = values.screenName.trim()
-  if (screenName.length > 0 && !SCREEN_NAME_RE.test(screenName))
+  if (screenName.length > 0 && !SCREEN_NAME_RE.test(screenName.toLowerCase()))
     return { field: 'screenName', text: messageFor('invalid_screen_name') }
   return null
 }
