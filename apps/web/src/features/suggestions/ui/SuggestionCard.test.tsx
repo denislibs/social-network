@@ -36,8 +36,6 @@ function mount(s: SuggestionDto, overrides = {}) {
 describe('SuggestionCard', () => {
   it('shows the name, mutual-friends caption and the injected friend action', () => {
     mount(suggestion)
-    // The whole row is the link (vk.ru's compact `SimpleCell`), so its accessible name also
-    // carries the caption and the action labels — match on the name rather than the exact string.
     expect(screen.getByRole('link', { name: /Соня Иванова/ })).toHaveAttribute('href', '/sonya')
     expect(screen.getByText('3 общих друга')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'friend' })).toBeInTheDocument()

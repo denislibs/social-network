@@ -1,6 +1,6 @@
 import { Icon24Cancel } from '@vkontakte/icons'
-import { ButtonGroup, IconButton, SimpleCell } from '@vkontakte/vkui'
-import type { MouseEvent, ReactNode } from 'react'
+import { ButtonGroup, IconButton, Link, SimpleCell } from '@vkontakte/vkui'
+import type { ReactNode } from 'react'
 import { type SuggestionDto, UserAvatar, userHandle } from '@/entities/user'
 import { pluralRu, RouterAnchor } from '@/shared/lib'
 import { useHideSuggestion } from '../model/useHideSuggestion'
@@ -11,13 +11,6 @@ function caption(s: SuggestionDto): string | undefined {
   if (s.mutual > 0) return `${s.mutual} ${pluralRu(s.mutual, MUTUAL_FORMS)}`
   if (s.sameCity) return 'Из вашего города'
   return undefined
-}
-
-/** The whole row is a link to the profile, so a click on one of the action buttons inside it
- * must not also navigate there. */
-function keepInsideTheRow(event: MouseEvent): void {
-  event.stopPropagation()
-  event.preventDefault()
 }
 
 type Props = {
@@ -32,21 +25,24 @@ type Props = {
 }
 
 /**
- * One «Возможно, вы знакомы» row, shaped like vk.ru's: a compact `SimpleCell` linking to the
- * profile — avatar, name, «N общих друзей» — with the actions as right-aligned icon buttons.
+ * One «Возможно, вы знакомы» row, shaped like vk.ru's: a compact `SimpleCell` — avatar, name
+ * linking to the profile, «N общих друзей» — with the actions as right-aligned icon buttons.
  * Deliberately no primary blue button: the block is a sidebar suggestion, not a call to action.
+ *
+ * The row itself is a plain, non-interactive `div`; only the name is a link. That keeps the
+ * action buttons in `after` as ordinary siblings instead of nesting them inside an anchor, so
+ * clicking one of them never also navigates to the profile.
  */
 export function SuggestionCard({ suggestion, friendAction }: Props) {
   const { hide } = useHideSuggestion()
 
   return (
     <SimpleCell
-      Component={RouterAnchor}
-      href={`/${userHandle(suggestion)}`}
+      Component="div"
       before={<UserAvatar user={suggestion} size={48} />}
       subtitle={caption(suggestion)}
       after={
-        <ButtonGroup mode="horizontal" gap="s" onClick={keepInsideTheRow}>
+        <ButtonGroup mode="horizontal" gap="s">
           {friendAction}
           <IconButton label="Скрыть" onClick={() => hide(suggestion.id)}>
             <Icon24Cancel />
@@ -54,7 +50,9 @@ export function SuggestionCard({ suggestion, friendAction }: Props) {
         </ButtonGroup>
       }
     >
-      {suggestion.firstName} {suggestion.lastName}
+      <Link Component={RouterAnchor} href={`/${userHandle(suggestion)}`}>
+        {suggestion.firstName} {suggestion.lastName}
+      </Link>
     </SimpleCell>
   )
 }

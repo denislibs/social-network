@@ -1,6 +1,8 @@
+import { Button } from '@vkontakte/vkui'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router'
+import { describe, expect, it, vi } from 'vitest'
 import type { UserCellDto } from '../model/types'
 import { UserCell } from './UserCell'
 
@@ -19,6 +21,15 @@ function makeUser(overrides: Partial<UserCellDto> = {}): UserCellDto {
 
 function mount(ui: React.ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>)
+}
+
+/** Mounts with a real route for the profile so a navigation can actually be observed. */
+function mountAtRoute(user: UserCellDto, after: React.ReactNode) {
+  const router = createMemoryRouter([
+    { path: '/', element: <UserCell user={user} after={after} /> },
+    { path: '/:handle', element: <div>PROFILE</div> },
+  ])
+  render(<RouterProvider router={router} />)
 }
 
 describe('UserCell', () => {
@@ -46,5 +57,23 @@ describe('UserCell', () => {
   it('renders the after slot passthrough', () => {
     mount(<UserCell user={makeUser()} after={<span>после</span>} />)
     expect(screen.getByText('после')).toBeInTheDocument()
+  })
+
+  it('keeps the after action outside the profile link, so clicking it does not navigate', async () => {
+    const onClick = vi.fn()
+    mountAtRoute(makeUser(), <Button onClick={onClick}>Принять</Button>)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Принять' }))
+
+    expect(onClick).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText('PROFILE')).not.toBeInTheDocument()
+  })
+
+  it('navigates to the profile when the name is clicked', async () => {
+    mountAtRoute(makeUser(), null)
+
+    await userEvent.click(screen.getByRole('link', { name: /Den Ivanov/ }))
+
+    expect(await screen.findByText('PROFILE')).toBeInTheDocument()
   })
 })
