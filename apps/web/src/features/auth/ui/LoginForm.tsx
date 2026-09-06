@@ -1,57 +1,33 @@
 import { Button, FormItem, FormLayoutGroup, Input } from '@vkontakte/vkui'
-import { type FormEvent, useState } from 'react'
 import type { UserDto } from '@/shared/api'
-import { authApi } from '../api/authApi'
-import { codeOf, fieldFor, messageFor } from '../model/errors'
-
-type FieldError = { field: 'login' | 'password' | 'form'; text: string }
+import { useLoginForm } from '../model/useLoginForm'
 
 export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
-  const [login, setLogin] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<FieldError | null>(null)
-  const [busy, setBusy] = useState(false)
+  const f = useLoginForm(onSuccess)
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setBusy(true)
-    try {
-      onSuccess(await authApi.login({ login, password }))
-    } catch (err) {
-      const code = codeOf(err)
-      setError({ field: fieldFor(code), text: messageFor(code) })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const status = (f: 'login' | 'password') => (error?.field === f ? 'error' : 'default')
+  const status = (field: 'login' | 'password') => (f.error?.field === field ? 'error' : 'default')
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form onSubmit={f.submit} noValidate>
       <FormLayoutGroup mode="vertical">
         <FormItem
           htmlFor="login"
           top="Логин"
           status={status('login')}
-          bottom={error?.field === 'login' ? error.text : undefined}
+          bottom={f.error?.field === 'login' ? f.error.text : undefined}
           bottomId="login-error"
         >
           <Input
             id="login"
             name="login"
             autoComplete="username"
-            value={login}
-            onChange={(e) => {
-              setLogin(e.target.value)
-              if (error) setError(null)
-            }}
-            disabled={busy}
+            value={f.values.login}
+            onChange={(e) => f.setField('login', e.target.value)}
+            disabled={f.busy}
             slotProps={{
               input: {
-                'aria-describedby': error?.field === 'login' ? 'login-error' : undefined,
-                'aria-invalid': error?.field === 'login',
+                'aria-describedby': f.error?.field === 'login' ? 'login-error' : undefined,
+                'aria-invalid': f.error?.field === 'login',
               },
             }}
           />
@@ -60,7 +36,7 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
           htmlFor="password"
           top="Пароль"
           status={status('password')}
-          bottom={error?.field === 'password' ? error.text : undefined}
+          bottom={f.error?.field === 'password' ? f.error.text : undefined}
           bottomId="password-error"
         >
           <Input
@@ -68,31 +44,28 @@ export function LoginForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
             name="password"
             type="password"
             autoComplete="current-password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value)
-              if (error) setError(null)
-            }}
-            disabled={busy}
+            value={f.values.password}
+            onChange={(e) => f.setField('password', e.target.value)}
+            disabled={f.busy}
             slotProps={{
               input: {
                 'aria-describedby':
-                  error?.field === 'password'
+                  f.error?.field === 'password'
                     ? 'password-error'
-                    : error?.field === 'form'
+                    : f.error?.field === 'form'
                       ? 'form-error'
                       : undefined,
-                'aria-invalid': error?.field === 'password',
+                'aria-invalid': f.error?.field === 'password',
               },
             }}
           />
         </FormItem>
         <FormItem
-          status={error?.field === 'form' ? 'error' : 'default'}
-          bottom={error?.field === 'form' ? error.text : undefined}
+          status={f.error?.field === 'form' ? 'error' : 'default'}
+          bottom={f.error?.field === 'form' ? f.error.text : undefined}
           bottomId="form-error"
         >
-          <Button type="submit" size="l" stretched mode="primary" loading={busy}>
+          <Button type="submit" size="l" stretched mode="primary" loading={f.busy}>
             Войти
           </Button>
         </FormItem>

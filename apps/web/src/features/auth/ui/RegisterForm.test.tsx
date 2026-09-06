@@ -1,10 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-
-const { register } = vi.hoisted(() => ({ register: vi.fn() }))
-vi.mock('../api/authApi', () => ({ authApi: { login: vi.fn(), register } }))
-
+import { withDi } from '@/shared/di'
+import { authTestContainer, fakeAuthGateway } from '../model/testing'
 import { RegisterForm } from './RegisterForm'
 
 async function fill() {
@@ -17,7 +15,7 @@ async function fill() {
 
 describe('RegisterForm', () => {
   it('registers and calls onSuccess', async () => {
-    register.mockResolvedValue({
+    const register = vi.fn().mockResolvedValue({
       id: 2,
       login: 'newbie',
       firstName: 'Тест',
@@ -25,8 +23,9 @@ describe('RegisterForm', () => {
       screenName: null,
       createdAt: '',
     })
+    const container = authTestContainer(fakeAuthGateway({ register }))
     const onSuccess = vi.fn()
-    render(<RegisterForm onSuccess={onSuccess} />)
+    render(<RegisterForm onSuccess={onSuccess} />, { wrapper: withDi(container) })
     await fill()
     await waitFor(() => expect(onSuccess).toHaveBeenCalled())
     expect(register).toHaveBeenCalledWith({
@@ -38,19 +37,21 @@ describe('RegisterForm', () => {
   })
 
   it('shows login_taken under the login field', async () => {
-    register.mockRejectedValue(
-      Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }),
-    )
-    render(<RegisterForm onSuccess={vi.fn()} />)
+    const register = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }))
+    const container = authTestContainer(fakeAuthGateway({ register }))
+    render(<RegisterForm onSuccess={vi.fn()} />, { wrapper: withDi(container) })
     await fill()
     expect(await screen.findByText('Логин занят')).toBeInTheDocument()
   })
 
   it('associates the error text with the login field for assistive tech', async () => {
-    register.mockRejectedValue(
-      Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }),
-    )
-    render(<RegisterForm onSuccess={vi.fn()} />)
+    const register = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }))
+    const container = authTestContainer(fakeAuthGateway({ register }))
+    render(<RegisterForm onSuccess={vi.fn()} />, { wrapper: withDi(container) })
     await fill()
     const msg = await screen.findByText('Логин занят')
     const input = screen.getByLabelText('Логин')
@@ -59,10 +60,11 @@ describe('RegisterForm', () => {
   })
 
   it('marks the invalid field with aria-invalid', async () => {
-    register.mockRejectedValue(
-      Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }),
-    )
-    render(<RegisterForm onSuccess={vi.fn()} />)
+    const register = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }))
+    const container = authTestContainer(fakeAuthGateway({ register }))
+    render(<RegisterForm onSuccess={vi.fn()} />, { wrapper: withDi(container) })
     await fill()
     await screen.findByText('Логин занят')
     expect(screen.getByLabelText('Логин')).toHaveAttribute('aria-invalid', 'true')
@@ -70,10 +72,11 @@ describe('RegisterForm', () => {
   })
 
   it('clears the error once the user edits the field again', async () => {
-    register.mockRejectedValue(
-      Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }),
-    )
-    render(<RegisterForm onSuccess={vi.fn()} />)
+    const register = vi
+      .fn()
+      .mockRejectedValue(Object.assign(new Error('taken'), { status: 409, code: 'login_taken' }))
+    const container = authTestContainer(fakeAuthGateway({ register }))
+    render(<RegisterForm onSuccess={vi.fn()} />, { wrapper: withDi(container) })
     await fill()
     expect(await screen.findByText('Логин занят')).toBeInTheDocument()
 

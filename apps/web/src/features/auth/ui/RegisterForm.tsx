@@ -1,42 +1,16 @@
 import { Button, FormItem, FormLayoutGroup, Input } from '@vkontakte/vkui'
-import { type ChangeEvent, type FormEvent, useState } from 'react'
 import type { UserDto } from '@/shared/api'
-import { authApi } from '../api/authApi'
-import { codeOf, fieldFor, messageFor } from '../model/errors'
-
-type Field = 'login' | 'firstName' | 'lastName' | 'password'
-type FieldError = { field: 'login' | 'password' | 'form'; text: string }
-const EMPTY: Record<Field, string> = { login: '', firstName: '', lastName: '', password: '' }
+import { useRegisterForm } from '../model/useRegisterForm'
 
 export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void }) {
-  const [form, setForm] = useState(EMPTY)
-  const [error, setError] = useState<FieldError | null>(null)
-  const [busy, setBusy] = useState(false)
+  const f = useRegisterForm(onSuccess)
 
-  const set = (f: Field) => (e: ChangeEvent<HTMLInputElement>) => {
-    setForm((s) => ({ ...s, [f]: e.target.value }))
-    if (error) setError(null)
-  }
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setBusy(true)
-    try {
-      onSuccess(await authApi.register(form))
-    } catch (err) {
-      const code = codeOf(err)
-      setError({ field: fieldFor(code), text: messageFor(code) })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const status = (f: 'login' | 'password') => (error?.field === f ? 'error' : 'default')
-  const bottom = (f: 'login' | 'password') => (error?.field === f ? error.text : undefined)
+  const status = (field: 'login' | 'password') => (f.error?.field === field ? 'error' : 'default')
+  const bottom = (field: 'login' | 'password') =>
+    f.error?.field === field ? f.error.text : undefined
 
   return (
-    <form onSubmit={submit} noValidate>
+    <form onSubmit={f.submit} noValidate>
       <FormLayoutGroup mode="vertical">
         <FormItem
           htmlFor="reg-login"
@@ -49,13 +23,13 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
             id="reg-login"
             name="login"
             autoComplete="username"
-            value={form.login}
-            onChange={set('login')}
-            disabled={busy}
+            value={f.values.login}
+            onChange={(e) => f.setField('login', e.target.value)}
+            disabled={f.busy}
             slotProps={{
               input: {
-                'aria-describedby': error?.field === 'login' ? 'reg-login-error' : undefined,
-                'aria-invalid': error?.field === 'login',
+                'aria-describedby': f.error?.field === 'login' ? 'reg-login-error' : undefined,
+                'aria-invalid': f.error?.field === 'login',
               },
             }}
           />
@@ -65,9 +39,9 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
             id="reg-first"
             name="firstName"
             autoComplete="given-name"
-            value={form.firstName}
-            onChange={set('firstName')}
-            disabled={busy}
+            value={f.values.firstName}
+            onChange={(e) => f.setField('firstName', e.target.value)}
+            disabled={f.busy}
           />
         </FormItem>
         <FormItem htmlFor="reg-last" top="Фамилия">
@@ -75,9 +49,9 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
             id="reg-last"
             name="lastName"
             autoComplete="family-name"
-            value={form.lastName}
-            onChange={set('lastName')}
-            disabled={busy}
+            value={f.values.lastName}
+            onChange={(e) => f.setField('lastName', e.target.value)}
+            disabled={f.busy}
           />
         </FormItem>
         <FormItem
@@ -92,28 +66,28 @@ export function RegisterForm({ onSuccess }: { onSuccess: (u: UserDto) => void })
             name="password"
             type="password"
             autoComplete="new-password"
-            value={form.password}
-            onChange={set('password')}
-            disabled={busy}
+            value={f.values.password}
+            onChange={(e) => f.setField('password', e.target.value)}
+            disabled={f.busy}
             slotProps={{
               input: {
                 'aria-describedby':
-                  error?.field === 'password'
+                  f.error?.field === 'password'
                     ? 'reg-password-error'
-                    : error?.field === 'form'
+                    : f.error?.field === 'form'
                       ? 'reg-form-error'
                       : undefined,
-                'aria-invalid': error?.field === 'password',
+                'aria-invalid': f.error?.field === 'password',
               },
             }}
           />
         </FormItem>
         <FormItem
-          status={error?.field === 'form' ? 'error' : 'default'}
-          bottom={error?.field === 'form' ? error.text : undefined}
+          status={f.error?.field === 'form' ? 'error' : 'default'}
+          bottom={f.error?.field === 'form' ? f.error.text : undefined}
           bottomId="reg-form-error"
         >
-          <Button type="submit" size="l" stretched mode="primary" loading={busy}>
+          <Button type="submit" size="l" stretched mode="primary" loading={f.busy}>
             Зарегистрироваться
           </Button>
         </FormItem>

@@ -1,3 +1,6 @@
+export { EdenAuthGateway } from './api/authApi'
+export { AUTH_GATEWAY, type AuthGateway } from './model/ports'
+export { useAuthRedirect } from './model/useAuthRedirect'
 export { LoginForm } from './ui/LoginForm'
 export { LogoutButton } from './ui/LogoutButton'
 export { RegisterForm } from './ui/RegisterForm'
