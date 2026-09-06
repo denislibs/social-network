@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { testDb, truncateAll } from '../../../../test/helpers/db'
 import { graphFixture } from '../../../../test/helpers/graph-fixture'
 import { testRedis } from '../../../../test/helpers/redis'
 import type { Db } from '../../../db/client'
+import { communities } from '../../../db/schema'
 import { Community } from '../domain/community'
 import { Friendship } from '../domain/friendship'
 import { DrizzleCommunityRepository } from './drizzle-community-repository'
@@ -235,6 +236,32 @@ describe('DrizzleCommunityRepository', () => {
     const afterLeave = await repo.findByScreenName('music_club')
     expect(afterLeave?.roleOf(21)).toBeNull()
     expect(afterLeave?.membersCount()).toBe(1)
+  })
+
+  it('a failing member insert rolls back the whole save, leaving members_count unchanged', async () => {
+    await graphFixture(db)
+    const repo = new DrizzleCommunityRepository(db)
+    const c = Community.create({
+      ownerId: 20,
+      name: 'Спорт',
+      screenName: 'sport_club',
+      topic: 'sport',
+      description: null,
+    })
+    const saved = await repo.save(c)
+
+    const reloaded = await repo.findById(saved.props.id as number)
+    reloaded!.join(999999) // no such user — violates community_members' FK on user_id
+    await expect(repo.save(reloaded!)).rejects.toThrow()
+
+    const after = await repo.findById(saved.props.id as number)
+    expect(after?.membersCount()).toBe(1)
+    expect(after?.roleOf(999999)).toBeNull()
+    const [row] = await db
+      .select({ membersCount: communities.membersCount })
+      .from(communities)
+      .where(eq(communities.id, saved.props.id as number))
+    expect(row?.membersCount).toBe(1)
   })
 })
 

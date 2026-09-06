@@ -3,16 +3,19 @@ import { createKernelContainer } from './kernel/container'
 import type { AppDeps } from './kernel/deps'
 import { AppError } from './kernel/errors'
 import { bindIdentity, mountIdentity } from './modules/identity'
+import { bindNotifications, mountNotifications } from './modules/notifications'
 import { bindSocialGraph, mountSocialGraph } from './modules/social-graph'
 
 export type { AppDeps }
 
 export async function buildApp(deps: AppDeps) {
   const container = createKernelContainer(deps)
-  bindIdentity(container) // later tasks add bindNotifications here
+  bindIdentity(container)
   bindSocialGraph(container)
+  bindNotifications(container)
   const identity = await mountIdentity(container)
   await mountSocialGraph(container) // routes come in Task 8; this only registers command/query handlers
+  await mountNotifications(container) // routes come in Task 8; this registers handlers + the graph-event subscriber
   return new Elysia({ prefix: '/api/v1' })
     .onError(({ error, set, code }) => {
       if (error instanceof AppError) {
