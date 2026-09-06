@@ -11,10 +11,22 @@ import type {
   UserCellDto,
 } from './dto'
 
+/**
+ * `'inserted'` — a fresh row was created (no existing pair). `'updated'` — an existing row was
+ * overwritten with the incoming aggregate's values (accept/decline/remove/rerequest, or a
+ * duplicate insert from the same requester). `'deleted'` — `f.isRemoved`. `'raced_accepted'` — a
+ * genuine mutual-request race: two opposite-direction `Friendship.request(...)` calls both saw no
+ * existing row, and this save lost the insert race, so instead of overwriting the winner's
+ * pending row with its own it was reconciled to `accepted`. Only the loser of that race observes
+ * `'raced_accepted'`; the caller uses it to publish the `FriendshipAccepted` event that would
+ * otherwise never fire for this path.
+ */
+export type SaveOutcome = 'inserted' | 'updated' | 'deleted' | 'raced_accepted'
+
 export interface FriendshipRepository {
   find(a: number, b: number): Promise<Friendship | null>
   /** Upserts the row keyed by the ordered pair; deletes it when `f.isRemoved`. */
-  save(f: Friendship): Promise<void>
+  save(f: Friendship): Promise<SaveOutcome>
 }
 export interface FollowRepository {
   add(followerId: number, target: { type: 'user' | 'community'; id: number }): Promise<void>

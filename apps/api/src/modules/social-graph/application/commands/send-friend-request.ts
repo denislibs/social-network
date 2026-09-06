@@ -21,11 +21,13 @@ export function sendFriendRequestHandler(d: {
     const existing = await d.friendships.find(me, other)
     let f: Friendship
     let relation: Relation
+    let isFreshRequest = false
 
     if (!existing) {
       f = Friendship.request(me, other, d.clock.now())
       await d.follows.add(me, { type: 'user', id: other })
       relation = 'outgoing'
+      isFreshRequest = true
     } else {
       const p = existing.props
       if (p.status === 'pending' && p.requesterId === other) {
@@ -46,8 +48,25 @@ export function sendFriendRequestHandler(d: {
       }
     }
 
-    await d.friendships.save(f)
+    const outcome = await d.friendships.save(f)
     await d.events.publish(f.pullEvents())
+
+    if (isFreshRequest && outcome === 'raced_accepted') {
+      // Both sides raced `Friendship.request(...)` from opposite directions and each saw no
+      // existing row; the repository resolved the row to `accepted`, but the aggregate we built
+      // above only ever pulled a `FriendRequested` event — nobody's aggregate ever transitioned
+      // through `accept()`, so no `FriendshipAccepted` would otherwise fire. Only the request
+      // that lost the insert race observes `raced_accepted`, so exactly one side publishes this.
+      await d.events.publish([
+        {
+          type: 'FriendshipAccepted',
+          occurredAt: d.clock.now(),
+          payload: { userLo: f.props.lo, userHi: f.props.hi, acceptedBy: me },
+        },
+      ])
+      relation = 'friends'
+    }
+
     await d.cache.invalidate([me, other])
     return relation
   }

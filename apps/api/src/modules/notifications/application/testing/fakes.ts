@@ -1,4 +1,4 @@
-import type { NotificationKind } from '../../../../db/schema'
+import type { NotificationKind } from '@vkc/contracts'
 import { type CursorKey, decodeCursor, encodeCursor, PAGE_SIZE } from '../../../../kernel/cursor'
 import type { NotificationDto, Page, UserCellDto } from '../dto'
 import type { NotificationReadModel, NotificationRepository } from '../ports'

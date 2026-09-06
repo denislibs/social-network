@@ -4,7 +4,7 @@ import { testDb, truncateAll } from '../../../../test/helpers/db'
 import { graphFixture } from '../../../../test/helpers/graph-fixture'
 import { testRedis } from '../../../../test/helpers/redis'
 import type { Db } from '../../../db/client'
-import { communities } from '../../../db/schema'
+import { communities, follows, friendships, users } from '../../../db/schema'
 import { Community } from '../domain/community'
 import { Friendship } from '../domain/friendship'
 import { DrizzleCommunityRepository } from './drizzle-community-repository'
@@ -81,6 +81,96 @@ describe('DrizzleSocialReadModel', () => {
     expect(c3.nextCursor).toBeNull()
     const allIds = new Set([...a.items, ...b.items, ...c3.items].map((u) => u.id))
     expect(allIds.size).toBe(45)
+  })
+
+  it('friends(): a batch of 25 rows sharing one timestamp still paginates 20 + 5 with no gaps or duplicates', async () => {
+    // A single insert() call, unlike graph-fixture's per-row loop, gives every row the exact
+    // same Postgres per-statement `now()` snapshot for created_at/accepted_at — the shape that
+    // previously slipped a row past the millisecond-precision keyset cursor at a page boundary.
+    await db.insert(users).values({
+      id: 1,
+      login: 'user1',
+      passwordHash: 'x',
+      firstName: 'Имя1',
+      lastName: 'Фамилия1',
+    })
+    const friendIds = Array.from({ length: 25 }, (_, i) => 5000 + i)
+    await db.insert(users).values(
+      friendIds.map((id) => ({
+        id,
+        login: `bulkfriend${id}`,
+        passwordHash: 'x',
+        firstName: `Имя${id}`,
+        lastName: `Фамилия${id}`,
+      })),
+    )
+    await db.execute(
+      sql`select setval(pg_get_serial_sequence('users','id'), (select max(id) from users))`,
+    )
+    const now = new Date()
+    await db.insert(friendships).values(
+      friendIds.map((id) => ({
+        userLo: Math.min(1, id),
+        userHi: Math.max(1, id),
+        status: 'accepted' as const,
+        requesterId: 1,
+        createdAt: now,
+        acceptedAt: now,
+      })),
+    )
+    await db
+      .insert(follows)
+      .values(friendIds.map((id) => ({ followerId: 1, targetType: 'user' as const, targetId: id })))
+
+    const rm = new DrizzleSocialReadModel(db)
+    const a = await rm.friends(1)
+    const b = await rm.friends(1, a.nextCursor ?? undefined)
+    expect([a.items.length, b.items.length]).toEqual([20, 5])
+    expect(b.nextCursor).toBeNull()
+    const allIds = new Set([...a.items, ...b.items].map((u) => u.id))
+    expect(allIds.size).toBe(25)
+  })
+
+  it("requests(1,'incoming'): a batch of 25 pending rows sharing one timestamp still paginates 20 + 5 with no gaps", async () => {
+    await db.insert(users).values({
+      id: 1,
+      login: 'user1',
+      passwordHash: 'x',
+      firstName: 'Имя1',
+      lastName: 'Фамилия1',
+    })
+    const requesterIds = Array.from({ length: 25 }, (_, i) => 6000 + i)
+    await db.insert(users).values(
+      requesterIds.map((id) => ({
+        id,
+        login: `bulkrequester${id}`,
+        passwordHash: 'x',
+        firstName: `Имя${id}`,
+        lastName: `Фамилия${id}`,
+      })),
+    )
+    await db.execute(
+      sql`select setval(pg_get_serial_sequence('users','id'), (select max(id) from users))`,
+    )
+    const now = new Date()
+    await db.insert(friendships).values(
+      requesterIds.map((id) => ({
+        userLo: Math.min(1, id),
+        userHi: Math.max(1, id),
+        status: 'pending' as const,
+        requesterId: id,
+        createdAt: now,
+        acceptedAt: null,
+      })),
+    )
+
+    const rm = new DrizzleSocialReadModel(db)
+    const a = await rm.requests(1, 'incoming')
+    const b = await rm.requests(1, 'incoming', a.nextCursor ?? undefined)
+    expect([a.items.length, b.items.length]).toEqual([20, 5])
+    expect(b.nextCursor).toBeNull()
+    const allIds = new Set([...a.items, ...b.items].map((u) => u.id))
+    expect(allIds.size).toBe(25)
   })
 
   it('suggestions: friends-of-friends ranked by mutual, excludes self/friends/pending/hidden, uses index scans', async () => {
@@ -184,14 +274,32 @@ describe('DrizzleFriendshipRepository', () => {
     expect(await repo.find(20, 21)).toBeNull()
   })
 
-  it('a second concurrent insert for the same pair upserts instead of throwing', async () => {
+  it('a second concurrent insert for the same pair (same requester) upserts instead of throwing', async () => {
     await graphFixture(db)
     const repo = new DrizzleFriendshipRepository(db)
     const a = Friendship.request(22, 23)
     const b = Friendship.request(22, 23)
-    await Promise.all([repo.save(a), repo.save(b)])
+    const outcomes = await Promise.all([repo.save(a), repo.save(b)])
     const found = await repo.find(22, 23)
     expect(found?.props.status).toBe('pending')
+    // Same requester on both sides is not the mutual-race shape (the SQL's `mutualRace` guard
+    // requires a *different* requester at conflict time), so this is a plain insert + overwrite.
+    expect(outcomes.toSorted()).toEqual(['inserted', 'updated'])
+  })
+
+  it('a genuine mutual race (opposite-direction requests) settles on one accepted row: one insert, one raced_accepted', async () => {
+    await graphFixture(db)
+    const repo = new DrizzleFriendshipRepository(db)
+    const a = Friendship.request(24, 25)
+    const b = Friendship.request(25, 24)
+    const outcomes = await Promise.all([repo.save(a), repo.save(b)])
+    expect(outcomes.toSorted()).toEqual(['inserted', 'raced_accepted'])
+
+    const rows = await db.execute(
+      sql`select status from friendships where user_lo = 24 and user_hi = 25`,
+    )
+    expect(rows.length).toBe(1)
+    expect(rows[0]?.status).toBe('accepted')
   })
 })
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
 import { EventBus } from '../../../kernel/event-bus'
 import { KERNEL } from '../../../kernel/tokens'
+import { Friendship } from '../domain/friendship'
 import { AcceptFriendRequest } from './commands/accept-friend-request'
 import { CreateCommunity } from './commands/create-community'
 import { DeclineFriendRequest } from './commands/decline-friend-request'
@@ -14,7 +15,12 @@ import { GetRelation } from './queries/get-relation'
 import { GetSuggestedFriends } from './queries/get-suggested-friends'
 import { registerSocialGraphHandlers } from './register'
 import { createSocialGraphTestContainer } from './testing/container'
-import type { InMemoryFollows, InMemorySocialRead, InMemorySuggestionCache } from './testing/fakes'
+import type {
+  InMemoryFollows,
+  InMemoryFriendships,
+  InMemorySocialRead,
+  InMemorySuggestionCache,
+} from './testing/fakes'
 
 let c: ReturnType<typeof createSocialGraphTestContainer>, published: string[]
 const exec = <T>(cmd: { __result: T }) =>
@@ -63,6 +69,25 @@ describe('friend requests', () => {
   it('mutual request = accepted', async () => {
     await exec(new SendFriendRequest({ me: 1, other: 2 }))
     expect(await exec(new SendFriendRequest({ me: 2, other: 1 }))).toBe('friends')
+  })
+  it('mutual-request race: a raced_accepted save publishes FriendshipAccepted with acceptedBy = the caller', async () => {
+    // Simulates the true concurrent shape (both sides' `find()` see no existing row) without
+    // real concurrency: pre-seed the row a faster concurrent 2→1 request would have created, then
+    // arm `raceOnce` so this handler's own `find(1, 2)` still returns null — exactly what two
+    // truly concurrent opposite-direction requests would each observe.
+    const friendships = c.get(SOCIAL.FriendshipRepository) as InMemoryFriendships
+    friendships.rows.set('1:2', Friendship.request(2, 1))
+    friendships.raceOnce = true
+
+    expect(await exec(new SendFriendRequest({ me: 1, other: 2 }))).toBe('friends')
+    expect(await ask(new GetRelation(1, 2))).toBe('friends')
+
+    const accepted = published.filter((p) => p.startsWith('FriendshipAccepted'))
+    expect(accepted).toHaveLength(1)
+    expect(accepted[0]).toBe('FriendshipAccepted:{"userLo":1,"userHi":2,"acceptedBy":1}')
+    // The aggregate built for this call still only ever pulls a FriendRequested event — the
+    // FriendshipAccepted above is the extra one the handler publishes for the race.
+    expect(published.filter((p) => p.startsWith('FriendRequested'))).toHaveLength(1)
   })
   it('decline keeps the follow and publishes no notification-worthy accept', async () => {
     await exec(new SendFriendRequest({ me: 1, other: 2 }))

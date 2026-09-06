@@ -1,6 +1,6 @@
 import type { Counters, Relation } from '../../../../kernel/social-read'
 import type { Community } from '../../domain/community'
-import type { Friendship } from '../../domain/friendship'
+import { Friendship } from '../../domain/friendship'
 import { orderPair } from '../../domain/value-objects'
 import type {
   CommunityCellDto,
@@ -14,6 +14,7 @@ import type {
   CommunityRepository,
   FollowRepository,
   FriendshipRepository,
+  SaveOutcome,
   SocialReadModel,
   SuggestionCache,
   SuggestionHider,
@@ -24,17 +25,46 @@ const emptyPage = <T>(): Page<T> => ({ items: [], nextCursor: null })
 /** Map keyed `lo:hi` — mirrors the ordered-pair key the domain uses for a friendship row. */
 export class InMemoryFriendships implements FriendshipRepository {
   rows = new Map<string, Friendship>()
+  /**
+   * Test-only hook: when true, the *next* `find()` call returns `null` regardless of stored
+   * state (and resets the flag) — simulates a concurrent transaction that hasn't yet observed a
+   * row the other side just inserted, so a test can drive the mutual-request-race code path
+   * deterministically instead of relying on real concurrency.
+   */
+  raceOnce = false
   private key(a: number, b: number): string {
     const { lo, hi } = orderPair(a, b)
     return `${lo}:${hi}`
   }
   async find(a: number, b: number): Promise<Friendship | null> {
+    if (this.raceOnce) {
+      this.raceOnce = false
+      return null
+    }
     return this.rows.get(this.key(a, b)) ?? null
   }
-  async save(f: Friendship): Promise<void> {
+  async save(f: Friendship): Promise<SaveOutcome> {
     const key = `${f.props.lo}:${f.props.hi}`
-    if (f.isRemoved) this.rows.delete(key)
-    else this.rows.set(key, f)
+    if (f.isRemoved) {
+      this.rows.delete(key)
+      return 'deleted'
+    }
+    const existing = this.rows.get(key)
+    if (
+      existing &&
+      existing.props.status === 'pending' &&
+      f.props.status === 'pending' &&
+      existing.props.requesterId !== f.props.requesterId
+    ) {
+      this.rows.set(
+        key,
+        Friendship.rehydrate({ ...existing.props, status: 'accepted', acceptedAt: new Date() }),
+      )
+      return 'raced_accepted'
+    }
+    const wasPresent = this.rows.has(key)
+    this.rows.set(key, f)
+    return wasPresent ? 'updated' : 'inserted'
   }
 }
 

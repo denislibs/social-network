@@ -35,6 +35,8 @@ const post = (path: string, body: unknown = {}, cookie?: string | undefined) =>
 const patch = (path: string, body: unknown, cookie?: string | undefined) =>
   req('PATCH', path, { body, cookie })
 const del = (path: string, cookie?: string | undefined) => req('DELETE', path, { cookie })
+const kindsOf = async (res: Response) =>
+  ((await res.json()) as { items: { kind: string }[] }).items.map((i) => i.kind)
 
 async function registerUser(
   login: string,
@@ -122,6 +124,18 @@ describe('social graph + profile e2e', () => {
     const profile = await get(`/users/id${d.id}`, c.cookie)
     const body = (await profile.json()) as { user: { relation: string } }
     expect(body.user.relation).toBe('friends')
+
+    // Both concurrent requests publish their own FriendRequested (2 total across the pair), and
+    // exactly one side of the race publishes the synthetic FriendshipAccepted (1 total) — which
+    // one depends on request-arrival order, which Promise.all doesn't pin down, so assert counts
+    // instead of which specific user got which notification.
+    const [cNotifs, dNotifs] = await Promise.all([
+      get('/me/notifications', c.cookie),
+      get('/me/notifications', d.cookie),
+    ])
+    const allKinds = [...(await kindsOf(cNotifs)), ...(await kindsOf(dNotifs))]
+    expect(allKinds.filter((k) => k === 'friend_request')).toHaveLength(2)
+    expect(allKinds.filter((k) => k === 'friend_accepted')).toHaveLength(1)
   })
 
   it('PATCH /me/profile: reserved screen name 422, taken 409, success then resolves by screen name', async () => {
@@ -174,6 +188,13 @@ describe('social graph + profile e2e', () => {
     const afterJoin = await get(`/communities/${communityId}`, a.cookie)
     const afterJoinBody = (await afterJoin.json()) as { community: { membersCount: number } }
     expect(afterJoinBody.community.membersCount).toBe(2)
+
+    // `:id` also resolves by screen name (the memoirist param-name-collision rename in the prior
+    // task's report — see the deviations section — must not have broken this path).
+    const byScreenName = await get('/communities/zvezdaclub', a.cookie)
+    expect(byScreenName.status).toBe(200)
+    const byScreenNameBody = (await byScreenName.json()) as { community: { id: number } }
+    expect(byScreenNameBody.community.id).toBe(communityId)
 
     const leftAsLastAdmin = await del(`/communities/${communityId}/join`, a.cookie)
     expect(leftAsLastAdmin.status).toBe(409)
