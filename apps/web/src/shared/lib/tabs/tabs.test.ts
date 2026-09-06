@@ -242,7 +242,10 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
   })
 
   it('lock granted: becomes leader and notifies a listener registered right after creation, exactly once', async () => {
-    const request = vi.fn((_name: string, cb: () => Promise<void>) => Promise.resolve().then(cb))
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, cb: () => Promise<void>) =>
+        Promise.resolve().then(cb),
+    )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
     const coordinator = createBrowserTabCoordinator()
@@ -258,13 +261,20 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
 
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith(true)
-    expect(request).toHaveBeenCalledWith('vkc-leader', expect.any(Function))
+    expect(request).toHaveBeenCalledWith(
+      'vkc-leader',
+      { signal: expect.any(AbortSignal) },
+      expect.any(Function),
+    )
 
     coordinator.dispose()
   })
 
   it('lock not granted: stays a non-leader and never notifies', async () => {
-    const request = vi.fn((_name: string, _cb: () => Promise<void>) => new Promise<void>(() => {}))
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, _cb: () => Promise<void>) =>
+        new Promise<void>(() => {}),
+    )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
     const coordinator = createBrowserTabCoordinator()
@@ -282,10 +292,12 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
 
   it('lock granted later: leader flips to true and the listener fires once the callback runs', () => {
     let grantedCb: (() => Promise<void>) | undefined
-    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
-      grantedCb = cb
-      return new Promise<void>(() => {})
-    })
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, cb: () => Promise<void>) => {
+        grantedCb = cb
+        return new Promise<void>(() => {})
+      },
+    )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
     const coordinator = createBrowserTabCoordinator()
@@ -307,10 +319,12 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
 
   it('onLeaderChange: the returned unsubscribe stops further leader notifications', () => {
     let grantedCb: (() => Promise<void>) | undefined
-    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
-      grantedCb = cb
-      return new Promise<void>(() => {})
-    })
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, cb: () => Promise<void>) => {
+        grantedCb = cb
+        return new Promise<void>(() => {})
+      },
+    )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
     const coordinator = createBrowserTabCoordinator()
@@ -328,7 +342,10 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
   })
 
   it('never requests the lock while the tab is ineligible', async () => {
-    const request = vi.fn((_name: string, _cb: () => Promise<void>) => new Promise<void>(() => {}))
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, _cb: () => Promise<void>) =>
+        new Promise<void>(() => {}),
+    )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
     const coordinator = createBrowserTabCoordinator()
@@ -342,10 +359,12 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
 
   it('setEligible(false) releases the held lock so another tab can take it', () => {
     let held: Promise<void> | undefined
-    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
-      held = cb()
-      return held
-    })
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, cb: () => Promise<void>) => {
+        held = cb()
+        return held
+      },
+    )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
     const coordinator = createBrowserTabCoordinator()
@@ -367,10 +386,12 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
 
   it('a lock granted after eligibility was withdrawn does not make the tab a leader', () => {
     let grantedCb: (() => Promise<void>) | undefined
-    const request = vi.fn((_name: string, cb: () => Promise<void>) => {
-      grantedCb = cb
-      return new Promise<void>(() => {})
-    })
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, cb: () => Promise<void>) => {
+        grantedCb = cb
+        return new Promise<void>(() => {})
+      },
+    )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
     const coordinator = createBrowserTabCoordinator()
@@ -384,8 +405,9 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
   })
 
   it('does not produce an unhandled rejection when the lock request rejects', async () => {
-    const request = vi.fn((_name: string, _cb: () => Promise<void>) =>
-      Promise.reject(new DOMException('aborted', 'AbortError')),
+    const request = vi.fn(
+      (_name: string, _opts: { signal: AbortSignal }, _cb: () => Promise<void>) =>
+        Promise.reject(new DOMException('aborted', 'AbortError')),
     )
     Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
 
@@ -400,6 +422,60 @@ describe('createBrowserTabCoordinator leadership via the real Web Locks API', ()
     expect(onUnhandledRejection).not.toHaveBeenCalled()
 
     process.off('unhandledRejection', onUnhandledRejection)
+    coordinator.dispose()
+  })
+
+  it('setEligible(false) aborts a still-queued lock request', () => {
+    let capturedSignal: AbortSignal | undefined
+    const request = vi.fn(
+      (_name: string, opts: { signal: AbortSignal }, _cb: () => Promise<void>) => {
+        capturedSignal = opts.signal
+        return new Promise<void>(() => {}) // never granted: stays queued behind another tab
+      },
+    )
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    coordinator.setEligible(true)
+    expect(capturedSignal?.aborted).toBe(false)
+
+    coordinator.setEligible(false)
+
+    expect(capturedSignal?.aborted).toBe(true)
+
+    coordinator.dispose()
+  })
+
+  it('a grant delivered after the request was aborted does not make the tab a leader', () => {
+    let grantedCb: (() => Promise<void>) | undefined
+    let capturedSignal: AbortSignal | undefined
+    const request = vi.fn(
+      (_name: string, opts: { signal: AbortSignal }, cb: () => Promise<void>) => {
+        capturedSignal = opts.signal
+        grantedCb = cb
+        return new Promise<void>(() => {})
+      },
+    )
+    Object.defineProperty(navigator, 'locks', { value: { request }, configurable: true })
+
+    const coordinator = createBrowserTabCoordinator()
+    const onChange = vi.fn()
+    coordinator.onLeaderChange(onChange)
+
+    // Tab toggles eligible→ineligible while the request for the lock is still queued behind
+    // another tab holding it (the callback is never invoked while queued, exactly like the
+    // real Web Locks API): the queued request must be aborted, not merely ignored client-side.
+    coordinator.setEligible(true)
+    coordinator.setEligible(false)
+    expect(capturedSignal?.aborted).toBe(true)
+
+    // The stale request is later (incorrectly, in a buggy implementation) granted anyway —
+    // simulating the browser handing the lock to this tab's now-aborted queued request.
+    grantedCb?.()
+
+    expect(coordinator.isLeader()).toBe(false)
+    expect(onChange).not.toHaveBeenCalledWith(true)
+
     coordinator.dispose()
   })
 })

@@ -92,15 +92,18 @@ export function useEditProfileForm(profile: ProfileDto): {
         const updated = await gateway.updateProfile(patch)
         // `ProfileDto.login` only comes back for `relation === 'self'`, so it is typed optional
         // even though this form is self-only: fall back to the login already in the session
-        // rather than widening `UserDto`.
-        setUser({
-          id: updated.id,
-          login: updated.login ?? user?.login ?? '',
-          firstName: updated.firstName,
-          lastName: updated.lastName,
-          screenName: updated.screenName,
-          createdAt: updated.createdAt,
-        })
+        // rather than widening `UserDto`. `user` is never actually null on this page (it
+        // requires an authed session), but skip rather than write a blank login if it ever is.
+        if (user) {
+          setUser({
+            id: updated.id,
+            login: updated.login ?? user.login,
+            firstName: updated.firstName,
+            lastName: updated.lastName,
+            screenName: updated.screenName,
+            createdAt: updated.createdAt,
+          })
+        }
         queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'user' })
         queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'handle' })
         navigate(`/${userHandle(updated)}`)

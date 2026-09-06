@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSessionTestProvider } from '@/entities/session'
 import type { ProfileDto, UserGateway } from '@/entities/user'
 import { USER_GATEWAY } from '@/entities/user'
@@ -89,5 +89,31 @@ describe('EditProfilePage', () => {
   it('shows a placeholder on error', async () => {
     mount({ getProfile: vi.fn().mockRejectedValue(new Error('boom')) })
     expect(await screen.findByText('Не удалось загрузить профиль')).toBeInTheDocument()
+  })
+
+  describe('while the profile is resolving', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('shows neither the skeleton nor the error placeholder before the 150 ms delay', () => {
+      // The error/placeholder branch must wait for the query to actually settle: rendering it
+      // while the request is still in flight would flash "не удалось загрузить" on every load.
+      mount({ getProfile: vi.fn((): Promise<never> => new Promise(() => {})) })
+
+      expect(screen.queryByLabelText('Загрузка')).not.toBeInTheDocument()
+      expect(screen.queryByText('Не удалось загрузить профиль')).not.toBeInTheDocument()
+
+      act(() => {
+        vi.advanceTimersByTime(150)
+      })
+
+      expect(screen.getByLabelText('Загрузка')).toBeInTheDocument()
+      expect(screen.queryByText('Не удалось загрузить профиль')).not.toBeInTheDocument()
+    })
   })
 })

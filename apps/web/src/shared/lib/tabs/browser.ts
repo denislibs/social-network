@@ -58,6 +58,14 @@ export function createBrowserTabCoordinator(): TabCoordinator & { dispose(): voi
   let eligible = false
   /** Resolving this hands the Web Lock back to the browser; `null` while no request is in flight. */
   let releaseHeldLock: (() => void) | null = null
+  /**
+   * Aborts the in-flight `navigator.locks.request` call; `null` while none is in flight.
+   * Needed because `setEligible(false)`/`release()` can run while the request is still
+   * *queued* behind another tab's held lock — at that point there is no held lock to hand
+   * back yet, only a pending request to cancel, or the browser may grant it after this tab
+   * has already gone ineligible and flip it back to leader on a stale grant.
+   */
+  let abortRequest: (() => void) | null = null
 
   function acquire(): void {
     if (!navigator.locks) {
@@ -66,20 +74,24 @@ export function createBrowserTabCoordinator(): TabCoordinator & { dispose(): voi
       setLeader(true)
       return
     }
-    if (releaseHeldLock) return
+    if (releaseHeldLock || abortRequest) return
     let handBack!: () => void
     const held = new Promise<void>((resolve) => {
       handBack = resolve
     })
     releaseHeldLock = handBack
+    const controller = new AbortController()
+    abortRequest = () => controller.abort()
     // The callback's promise stays pending for as long as this tab should lead: that is what
-    // holds the lock. The `.catch` is not error *handling* — a rejection (e.g. `AbortError`)
-    // just means this tab never became leader, which is already the default state; it only
-    // keeps the rejection from surfacing as an unhandled one.
+    // holds the lock. The `.catch` is not error *handling* — a rejection (e.g. `AbortError`
+    // from the `signal` below) just means this tab never became leader, which is already the
+    // default state; it only keeps the rejection from surfacing as an unhandled one.
     void navigator.locks
-      .request('vkc-leader', () => {
-        // Eligibility can be withdrawn while the request is still queued behind another tab.
-        if (!eligible) return Promise.resolve()
+      .request('vkc-leader', { signal: controller.signal }, () => {
+        // Eligibility can be withdrawn while the request is still queued behind another tab —
+        // and so can this specific request, via `controller.abort()` in `release()`. A grant
+        // delivered to an already-aborted request must not resurrect leadership.
+        if (!eligible || controller.signal.aborted) return Promise.resolve()
         setLeader(true)
         return held
       })
@@ -90,6 +102,10 @@ export function createBrowserTabCoordinator(): TabCoordinator & { dispose(): voi
     setLeader(false)
     releaseHeldLock?.()
     releaseHeldLock = null
+    // Cancels the request outright while it is still queued (no lock was ever held); a no-op
+    // once the lock has been granted and is being handed back via `releaseHeldLock` above.
+    abortRequest?.()
+    abortRequest = null
   }
 
   return {

@@ -169,6 +169,39 @@ describe('useEditProfileForm', () => {
     expect(navigateSpy).toHaveBeenCalledWith('/newname')
   })
 
+  it('falls back to the previous session login when the response omits it', async () => {
+    // `ProfileDto.login` only comes back for `relation === 'self'` and is typed optional;
+    // a response that omits it must not blank out the login already held in the session.
+    const updated = { ...profile, login: undefined, screenName: 'newname' }
+    const setUser = vi.fn()
+    const { result } = setup({ updateProfile: vi.fn().mockResolvedValue(updated) }, setUser)
+    act(() => result.current.setField('screenName', 'newname'))
+    await act(() => result.current.submit())
+
+    expect(setUser).toHaveBeenCalledWith(
+      expect.objectContaining({ login: 'demo' /* the session user's login, from setup() */ }),
+    )
+  })
+
+  it('never calls setUser with a blank login when there is no session user to fall back to', async () => {
+    // Defensive only: this page requires an authed session, so `user` is never actually
+    // null here. But the fallback chain must not paper over that with an empty string.
+    const updated = { ...profile, login: undefined, screenName: 'newname' }
+    const setUser = vi.fn()
+    const container = createTestContainer()
+    container
+      .bind(USER_GATEWAY)
+      .toConstantValue(fakeUserGateway({ updateProfile: vi.fn().mockResolvedValue(updated) }))
+    const Session = createSessionTestProvider({ user: null, status: 'authed', setUser })
+    const { result } = renderHook(() => useEditProfileForm(profile), {
+      wrapper: compose(withProviders(container), Session),
+    })
+    act(() => result.current.setField('screenName', 'newname'))
+    await act(() => result.current.submit())
+
+    expect(setUser).not.toHaveBeenCalled()
+  })
+
   it('busy is true while the request is in flight', async () => {
     let resolve!: (p: ProfileDto) => void
     const { result } = setup({

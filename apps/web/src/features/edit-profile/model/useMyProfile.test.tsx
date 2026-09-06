@@ -36,6 +36,32 @@ function compose(
 }
 
 describe('useMyProfile', () => {
+  it('exposes both the raw isPending and the delayed showSkeleton flag', async () => {
+    const getProfile = vi.fn().mockResolvedValue({ id: 1 } as ProfileDto)
+    const container = createTestContainer()
+    container.bind(USER_GATEWAY).toConstantValue(fakeUserGateway({ getProfile }))
+    const Session = createSessionTestProvider({
+      user: {
+        id: 1,
+        login: 'demo',
+        firstName: 'Д',
+        lastName: 'П',
+        screenName: 'demo_screen',
+        createdAt: '',
+      },
+      status: 'authed',
+    })
+    const { result } = renderHook(() => useMyProfile(), {
+      wrapper: compose(withProviders(container), Session),
+    })
+
+    expect(result.current.isPending).toBe(true)
+    expect(result.current.showSkeleton).toBe(false)
+
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.showSkeleton).toBe(false)
+  })
+
   it('loads the profile for the signed-in user by their own handle', async () => {
     const profile = { id: 1 } as ProfileDto
     const getProfile = vi.fn().mockResolvedValue(profile)
